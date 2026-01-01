@@ -12,9 +12,9 @@ LIST_SCHEMA_RELATED_DOC_PATHS_AGENTは、指定されたスキーマに関連す
 
 ## 設計上の位置づけ
 
-本プロシージャはDB_DESIGNスキーマに配置され、DOCS_OBSIDIAN_Vビューを参照する。DOCS_OBSIDIAN_Vは、Obsidian Vault内のMarkdownファイルをPATH、SCOPE、`FILE_TYPE`、TARGET_SCHEMA等のメタ情報とともに保持している。
+本プロシージャはDB_DESIGNスキーマに配置され、[[design.DOCS_OBSIDIAN_V]]ビューを参照する。[[design.DOCS_OBSIDIAN_V]]は、Obsidian Vault内のMarkdownファイルをPATH、SCOPE、`FILE_TYPE`、`TARGET_SCHEMA`等のメタ情報とともに保持している。
 
-本プロシージャは、OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENTからgeneric toolとして呼び出され、スキーマレビューの第1ステップ（ドキュメントPATH列挙）を担当する。列挙されたPATHリストは、次にget_docs_by_pathsに渡されて本文が取得される。
+本プロシージャは、[[design.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT]]からgeneric toolとして呼び出され、スキーマレビューの第1ステップ（ドキュメントPATH列挙）を担当する。列挙されたPATHリストは、次に[[design.GET_DOCS_BY_PATHS_AGENT]]に渡されて本文が取得される。
 
 ## 機能
 

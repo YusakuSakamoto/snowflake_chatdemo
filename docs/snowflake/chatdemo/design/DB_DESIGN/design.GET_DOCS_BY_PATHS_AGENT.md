@@ -12,9 +12,9 @@ Cortex Agentがレビューやクエリ実行時に複数のドキュメント�
 
 ## 設計上の位置づけ
 
-本プロシージャはDB_DESIGNスキーマに配置され、DOCS_OBSIDIAN_Vビューを参照する。DOCS_OBSIDIAN_Vはmaster、design、reviews等のObsidian VaultのMarkdownファイルを格納したビューである。
+本プロシージャはDB_DESIGNスキーマに配置され、[[design.DOCS_OBSIDIAN_V]]ビューを参照する。[[design.DOCS_OBSIDIAN_V]]はmaster、design、reviews等のObsidian VaultのMarkdownファイルを格納したビューである。
 
-本プロシージャは、OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENTをはじめとする各種Cortex Agentからgeneric toolとして呼び出され、ドキュメント本文取得の共通インターフェースとして機能する。
+本プロシージャは、[[design.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT]]をはじめとする各種Cortex Agentからgeneric toolとして呼び出され、ドキュメント本文取得の共通インターフェースとして機能する。
 
 ## 機能
 

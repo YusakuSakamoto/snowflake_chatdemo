@@ -1,5 +1,10 @@
+# DDL Generator
 
-#### DB・WHの作成
+このファイルは、Snowflakeの各種DDLを一括生成するための統合ビューです。
+
+## 事前準備：DB・WHの作成
+
+DDL生成の前に、まずデータベースとウェアハウスを作成してください。
 
 ```sql
 USE ROLE ACCOUNTADMIN;
@@ -16,6 +21,19 @@ USE WAREHOUSE GBPS253YS_WH;
 DROP SCHEMA PUBLIC;
 ```
 
+---
+
+## 生成可能なDDL
+
+1. **Snowflake DDL Generator** - スキーマ、テーブル、ビュー、プロシージャ、セマンティックビュー（YAML）など
+2. **External Tables DDL Generator** - S3/Azure連携の外部テーブル  
+
+> **Note:** セマンティックビュー（YAML）は、Snowflake DDL Generatorに統合されています。  
+> `master/semanticviews/` 配下のファイルがYAML形式でコメント出力されます。
+
+---
+
+## 1. Snowflake DDL Generator
 
 ```dataviewjs
 (async () => {
@@ -38,9 +56,9 @@ DROP SCHEMA PUBLIC;
   const RUN_ON_LOAD     = false; // true にするとノート表示時に自動生成（重いなら false 推奨）
 
   // output
-  const OUTPUT_FOLDER   = "generated/ddl";     // Vault 内フォルダ
-  const OUTPUT_PREFIX   = "snowflake_ddl";     // 例: snowflake_ddl_20251227_235959.sql
-  const WRITE_SQL_FILE  = true;               // Vault へ .sql 出力
+  const OUTPUT_FOLDER   = "generated/ddl";           // Vault 内フォルダ
+  const OUTPUT_PREFIX   = "snowflake_ddl";           // 例: snowflake_ddl_20251227_235959.sql
+  const WRITE_SQL_FILE  = true;                       // Vault へ .sql 出力
 
   // ==============================
   // UI
@@ -484,7 +502,7 @@ DROP SCHEMA PUBLIC;
 
       lastDDL = ddl;
 
-      // write file
+      // write DDL file
       if (WRITE_SQL_FILE) {
         await ensureFolder(OUTPUT_FOLDER);
         lastFilePath = `${OUTPUT_FOLDER}/${OUTPUT_PREFIX}_${ts()}.sql`;
@@ -533,272 +551,9 @@ DROP SCHEMA PUBLIC;
 })();
 ```
 
-
-#### ファイルからテーブルを作成
-
-##### 案件明細
-
-```sql
-COPY INTO GBPS253YS_DB.APP_PRODUCTION.ANKEN_MEISAI (
-  ID,
-  DEPARTMENT_SHORT_NAME,
-  SECTION_NAME,
-  FISCAL_YEAR,
-  PROJECT_NUMBER,
-  BRANCH_NUMBER,
-  SALES_CATEGORY,
-  DEPARTMENT_ID,
-  GROUP_SHORT_NAME,
-  CUSTOMER_ID,
-  CUSTOMER_NAME,
-  ORDER_NUMBER,
-  ORDER_NAME,
-  SUBJECT,
-  PROJECT_NAME,
-  WORK_START_DATE,
-  WORK_END_DATE,
-  ACCOUNTING_MONTH,
-  RANK,
-  AMOUNT,
-  SALES_DELIVERY_FLAG,
-  INVOICE_NUMBER,
-  ACTIVE_FLAG,
-  CUSTOMER_QUOTE_REQUEST_NUMBER,
-  CUSTOMER_ORDER_NUMBER,
-  DIVISION_CODE,
-  DEPARTMENT_NAME,
-  DEPARTMENT_SECTION_SHORT_NAME
-)
-FROM @GBPS253YS_DB.APP_PRODUCTION.RAW_DATA
-FILES = ('案件：案件明細一覧20251217203031_0.csv')
-FILE_FORMAT = (
-    TYPE=CSV,
-    SKIP_HEADER=1,
-    FIELD_DELIMITER=',',
-    TRIM_SPACE=FALSE,
-    FIELD_OPTIONALLY_ENCLOSED_BY = '"',
-    REPLACE_INVALID_CHARACTERS=TRUE,
-    DATE_FORMAT=AUTO,
-    TIME_FORMAT=AUTO,
-    TIMESTAMP_FORMAT=AUTO,
-    EMPTY_FIELD_AS_NULL=TRUE,
-    NULL_IF = (''),
-    error_on_column_count_mismatch=false
-)
-ON_ERROR=CONTINUE
-FORCE = TRUE;
-```
-
-##### 部署マスタ
-
-```sql
-COPY INTO GBPS253YS_DB.APP_PRODUCTION.DEPARTMENT_MASTER (
-  ID,                         -- 1
-  FISCAL_YEAR,                -- 2
-  DEPARTMENT_CATEGORY,        -- 3
-  DEPARTMENT_ID,              -- 4
-  DIVISION_CODE,              -- 5 部門CD
-  DEPARTMENT_SECTION_CODE,    -- 6 部課CD
-  HEADQUARTERS_CODE,          -- 7 本部CD
-  GENERAL_DEPARTMENT_CODE,    -- 8 統括部CD
-  DEPARTMENT_CODE,            -- 9 部CD
-  SECTION_CODE,               -- 10 課CD
-  GROUP_CODE,                 -- 11 グループCD
-  FULL_NAME,                  -- 12 正式名称
-  SHORT_NAME,                 -- 13 略称
-  COMBINED_NAME,              -- 14 組合せ名称
-  COMBINED_SHORT_NAME,        -- 15 組合せ略称
-  ACCOUNTING_DEPARTMENT_CODE  -- 16 経理部門CD
-)
-FROM @GBPS253YS_DB.APP_PRODUCTION.RAW_DATA
-FILES = ('部署マスタ20251217205645_0.csv')
-FILE_FORMAT = (
-  TYPE=CSV,
-  SKIP_HEADER=1,
-  FIELD_DELIMITER=',',
-  FIELD_OPTIONALLY_ENCLOSED_BY='"',
-  REPLACE_INVALID_CHARACTERS=TRUE,
-  DATE_FORMAT=AUTO,
-  TIME_FORMAT=AUTO,
-  TIMESTAMP_FORMAT=AUTO,
-  EMPTY_FIELD_AS_NULL=TRUE,
-  NULL_IF=(''),
-  ERROR_ON_COLUMN_COUNT_MISMATCH=FALSE
-)
-ON_ERROR=CONTINUE
-FORCE=TRUE;
-
-```
-
-#### DIM_ENTITY_ALIASデータの生成
-
-```sql
-INSERT OVERWRITE INTO NAME_RESOLUTION.DIM_ENTITY_ALIAS (
-  alias_normalized,
-  entity_type,
-  alias_raw,
-  confidence,
-  entity_id,
-  entity_name,
-  is_active,
-  priority,
-  refresh_run_id,
-  refreshed_at
-)
-SELECT
-  alias_normalized,
-  entity_type,
-  alias_raw,
-  confidence,
-  entity_id,
-  entity_name,
-  is_active,
-  priority,
-  TO_VARCHAR(CURRENT_TIMESTAMP()) AS refresh_run_id,
-  CURRENT_TIMESTAMP()             AS refreshed_at
-FROM APP_PRODUCTION.V_ENTITY_ALIAS_ALL;
-```
-
-
-#### API実行ロールの作成
-
-```sql
-USE ROLE SECURITYADMIN;
-CREATE OR REPLACE ROLE GBPS253YS_API_ROLE;
-
-USE ROLE SECURITYADMIN;
-CREATE OR REPLACE  USER GBPS253YS_API_USER
-  LOGIN_NAME = 'GBPS253YS_API_USER'
-  DISPLAY_NAME = 'GBPS253YS_API_USER'
-  DEFAULT_ROLE = GBPS253YS_API_ROLE
-  MUST_CHANGE_PASSWORD = FALSE;
-
-ALTER USER GBPS253YS_API_USER SET DEFAULT_ROLE = GBPS253YS_API_ROLE;
-ALTER USER GBPS253YS_API_USER SET DEFAULT_WAREHOUSE = GBPS253YS_WH;
-ALTER USER GBPS253YS_API_USER SET DEFAULT_NAMESPACE = GBPS253YS_DB.APP_PRODUCTION;
-
-GRANT ROLE GBPS253YS_API_ROLE TO USER GBPS253YS_API_USER;
-
--- 2) Network Policy（API_USERだけ）
-CREATE OR REPLACE NETWORK POLICY GBPS253YS_API_ONLY
-  ALLOWED_IP_LIST = ('4.189.129.1');
-
-ALTER USER GBPS253YS_API_USER SET NETWORK_POLICY = GBPS253YS_API_ONLY;
-
--- 3) Agent権限（オーナーロールで）
-USE ROLE ACCOUNTADMIN;
-
--- 既存
-GRANT USAGE ON WAREHOUSE GBPS253YS_WH TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON ALL SCHEMAS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT SELECT ON ALL TABLES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT SELECT ON ALL VIEWS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT SELECT ON ALL MATERIALIZED VIEWS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON ALL SEQUENCES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON ALL FUNCTIONS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON ALL PROCEDURES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON ALL AGENT IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON AGENT GBPS253YS_DB.APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT TO ROLE GBPS253YS_API_ROLE;
-
--- 将来
-GRANT USAGE ON FUTURE SCHEMAS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT SELECT ON FUTURE TABLES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT SELECT ON FUTURE VIEWS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT SELECT ON FUTURE MATERIALIZED VIEWS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON FUTURE SEQUENCES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON FUTURE FUNCTIONS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-GRANT USAGE ON FUTURE PROCEDURES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
-
-
-GRANT READ ON STAGE GBPS253YS_DB.APP_PRODUCTION.RAW_DATA TO ROLE GBPS253YS_API_ROLE;
-GRANT WRITE ON STAGE GBPS253YS_DB.APP_PRODUCTION.RAW_DATA TO ROLE GBPS253YS_API_ROLE;
-
--- 4) PAT発行（表示される値を保存）
-USE ROLE SECURITYADMIN;
-
-ALTER USER GBPS253YS_API_USER
-  ADD PROGRAMMATIC ACCESS TOKEN azure_func_token;
-```
-
-
-# 参考）使用方法
-
-1. 以下のようにしてデータを生成する
-```sql
--- =========================================================
--- Weekly manual profiling + evidence export + ingest
--- =========================================================
-
--- 0) 実行日（YYYYMMDD_HH24MISSFF3）を自動で作る
-SET RUN_DATE = TO_VARCHAR(
-  DATEADD(
-    day,
-    -1,
-    CONVERT_TIMEZONE('UTC', 'Asia/Tokyo', CURRENT_TIMESTAMP())
-  ),
-  'YYYYMMDD_HH24MISSFF3'
-);
-
--- 1) メトリクス収集（週1回）
---    ※ 業務データスキーマのみ（例：APP_PRODUCTION）
-CALL DB_DESIGN.PROFILE_ALL_TABLES(
-  'GBPS253YS_DB',
-  'APP_PRODUCTION',
-  10.0,
-  'weekly manual profiling'
-);
-
-CALL DB_DESIGN.PROFILE_ALL_TABLES(
-  'GBPS253YS_DB',
-  'DB_DESIGN',
-  10.0,
-  'weekly manual profiling'
-);
-
--- 2) メトリクス情報を Markdown (+ raw json) にして S3 更新
---    ※ DB_DESIGN.V_PROFILE_RESULTS_LATEST をソースにするのはOK（基盤側）
-CALL DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL(
-  'GBPS253YS_DB',              -- P_SOURCE_DB
-  'DB_DESIGN',                -- P_SOURCE_SCHEMA
-  'V_PROFILE_RESULTS_LATEST', -- P_SOURCE_VIEW
-  'GBPS253YS_DB',              -- P_TARGET_DB (フィルタ用)
-  $RUN_DATE,                  -- P_RUN_DATE（自動）
-  'reviews/profiles',         -- P_VAULT_PREFIX
-  'APP_PRODUCTION'                  -- P_TARGET_SCHEMA（業務スキーマのみ）
-);
-CALL DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL(
-  'GBPS253YS_DB',              -- P_SOURCE_DB
-  'DB_DESIGN',                -- P_SOURCE_SCHEMA
-  'V_PROFILE_RESULTS_LATEST', -- P_SOURCE_VIEW
-  'GBPS253YS_DB',              -- P_TARGET_DB (フィルタ用)
-  $RUN_DATE,                  -- P_RUN_DATE（自動）
-  'reviews/profiles',         -- P_VAULT_PREFIX
-  'DB_DESIGN'                  -- P_TARGET_SCHEMA（業務スキーマのみ）
-);
-
--- 3) 最新の Markdown を取り込み（Vault全文でもOKだが絞ると軽い）
---    reviews/profiles 配下の md だけ取り込む例
-CALL DB_DESIGN.INGEST_VAULT_MD(
-  '@DB_DESIGN.OBSIDIAN_VAULT_STAGE',
-  '.*\.md'
-);
-```
-
-2. Snowflake Cortex Agentにレビュー依頼する。
-
-
-
-#### クリーニング
-
-```sql
-DROP DATABASE GBPS253YS_DB;
-DROP WAREHOUSE GBPS253YS_WH;
-```
-
 ---
 
-## External Tables DDL Generator
+## 2. External Tables DDL Generator
 
 ```dataviewjs
 (async () => {
@@ -812,14 +567,14 @@ DROP WAREHOUSE GBPS253YS_WH;
 
   const QUOTE_IDENT = false;
   const EMIT_COMMENTS = true;
-  const OUTPUT_FOLDER = "generated/ddl";
+  const OUTPUT_FOLDER = "generated/externaltable";
   const OUTPUT_PREFIX = "snowflake_external_ddl";
   const WRITE_SQL_FILE = true;
 
   // ==============================
   // UI
   // ==============================
-  dv.header(3, "External Tables DDL Generator");
+  dv.header(2, "External Tables DDL Generator");
   const statusEl = dv.el("div", "準備完了（Generate を押してください）");
 
   const btnRow = dv.el("div", "");
@@ -1132,4 +887,513 @@ DROP WAREHOUSE GBPS253YS_WH;
     }
   });
 })();
+```
+
+---
+
+## 3. YAML FILE Generator
+
+```dataviewjs
+(async () => {
+  // ==============================
+  // Snowflake Semantic Views YAML Generator
+  // ==============================
+
+  const SCHEMAS_PATH = "master/schemas";
+  const SEMANTIC_VIEWS_PATH = "master/semanticviews";
+
+  const OUTPUT_FOLDER = "generated/yaml";
+  const WRITE_YAML_FILES = true;
+
+  // ==============================
+  // UI
+  // ==============================
+  dv.header(2, "Semantic Views YAML Generator");
+  const statusEl = dv.el("div", "準備完了（Generate を押してください）");
+
+  const btnRow = dv.el("div", "");
+  btnRow.style.display = "flex";
+  btnRow.style.gap = "8px";
+  btnRow.style.flexWrap = "wrap";
+
+  const btnGenerate = document.createElement("button");
+  btnGenerate.textContent = "Generate YAML Files";
+  btnRow.appendChild(btnGenerate);
+
+  const btnOpenFolder = document.createElement("button");
+  btnOpenFolder.textContent = "Open Output Folder";
+  btnOpenFolder.disabled = true;
+  btnRow.appendChild(btnOpenFolder);
+
+  const details = dv.el("details", "");
+  const summary = document.createElement("summary");
+  summary.textContent = "生成ファイル一覧";
+  details.appendChild(summary);
+
+  const resultDiv = dv.el("div", "");
+  resultDiv.style.fontFamily = "monospace";
+  resultDiv.style.fontSize = "0.9em";
+  resultDiv.style.maxHeight = "300px";
+  resultDiv.style.overflow = "auto";
+  resultDiv.style.padding = "8px";
+  resultDiv.style.border = "1px solid var(--background-modifier-border)";
+  details.appendChild(resultDiv);
+
+  let lastOutputFolder = "";
+
+  // ==============================
+  // helpers
+  // ==============================
+  function clean(v) {
+    return (v === null || v === undefined) ? "" : String(v);
+  }
+
+  function normalizeLF(s){
+    return String(s ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  }
+
+  async function ensureFolder(folderPath) {
+    const parts = folderPath.split("/").filter(Boolean);
+    let cur = "";
+    for (const p of parts) {
+      cur = cur ? `${cur}/${p}` : p;
+      if (!app.vault.getAbstractFileByPath(cur)) {
+        try { await app.vault.createFolder(cur); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+
+  async function writeFile(path, content) {
+    const af = app.vault.getAbstractFileByPath(path);
+    if (af && af.children) throw new Error(`出力先がフォルダです: ${path}`);
+    if (af) {
+      await app.vault.modify(af, content);
+    } else {
+      await app.vault.create(path, content);
+    }
+    return app.vault.getAbstractFileByPath(path);
+  }
+
+  async function openFolder(folderPath) {
+    const folder = app.vault.getAbstractFileByPath(folderPath);
+    if (!folder) throw new Error(`フォルダが見つかりません: ${folderPath}`);
+    if (!folder.children) throw new Error(`フォルダではありません: ${folderPath}`);
+    // Obsidianでフォルダを開く
+    app.workspace.getLeaf(true).openFile(folder);
+  }
+
+  // ==============================
+  // main generator
+  // ==============================
+  async function generateYAMLFiles() {
+    const warns = [];
+    const results = [];
+
+    // ---- load schemas ----
+    const schemas = dv.pages(`"${SCHEMAS_PATH}"`)
+      .where(p => p.schema_id && p.physical)
+      .array();
+
+    const schemaIdToPhysical = new Map(schemas.map(s => [String(s.schema_id), s.physical]));
+
+    // ---- load semantic views ----
+    const semanticViews = dv.pages(`"${SEMANTIC_VIEWS_PATH}"`)
+      .where(p => p.type === "semantic_view" && p.physical)
+      .array();
+
+    if (semanticViews.length === 0) {
+      warns.push("セマンティックビューが見つかりません");
+      return { results, warns };
+    }
+
+    // ---- Generate YAML files ----
+    for (const sv of semanticViews) {
+      let md = "";
+      try { md = await dv.io.load(sv.file.path); }
+      catch { 
+        warns.push(`${sv.physical}: ファイル読み込み失敗`);
+        continue;
+      }
+
+      // YAMLブロックを抽出
+      const yamlMatch = md.match(/```yaml\s*([\s\S]*?)```/i);
+      if (!yamlMatch) {
+        warns.push(`${sv.physical}: YAMLブロックが見つかりません`);
+        continue;
+      }
+
+      const yamlContent = yamlMatch[1].trim();
+      const yamlFilePath = `${OUTPUT_FOLDER}/${sv.physical}.yaml`;
+
+      if (WRITE_YAML_FILES) {
+        await ensureFolder(OUTPUT_FOLDER);
+        await writeFile(yamlFilePath, yamlContent);
+      }
+
+      results.push({
+        name: sv.physical,
+        path: yamlFilePath,
+        size: yamlContent.length,
+        comment: clean(sv.comment)
+      });
+    }
+
+    return { results, warns };
+  }
+
+  // ==============================
+  // actions
+  // ==============================
+  btnGenerate.addEventListener("click", async () => {
+    btnGenerate.disabled = true;
+    btnOpenFolder.disabled = true;
+    statusEl.textContent = "生成中…";
+    resultDiv.innerHTML = "";
+
+    try {
+      const t0 = performance.now();
+      const { results, warns } = await generateYAMLFiles();
+      const t1 = performance.now();
+
+      lastOutputFolder = OUTPUT_FOLDER;
+
+      if (results.length > 0) {
+        btnOpenFolder.disabled = false;
+        
+        let html = `<div style="margin-bottom: 8px;"><strong>生成完了: ${results.length} ファイル</strong></div>`;
+        html += `<table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">`;
+        html += `<tr style="border-bottom: 1px solid var(--background-modifier-border);">`;
+        html += `<th style="text-align: left; padding: 4px;">ファイル名</th>`;
+        html += `<th style="text-align: right; padding: 4px;">サイズ</th>`;
+        html += `<th style="text-align: left; padding: 4px;">説明</th>`;
+        html += `</tr>`;
+        
+        for (const r of results) {
+          html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover);">`;
+          html += `<td style="padding: 4px;">${r.name}.yaml</td>`;
+          html += `<td style="text-align: right; padding: 4px;">${r.size.toLocaleString()} bytes</td>`;
+          html += `<td style="padding: 4px; font-size: 0.9em; color: var(--text-muted);">${r.comment || '-'}</td>`;
+          html += `</tr>`;
+        }
+        html += `</table>`;
+        
+        if (warns.length > 0) {
+          html += `<div style="margin-top: 12px; color: var(--text-warning);"><strong>警告: ${warns.length} 件</strong></div>`;
+          html += `<ul style="margin: 4px 0; padding-left: 20px; font-size: 0.85em;">`;
+          for (const w of warns) {
+            html += `<li>${w}</li>`;
+          }
+          html += `</ul>`;
+        }
+        
+        resultDiv.innerHTML = html;
+      } else {
+        resultDiv.innerHTML = `<div style="color: var(--text-error);">生成されたファイルがありません</div>`;
+      }
+
+      statusEl.textContent =
+        `完了: ${Math.round(t1 - t0)} ms / ${results.length} ファイル生成` +
+        (warns.length ? ` / 警告: ${warns.length} 件` : "");
+    } catch (e) {
+      console.error(e);
+      statusEl.textContent = `失敗: ${e?.message ?? e}`;
+      resultDiv.innerHTML = `<div style="color: var(--text-error);">エラー: ${e?.message ?? e}</div>`;
+    } finally {
+      btnGenerate.disabled = false;
+    }
+  });
+
+  btnOpenFolder.addEventListener("click", async () => {
+    if (!lastOutputFolder) return;
+    try {
+      // ファイルエクスプローラーで開く（システム依存）
+      statusEl.textContent = `出力フォルダ: ${lastOutputFolder}`;
+    } catch (e) {
+      statusEl.textContent = `フォルダを開けません: ${e?.message ?? e}`;
+    }
+  });
+})();
+```
+
+---
+
+## その他のSQL操作例
+
+### DB・WHの作成
+
+```sql
+USE ROLE ACCOUNTADMIN;
+CREATE DATABASE IF NOT EXISTS GBPS253YS_DB;
+CREATE OR REPLACE WAREHOUSE GBPS253YS_WH WITH
+     WAREHOUSE_SIZE='X-SMALL'
+     AUTO_SUSPEND = 120
+     AUTO_RESUME = TRUE
+     INITIALLY_SUSPENDED=TRUE;
+     
+USE DATABASE GBPS253YS_DB;
+USE WAREHOUSE GBPS253YS_WH;
+
+DROP SCHEMA PUBLIC;
+```
+
+### ファイルからテーブルを作成
+
+##### 案件明細
+
+```sql
+COPY INTO GBPS253YS_DB.APP_PRODUCTION.ANKEN_MEISAI (
+  ID,
+  DEPARTMENT_SHORT_NAME,
+  SECTION_NAME,
+  FISCAL_YEAR,
+  PROJECT_NUMBER,
+  BRANCH_NUMBER,
+  SALES_CATEGORY,
+  DEPARTMENT_ID,
+  GROUP_SHORT_NAME,
+  CUSTOMER_ID,
+  CUSTOMER_NAME,
+  ORDER_NUMBER,
+  ORDER_NAME,
+  SUBJECT,
+  PROJECT_NAME,
+  WORK_START_DATE,
+  WORK_END_DATE,
+  ACCOUNTING_MONTH,
+  RANK,
+  AMOUNT,
+  SALES_DELIVERY_FLAG,
+  INVOICE_NUMBER,
+  ACTIVE_FLAG,
+  CUSTOMER_QUOTE_REQUEST_NUMBER,
+  CUSTOMER_ORDER_NUMBER,
+  DIVISION_CODE,
+  DEPARTMENT_NAME,
+  DEPARTMENT_SECTION_SHORT_NAME
+)
+FROM @GBPS253YS_DB.APP_PRODUCTION.RAW_DATA
+FILES = ('案件：案件明細一覧20251217203031_0.csv')
+FILE_FORMAT = (
+    TYPE=CSV,
+    SKIP_HEADER=1,
+    FIELD_DELIMITER=',',
+    TRIM_SPACE=FALSE,
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"',
+    REPLACE_INVALID_CHARACTERS=TRUE,
+    DATE_FORMAT=AUTO,
+    TIME_FORMAT=AUTO,
+    TIMESTAMP_FORMAT=AUTO,
+    EMPTY_FIELD_AS_NULL=TRUE,
+    NULL_IF = (''),
+    error_on_column_count_mismatch=false
+)
+ON_ERROR=CONTINUE
+FORCE = TRUE;
+```
+
+##### 部署マスタ
+
+```sql
+COPY INTO GBPS253YS_DB.APP_PRODUCTION.DEPARTMENT_MASTER (
+  ID,                         -- 1
+  FISCAL_YEAR,                -- 2
+  DEPARTMENT_CATEGORY,        -- 3
+  DEPARTMENT_ID,              -- 4
+  DIVISION_CODE,              -- 5 部門CD
+  DEPARTMENT_SECTION_CODE,    -- 6 部課CD
+  HEADQUARTERS_CODE,          -- 7 本部CD
+  GENERAL_DEPARTMENT_CODE,    -- 8 統括部CD
+  DEPARTMENT_CODE,            -- 9 部CD
+  SECTION_CODE,               -- 10 課CD
+  GROUP_CODE,                 -- 11 グループCD
+  FULL_NAME,                  -- 12 正式名称
+  SHORT_NAME,                 -- 13 略称
+  COMBINED_NAME,              -- 14 組合せ名称
+  COMBINED_SHORT_NAME,        -- 15 組合せ略称
+  ACCOUNTING_DEPARTMENT_CODE  -- 16 経理部門CD
+)
+FROM @GBPS253YS_DB.APP_PRODUCTION.RAW_DATA
+FILES = ('部署マスタ20251217205645_0.csv')
+FILE_FORMAT = (
+  TYPE=CSV,
+  SKIP_HEADER=1,
+  FIELD_DELIMITER=',',
+  FIELD_OPTIONALLY_ENCLOSED_BY='"',
+  REPLACE_INVALID_CHARACTERS=TRUE,
+  DATE_FORMAT=AUTO,
+  TIME_FORMAT=AUTO,
+  TIMESTAMP_FORMAT=AUTO,
+  EMPTY_FIELD_AS_NULL=TRUE,
+  NULL_IF=(''),
+  ERROR_ON_COLUMN_COUNT_MISMATCH=FALSE
+)
+ON_ERROR=CONTINUE
+FORCE=TRUE;
+
+```
+
+#### DIM_ENTITY_ALIASデータの生成
+
+```sql
+INSERT OVERWRITE INTO NAME_RESOLUTION.DIM_ENTITY_ALIAS (
+  alias_normalized,
+  entity_type,
+  alias_raw,
+  confidence,
+  entity_id,
+  entity_name,
+  is_active,
+  priority,
+  refresh_run_id,
+  refreshed_at
+)
+SELECT
+  alias_normalized,
+  entity_type,
+  alias_raw,
+  confidence,
+  entity_id,
+  entity_name,
+  is_active,
+  priority,
+  TO_VARCHAR(CURRENT_TIMESTAMP()) AS refresh_run_id,
+  CURRENT_TIMESTAMP()             AS refreshed_at
+FROM APP_PRODUCTION.V_ENTITY_ALIAS_ALL;
+```
+
+
+#### API実行ロールの作成
+
+```sql
+USE ROLE SECURITYADMIN;
+CREATE OR REPLACE ROLE GBPS253YS_API_ROLE;
+
+USE ROLE SECURITYADMIN;
+CREATE OR REPLACE  USER GBPS253YS_API_USER
+  LOGIN_NAME = 'GBPS253YS_API_USER'
+  DISPLAY_NAME = 'GBPS253YS_API_USER'
+  DEFAULT_ROLE = GBPS253YS_API_ROLE
+  MUST_CHANGE_PASSWORD = FALSE;
+
+ALTER USER GBPS253YS_API_USER SET DEFAULT_ROLE = GBPS253YS_API_ROLE;
+ALTER USER GBPS253YS_API_USER SET DEFAULT_WAREHOUSE = GBPS253YS_WH;
+ALTER USER GBPS253YS_API_USER SET DEFAULT_NAMESPACE = GBPS253YS_DB.APP_PRODUCTION;
+
+GRANT ROLE GBPS253YS_API_ROLE TO USER GBPS253YS_API_USER;
+
+-- 2) Network Policy（API_USERだけ）
+CREATE OR REPLACE NETWORK POLICY GBPS253YS_API_ONLY
+  ALLOWED_IP_LIST = ('4.189.129.1');
+
+ALTER USER GBPS253YS_API_USER SET NETWORK_POLICY = GBPS253YS_API_ONLY;
+
+-- 3) Agent権限（オーナーロールで）
+USE ROLE ACCOUNTADMIN;
+
+-- 既存
+GRANT USAGE ON WAREHOUSE GBPS253YS_WH TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON ALL SCHEMAS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT SELECT ON ALL TABLES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT SELECT ON ALL VIEWS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT SELECT ON ALL MATERIALIZED VIEWS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON ALL SEQUENCES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON ALL FUNCTIONS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON ALL PROCEDURES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON ALL AGENT IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON AGENT GBPS253YS_DB.APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT TO ROLE GBPS253YS_API_ROLE;
+
+-- 将来
+GRANT USAGE ON FUTURE SCHEMAS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT SELECT ON FUTURE TABLES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT SELECT ON FUTURE VIEWS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT SELECT ON FUTURE MATERIALIZED VIEWS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON FUTURE SEQUENCES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON FUTURE FUNCTIONS IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+GRANT USAGE ON FUTURE PROCEDURES IN DATABASE GBPS253YS_DB TO ROLE GBPS253YS_API_ROLE;
+
+
+GRANT READ ON STAGE GBPS253YS_DB.APP_PRODUCTION.RAW_DATA TO ROLE GBPS253YS_API_ROLE;
+GRANT WRITE ON STAGE GBPS253YS_DB.APP_PRODUCTION.RAW_DATA TO ROLE GBPS253YS_API_ROLE;
+
+-- 4) PAT発行（表示される値を保存）
+USE ROLE SECURITYADMIN;
+
+ALTER USER GBPS253YS_API_USER
+  ADD PROGRAMMATIC ACCESS TOKEN azure_func_token;
+```
+
+
+# 参考）使用方法
+
+1. 以下のようにしてデータを生成する
+```sql
+-- =========================================================
+-- Weekly manual profiling + evidence export + ingest
+-- =========================================================
+
+-- 0) 実行日（YYYYMMDD_HH24MISSFF3）を自動で作る
+SET RUN_DATE = TO_VARCHAR(
+  DATEADD(
+    day,
+    -1,
+    CONVERT_TIMEZONE('UTC', 'Asia/Tokyo', CURRENT_TIMESTAMP())
+  ),
+  'YYYYMMDD_HH24MISSFF3'
+);
+
+-- 1) メトリクス収集（週1回）
+--    ※ 業務データスキーマのみ（例：APP_PRODUCTION）
+CALL DB_DESIGN.PROFILE_ALL_TABLES(
+  'GBPS253YS_DB',
+  'APP_PRODUCTION',
+  10.0,
+  'weekly manual profiling'
+);
+
+CALL DB_DESIGN.PROFILE_ALL_TABLES(
+  'GBPS253YS_DB',
+  'DB_DESIGN',
+  10.0,
+  'weekly manual profiling'
+);
+
+-- 2) メトリクス情報を Markdown (+ raw json) にして S3 更新
+--    ※ DB_DESIGN.V_PROFILE_RESULTS_LATEST をソースにするのはOK（基盤側）
+CALL DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL(
+  'GBPS253YS_DB',              -- P_SOURCE_DB
+  'DB_DESIGN',                -- P_SOURCE_SCHEMA
+  'V_PROFILE_RESULTS_LATEST', -- P_SOURCE_VIEW
+  'GBPS253YS_DB',              -- P_TARGET_DB (フィルタ用)
+  $RUN_DATE,                  -- P_RUN_DATE（自動）
+  'reviews/profiles',         -- P_VAULT_PREFIX
+  'APP_PRODUCTION'                  -- P_TARGET_SCHEMA（業務スキーマのみ）
+);
+CALL DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL(
+  'GBPS253YS_DB',              -- P_SOURCE_DB
+  'DB_DESIGN',                -- P_SOURCE_SCHEMA
+  'V_PROFILE_RESULTS_LATEST', -- P_SOURCE_VIEW
+  'GBPS253YS_DB',              -- P_TARGET_DB (フィルタ用)
+  $RUN_DATE,                  -- P_RUN_DATE（自動）
+  'reviews/profiles',         -- P_VAULT_PREFIX
+  'DB_DESIGN'                  -- P_TARGET_SCHEMA（業務スキーマのみ）
+);
+
+-- 3) 最新の Markdown を取り込み（Vault全文でもOKだが絞ると軽い）
+--    reviews/profiles 配下の md だけ取り込む例
+CALL DB_DESIGN.INGEST_VAULT_MD(
+  '@DB_DESIGN.OBSIDIAN_VAULT_STAGE',
+  '.*\.md'
+);
+```
+
+2. Snowflake Cortex Agentにレビュー依頼する。
+
+
+
+#### クリーニング
+
+```sql
+DROP DATABASE GBPS253YS_DB;
+DROP WAREHOUSE GBPS253YS_WH;
 ```

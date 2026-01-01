@@ -399,18 +399,18 @@ relationships:
 
 ## 利用方法
 
+### YAMLファイルとして保存
+```bash
+# S3ステージ経由でアップロード（SV_SALES.yamlとして出力）
+PUT file://SV_SALES.yaml @APP_PRODUCTION.RAW_DATA;
+```
+
 ### Cortex Analyst呼び出し
 ```sql
 SELECT SNOWFLAKE.CORTEX.ANALYST_TEXT_TO_SQL(
-    @SV_SALES,
+    '@APP_PRODUCTION.RAW_DATA/SV_SALES.yaml',
     '営業部の2024年度の売上合計を教えて'
 );
-```
-
-### YAMLファイルとして保存
-```bash
-# S3ステージ経由でアップロード
-PUT file://sv_sales.yaml @APP_PRODUCTION.SEMANTIC_MODEL_STAGE;
 ```
 
 ## 参考リンク

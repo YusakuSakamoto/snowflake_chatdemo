@@ -53,10 +53,16 @@ relationships:
 
 ## 利用方法
 
+### YAMLファイルとして保存
+```bash
+# {{SEMANTIC_VIEW_NAME}}.yamlとして出力してS3ステージにアップロード
+PUT file://{{SEMANTIC_VIEW_NAME}}.yaml @STAGE_NAME;
+```
+
 ### Cortex Analyst呼び出し
 ```sql
 SELECT SNOWFLAKE.CORTEX.ANALYST_TEXT_TO_SQL(
-    @{{SEMANTIC_VIEW_NAME}},
+    '@STAGE_NAME/{{SEMANTIC_VIEW_NAME}}.yaml',
     '自然言語クエリ'
 );
 ```

@@ -171,8 +171,9 @@ ORDER BY i.ACCOUNTING_MONTH
 
 ### YAMLファイルの管理
 - **Git管理**: master/semanticviews/ 配下で管理
-- **S3ステージ同期**: デプロイ時にS3にアップロード
+- **S3ステージ同期**: デプロイ時にS3にアップロード（SV_SALES.yamlとして出力）
 - **バージョニング**: semantic_view_id で履歴管理
+- **出力ファイル名**: SV_SALES.yaml（物理名に対応したファイル名）
 
 ### 同義語の追加ルール
 - 業務で実際に使われる用語を優先

@@ -170,7 +170,7 @@ tool_resources:
     identifier: "GBPS253YS_DB.APP_PRODUCTION.EXPAND_DEPARTMENT_SCOPE_TOOL"
 
   text_to_sql:
-    semantic_model_file: "@GBPS253YS_DB.APP_PRODUCTION.RAW_DATA/test.yaml"
+    semantic_model_file: "@GBPS253YS_DB.APP_PRODUCTION.RAW_DATA/SV_SALES.yaml"
     execution_environment:
       type: "warehouse"
       warehouse: "GBPS253YS_WH"

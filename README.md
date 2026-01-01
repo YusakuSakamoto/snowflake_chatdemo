@@ -54,6 +54,21 @@ snowflake_chatdemo/
 └── README.md                               # このファイル
 ```
 
+## 🤖 GitHub Copilot設定
+
+本プロジェクトには、GitHub Copilotが自動的に参照する設定ファイルが含まれています：
+
+- **`.github/copilot-instructions.md`** - Copilotへの指示とプロジェクト規則
+- **`.vscode/settings.json`** - VS Code設定（Copilot統合含む）
+
+### 重要な規則
+Copilotは以下のドキュメントを常に参照します：
+- 命名規則: `docs/snowflake/chatdemo/naming_conventions.md`
+- メンテナンスガイド: `docs/snowflake/chatdemo/MAINTENANCE_GUIDE.md`
+- Git運用規則: `docs/git/chatdemo/GIT_WORKFLOW.md`
+
+---
+
 ## 🚀 セットアップ
 
 ### 1. Python仮想環境

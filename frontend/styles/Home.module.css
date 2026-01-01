@@ -217,12 +217,12 @@
 
 .chart {
   margin: 1rem 0;
-  min-width: 1200px;
+  min-width: 1100px;
 }
 
 .vegaChart {
   width: 100%;
-  min-height: 550px;
+  min-height: 650px;
 }
 
 .messageHeader {

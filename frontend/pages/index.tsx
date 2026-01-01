@@ -25,15 +25,39 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
       // 既存のチャートをクリア
       containerRef.current.innerHTML = ''
       
+      // Y軸のラベルを折り返す処理
+      const wrapLabel = (text: string, maxLength: number = 30) => {
+        if (text.length <= maxLength) return text
+        const parts = []
+        for (let i = 0; i < text.length; i += maxLength) {
+          parts.push(text.substring(i, i + maxLength))
+        }
+        return parts.join('\n')
+      }
+      
       // チャートのサイズを拡大し、Y軸ラベルの設定を調整
       const enlargedSpec = {
         ...spec,
         width: 600,
-        height: 500,
+        height: 600,
+        encoding: {
+          ...spec.encoding,
+          y: {
+            ...spec.encoding.y,
+            axis: {
+              labelLimit: 400,
+              labelFontSize: 11,
+              labelAlign: 'left',
+              labelExpr: 'length(datum.label) > 30 ? substring(datum.label, 0, 30) + "\\n" + substring(datum.label, 30, 60) + (length(datum.label) > 60 ? "\\n" + substring(datum.label, 60) : "") : datum.label'
+            }
+          }
+        },
         config: {
           axisY: {
-            labelLimit: 500,  // Y軸ラベルの最大幅を大幅に増やす
-            labelFontSize: 10
+            labelLimit: 400,
+            labelFontSize: 11,
+            labelAlign: 'left',
+            labelBaseline: 'middle'
           }
         },
         autosize: {

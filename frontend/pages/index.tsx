@@ -5,7 +5,10 @@ import styles from '@/styles/Home.module.css'
 interface Message {
   user_id: string
   message: string
+  ai_response?: string
   timestamp: string
+  progress?: string[]
+  tool_logs?: string[]
 }
 
 export default function Home() {
@@ -44,17 +47,48 @@ export default function Home() {
     if (!inputMessage.trim()) return
 
     setLoading(true)
+    
+    // ユーザーメッセージを即座に表示
+    const userMessage: Message = {
+      user_id: userId,
+      message: inputMessage,
+      timestamp: new Date().toISOString()
+    }
+    setMessages(prev => [...prev, userMessage])
+    const currentMessage = inputMessage
+    setInputMessage('')
+
     try {
-      const response = await axios.post(`${API_URL}/chat`, {
-        user_id: userId,
-        message: inputMessage
+      // Snowflake Cortex Agentのストリーミングエンドポイントを使用
+      const response = await axios.post(`${API_URL}/chat-stream`, {
+        text: currentMessage,
+        message: currentMessage
       })
       
-      setMessages(response.data.recent_messages.reverse())
-      setInputMessage('')
+      if (response.data.ok && response.data.answer) {
+        // AIの回答を追加
+        const aiMessage: Message = {
+          user_id: 'Snowflake AI',
+          message: response.data.answer,
+          ai_response: response.data.answer,
+          timestamp: new Date().toISOString(),
+          progress: response.data.progress,
+          tool_logs: response.data.tool_logs
+        }
+        setMessages(prev => [...prev, aiMessage])
+      } else {
+        throw new Error('AIからの応答がありません')
+      }
     } catch (error) {
       console.error('メッセージの送信に失敗しました:', error)
-      alert('メッセージの送信に失敗しました')
+      
+      // エラーメッセージを表示
+      const errorMessage: Message = {
+        user_id: 'System',
+        message: 'エラー: メッセージの送信に失敗しました。Snowflakeへの接続を確認してください。',
+        timestamp: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, errorMessage])
     } finally {
       setLoading(false)
     }
@@ -81,16 +115,30 @@ export default function Home() {
             <div
               key={index}
               className={`${styles.message} ${
-                msg.user_id === userId ? styles.myMessage : styles.otherMessage
+                msg.user_id === userId ? styles.myMessage : 
+                msg.user_id === 'Snowflake AI' ? styles.aiMessage :
+                msg.user_id === 'System' ? styles.systemMessage :
+                styles.otherMessage
               }`}
             >
               <div className={styles.messageHeader}>
-                <span className={styles.userName}>{msg.user_id}</span>
+                <span className={styles.userName}>
+                  {msg.user_id === 'Snowflake AI' ? '🤖 Snowflake AI' : 
+                   msg.user_id === 'System' ? '⚠️ System' : 
+                   msg.user_id}
+                </span>
                 <span className={styles.timestamp}>
                   {new Date(msg.timestamp).toLocaleString('ja-JP')}
                 </span>
               </div>
-              <div className={styles.messageContent}>{msg.message}</div>
+              <div className={styles.messageContent}>
+                {msg.message}
+                {msg.tool_logs && msg.tool_logs.length > 0 && (
+                  <div className={styles.toolLogs}>
+                    <small>🔧 使用ツール: {msg.tool_logs.join(', ')}</small>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
           <div ref={messagesEndRef} />

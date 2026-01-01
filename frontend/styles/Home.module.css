@@ -95,6 +95,29 @@
   border-bottom-left-radius: 4px;
 }
 
+.aiMessage {
+  background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+  color: white;
+  border-bottom-left-radius: 4px;
+  max-width: 80%;
+}
+
+.systemMessage {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.toolLogs {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  opacity: 0.9;
+}
+
 .messageHeader {
   display: flex;
   justify-content: space-between;
@@ -113,6 +136,16 @@
 
 .otherMessage .userName {
   color: #667eea;
+}
+
+.aiMessage .userName {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 700;
+}
+
+.systemMessage .userName {
+  color: #856404;
+  font-weight: 700;
 }
 
 .timestamp {

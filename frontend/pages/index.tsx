@@ -13,7 +13,9 @@ interface Message {
   timestamp: string
   progress?: string[]
   tool_logs?: string[]
+  tool_details?: any[]
   charts?: any[]
+  isComplete?: boolean
 }
 
 // Vega-Liteチャートを描画するコンポーネント
@@ -36,6 +38,88 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
   }, [spec])
 
   return <div ref={containerRef} className={styles.vegaChart} />
+}
+
+// プログレス情報とツール詳細を表示するコンポーネント
+function ToolDetails({ progress, tool_logs, tool_details, isComplete }: { 
+  progress?: string[], 
+  tool_logs?: string[], 
+  tool_details?: any[],
+  isComplete?: boolean 
+}) {
+  const [isExpanded, setIsExpanded] = useState(!isComplete)
+
+  if (!progress && !tool_logs && !tool_details) return null
+
+  return (
+    <div className={styles.toolDetailsContainer}>
+      <button 
+        className={styles.toolDetailsToggle}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span>{isExpanded ? '▼' : '▶'}</span>
+        <span>実行詳細 ({progress?.length || 0}ステップ)</span>
+      </button>
+      
+      {isExpanded && (
+        <div className={styles.toolDetailsContent}>
+          {/* プログレス表示 */}
+          {progress && progress.length > 0 && (
+            <div className={styles.progressSection}>
+              <h4>📋 実行ステップ</h4>
+              <ol className={styles.progressList}>
+                {progress.map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+          
+          {/* ツール詳細表示 */}
+          {tool_details && tool_details.length > 0 && (
+            <div className={styles.toolSection}>
+              <h4>🔧 使用ツール</h4>
+              {tool_details.map((tool, index) => (
+                <div key={index} className={styles.toolItem}>
+                  <div className={styles.toolHeader}>
+                    <span className={styles.toolName}>{tool.tool_name}</span>
+                    <span className={`${styles.toolStatus} ${styles[tool.status]}`}>
+                      {tool.status === 'success' ? '✓' : '✗'} {tool.status}
+                    </span>
+                  </div>
+                  
+                  {/* SQL表示 */}
+                  {tool.tool_name === 'text_to_sql' && tool.input?.sql && (
+                    <div className={styles.sqlBlock}>
+                      <div className={styles.sqlLabel}>SQL:</div>
+                      <pre className={styles.sqlCode}>{tool.input.sql}</pre>
+                    </div>
+                  )}
+                  
+                  {/* 入力情報 */}
+                  {tool.input && Object.keys(tool.input).length > 0 && tool.tool_name !== 'text_to_sql' && (
+                    <div className={styles.toolInput}>
+                      <strong>入力:</strong> {JSON.stringify(tool.input, null, 2)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* ツールログ表示 */}
+          {tool_logs && tool_logs.length > 0 && (
+            <div className={styles.logsSection}>
+              <h4>📝 ログ</h4>
+              <pre className={styles.logsPre}>
+                {tool_logs.join('\n')}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Home() {
@@ -161,7 +245,9 @@ export default function Home() {
           timestamp: new Date().toISOString(),
           progress: response.data.progress,
           tool_logs: response.data.tool_logs,
-          charts: charts.length > 0 ? charts : undefined
+          tool_details: response.data.tool_details,
+          charts: charts.length > 0 ? charts : undefined,
+          isComplete: true
         }
         setMessages(prev => [...prev, aiMessage])
       } else {
@@ -213,14 +299,26 @@ export default function Home() {
               </div>
               <div className={styles.messageContent}>
                 {msg.user_id === 'Snowflake AI' || msg.user_id === 'System' ? (
-                  <div className={styles.markdown}>
-                    <ReactMarkdown 
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeMermaid]}
-                    >
-                      {msg.message.replace(/\n\s*\n\s*\n/g, '\n\n').trim()}
-                    </ReactMarkdown>
-                  </div>
+                  <>
+                    {/* ツール詳細表示 */}
+                    {msg.user_id === 'Snowflake AI' && (
+                      <ToolDetails 
+                        progress={msg.progress}
+                        tool_logs={msg.tool_logs}
+                        tool_details={msg.tool_details}
+                        isComplete={msg.isComplete}
+                      />
+                    )}
+                    
+                    <div className={styles.markdown}>
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeMermaid]}
+                      >
+                        {msg.message.replace(/\n\s*\n\s*\n/g, '\n\n').trim()}
+                      </ReactMarkdown>
+                    </div>
+                  </>
                 ) : (
                   <div>{msg.message}</div>
                 )}

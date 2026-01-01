@@ -11,7 +11,8 @@
     "SNOWFLAKE_WAREHOUSE": "your-warehouse",
     "SNOWFLAKE_DATABASE": "your-database",
     "SNOWFLAKE_SCHEMA": "public",
-    "SNOWFLAKE_ROLE": "ACCOUNTADMIN"
+    "SNOWFLAKE_ROLE": "ACCOUNTADMIN",
+    "SNOWFLAKE_AGENT_NAME": "SNOWFLAKE_DEMO_AGENT"
   },
   "Host": {
     "CORS": "*",

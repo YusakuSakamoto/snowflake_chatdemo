@@ -17,6 +17,7 @@ class SnowflakeCortexClient:
         self.database = os.getenv('SNOWFLAKE_DATABASE')
         self.schema = os.getenv('SNOWFLAKE_SCHEMA', 'PUBLIC')
         self.role = os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN')
+        self.agent_name = os.getenv('SNOWFLAKE_AGENT_NAME', 'SNOWFLAKE_DEMO_AGENT')
         
         # Snowflake REST APIエンドポイント
         self.base_url = f"https://{self.host}/api/v2"

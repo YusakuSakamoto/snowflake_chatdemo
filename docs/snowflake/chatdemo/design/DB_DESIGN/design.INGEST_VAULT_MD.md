@@ -110,9 +110,9 @@ def _to_relpath(name: str) -> str:
     return n
 ```
 
-`s3://snowflake-chatdemo-vault-prod/design/[[design.APP_PRODUCTION]]/[[design.ANKEN_MEISAI]].md`
+`s3://snowflake-chatdemo-vault-prod/design/APP_PRODUCTION/design.ANKEN_MEISAI.md`
   ↓
-`design/[[design.APP_PRODUCTION]]/[[design.ANKEN_MEISAI]].md`
+`design/APP_PRODUCTION/design.ANKEN_MEISAI.md`
 
 #### ステップ4：コンテンツハッシュ計算
 ```python

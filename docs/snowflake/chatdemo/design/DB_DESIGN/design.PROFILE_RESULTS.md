@@ -1,5 +1,5 @@
 
-# 外部テーブル設計：[[design.PROFILE_RESULTS]]
+# テーブル設計：[[design.PROFILE_RESULTS]]
 
 ## 概要
 [[DB_DESIGN.PROFILE_RESULTS]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上に保持し、Snowflakeから外部テーブルとして参照するテーブルである。  

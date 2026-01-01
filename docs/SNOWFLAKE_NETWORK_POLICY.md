@@ -67,16 +67,36 @@ ALTER NETWORK POLICY <existing_policy_name>
 # SnowSQLをインストール（まだの場合）
 # https://docs.snowflake.com/en/user-guide/snowsql-install-config
 
-# 接続テスト
+# 方法1: 設定ファイルの接続名を使用（推奨）
+snowsql -c myconn --private-key-path /home/yolo/.ssh/snowflake/rsa_key.p8
+
+# 方法2: ブラウザ認証
 snowsql -a PGPALAB-IY16795 \
-  -u GBPS253YS_API_USER \
+  -u YUSAKURO \
   --authenticator externalbrowser
 
-# または、Personal Access Tokenで接続
+# 方法3: Personal Access Tokenで接続
 snowsql -a PGPALAB-IY16795 \
   -u GBPS253YS_API_USER \
   --authenticator oauth \
   --token "<YOUR_SNOWFLAKE_BEARER_TOKEN>"
+
+# 方法4: 秘密鍵認証（APIユーザー用）
+snowsql -a PGPALAB-IY16795 \
+  -u GBPS253YS_API_USER \
+  --private-key-path /path/to/rsa_key.p8
+```
+
+#### SnowSQL設定ファイル (~/.snowsql/config)
+
+```ini
+[connections.myconn]
+accountname = pgpalab-iy16795
+username = YUSAKURO
+# private_key_path = /home/yolo/.ssh/snowflake/rsa_key.p8
+
+# 使用例
+# snowsql -c myconn --private-key-path /home/yolo/.ssh/snowflake/rsa_key.p8
 ```
 
 ### 4. ネットワークポリシーの確認

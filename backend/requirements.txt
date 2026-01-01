@@ -2,3 +2,5 @@ azure-functions
 snowflake-connector-python
 python-dotenv
 requests
+cryptography
+PyJWT

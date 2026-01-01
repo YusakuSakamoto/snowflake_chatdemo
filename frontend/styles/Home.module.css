@@ -216,6 +216,11 @@
   margin: 1rem 0;
 }
 
+.vegaChart {
+  width: 100%;
+  min-height: 300px;
+}
+
 .messageHeader {
   display: flex;
   justify-content: space-between;

@@ -3,7 +3,7 @@ import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeMermaid from 'rehype-mermaid'
-import { VegaLite } from 'react-vega'
+import embed from 'vega-embed'
 import styles from '@/styles/Home.module.css'
 
 interface Message {
@@ -14,6 +14,28 @@ interface Message {
   progress?: string[]
   tool_logs?: string[]
   charts?: any[]
+}
+
+// Vega-Liteチャートを描画するコンポーネント
+function VegaChart({ spec, index }: { spec: any; index: number }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (containerRef.current && spec) {
+      // 既存のチャートをクリア
+      containerRef.current.innerHTML = ''
+      
+      // チャートを描画
+      embed(containerRef.current, spec, {
+        actions: false,
+        renderer: 'svg'
+      }).catch(err => {
+        console.error('Chart rendering error:', err)
+      })
+    }
+  }, [spec])
+
+  return <div ref={containerRef} className={styles.vegaChart} />
 }
 
 export default function Home() {
@@ -182,7 +204,7 @@ export default function Home() {
                   <div className={styles.chartContainer}>
                     {msg.charts.map((chart, chartIndex) => (
                       <div key={chartIndex} className={styles.chart}>
-                        <VegaLite spec={chart} actions={false} />
+                        <VegaChart spec={chart} index={chartIndex} />
                       </div>
                     ))}
                   </div>

@@ -144,13 +144,13 @@ END;
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| `P_SOURCE_DB` | VARCHAR | ✅ | - | プロファイル結果が格納されているDB（例: `GBPS253YS_DB`） |
-| `P_SOURCE_SCHEMA` | VARCHAR | ✅ | - | プロファイル結果が格納されているスキーマ（例: [[design.DB_DESIGN]]） |
-| `P_SOURCE_VIEW` | VARCHAR | ✅ | - | プロファイル結果のビュー名（例: [[design.V_PROFILE_RESULTS_LATEST]]） |
-| `P_TARGET_DB` | VARCHAR | ✅ | - | プロファイル対象のDB（フィルタ条件） |
-| `P_RUN_DATE` | VARCHAR | ✅ | - | 実行日（YYYY-MM-DD形式）。S3パスの日付部分に使用 |
-| `P_VAULT_PREFIX` | VARCHAR | ✅ | - | S3の基底パス（例: `reviews/profiles`） |
-| `P_TARGET_SCHEMA` | VARCHAR | - | NULL | プロファイル対象のスキーマ（NULLの場合は全スキーマ） |
+| P_SOURCE_DB | VARCHAR | ✅ | - | プロファイル結果が格納されているDB（例: `GBPS253YS_DB`） |
+| P_SOURCE_SCHEMA | VARCHAR | ✅ | - | プロファイル結果が格納されているスキーマ（例: [[design.DB_DESIGN]]） |
+| P_SOURCE_VIEW | VARCHAR | ✅ | - | プロファイル結果のビュー名（例: [[design.V_PROFILE_RESULTS_LATEST]]） |
+| P_TARGET_DB | VARCHAR | ✅ | - | プロファイル対象のDB（フィルタ条件） |
+| P_RUN_DATE | VARCHAR | ✅ | - | 実行日（YYYY-MM-DD形式）。S3パスの日付部分に使用 |
+| P_VAULT_PREFIX | VARCHAR | ✅ | - | S3の基底パス（例: `reviews/profiles`） |
+| P_TARGET_SCHEMA | VARCHAR | - | NULL | プロファイル対象のスキーマ（NULLの場合は全スキーマ） |
 
 ### パラメータ設計の背景
 - P_SOURCE_VIEW: 最新のプロファイル結果のみをエクスポートするため、ビュー経由で取得
@@ -601,8 +601,8 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 ## データ品質とバリデーション
 
 ### 入力バリデーション
-- `P_RUN_DATE`: YYYY-MM-DD形式であることを前提。不正な形式の場合はS3パスが不正になるが、COPY INTOはエラーを返す
-- `P_VAULT_PREFIX`: スラッシュ始まり/終わりを含まないこと（例: `reviews/profiles` OK, `/reviews/profiles/` NG）
+- P_RUN_DATE: YYYY-MM-DD形式であることを前提。不正な形式の場合はS3パスが不正になるが、COPY INTOはエラーを返す
+- P_VAULT_PREFIX: スラッシュ始まり/終わりを含まないこと（例: `reviews/profiles` OK, `/reviews/profiles/` NG）
 
 ### 出力の妥当性チェック
 - ファイル存在確認: `LIST @STAGE/path/` で出力ファイルが生成されているか検証

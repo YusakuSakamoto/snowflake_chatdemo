@@ -126,11 +126,11 @@ TOP_VALUES AS (
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| `P_TARGET_DB` | STRING | ✅ | - | プロファイル対象のデータベース名 |
-| `P_TARGET_SCHEMA` | STRING | ✅ | - | プロファイル対象のスキーマ名 |
-| `P_TARGET_TABLE` | STRING | ✅ | - | プロファイル対象のテーブル名 |
-| `P_TARGET_COLUMN` | STRING | ✅ | - | プロファイル対象のカラム名 |
-| `P_SAMPLE_PCT` | FLOAT | - | NULL | サンプリング割合（0.0～100.0）。NULLの場合は全件スキャン |
+| P_TARGET_DB | STRING | ✅ | - | プロファイル対象のデータベース名 |
+| P_TARGET_SCHEMA | STRING | ✅ | - | プロファイル対象のスキーマ名 |
+| P_TARGET_TABLE | STRING | ✅ | - | プロファイル対象のテーブル名 |
+| P_TARGET_COLUMN | STRING | ✅ | - | プロファイル対象のカラム名 |
+| P_SAMPLE_PCT | FLOAT | - | NULL | サンプリング割合（0.0～100.0）。NULLの場合は全件スキャン |
 
 ### パラメータ設計の背景
 - P_TARGET_DB / P_TARGET_SCHEMA / P_TARGET_TABLE: 動的なフル修飾名構築に使用

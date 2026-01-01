@@ -137,13 +137,13 @@ SELECT OBJECT_CONSTRUCT(
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| `P_TARGET_DB` | STRING | ✅ | - | プロファイル対象のデータベース名 |
-| `P_TARGET_SCHEMA` | STRING | ✅ | - | プロファイル対象のスキーマ名 |
-| `P_TARGET_TABLE` | STRING | ✅ | - | プロファイル対象のテーブル名 |
-| `P_SAMPLE_PCT` | FLOAT | - | NULL | サンプリング割合（0.0～100.0）。NULLの場合は全件スキャン |
-| `P_RUN_ID` | STRING | - | NULL | 実行ID。NULLの場合は自動生成（`RUN-` + UUID） |
-| `P_GIT_COMMIT` | STRING | - | NULL | Git コミットハッシュ（バージョン管理用） |
-| `P_NOTE` | STRING | - | NULL | 実行メモ（運用管理用） |
+| P_TARGET_DB | STRING | ✅ | - | プロファイル対象のデータベース名 |
+| P_TARGET_SCHEMA | STRING | ✅ | - | プロファイル対象のスキーマ名 |
+| P_TARGET_TABLE | STRING | ✅ | - | プロファイル対象のテーブル名 |
+| P_SAMPLE_PCT | FLOAT | - | NULL | サンプリング割合（0.0～100.0）。NULLの場合は全件スキャン |
+| P_RUN_ID | STRING | - | NULL | 実行ID。NULLの場合は自動生成（`RUN-` + UUID） |
+| P_GIT_COMMIT | STRING | - | NULL | Git コミットハッシュ（バージョン管理用） |
+| P_NOTE | STRING | - | NULL | 実行メモ（運用管理用） |
 
 ### パラメータ設計の背景
 - P_SAMPLE_PCT: BERNOULLIサンプリング（行単位）を使用。例: 1.0 = 1%サンプリング、100.0 = 全件

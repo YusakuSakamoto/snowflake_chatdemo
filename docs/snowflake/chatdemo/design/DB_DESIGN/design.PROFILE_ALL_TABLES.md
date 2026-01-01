@@ -123,10 +123,10 @@ V_QSC := '''' || REPLACE(P_TARGET_SCHEMA,'''','''''') || '''';
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| `P_TARGET_DB` | STRING | ✅ | - | プロファイル対象のデータベース名 |
-| `P_TARGET_SCHEMA` | STRING | ✅ | - | プロファイル対象のスキーマ名 |
-| `P_SAMPLE_PCT` | FLOAT | - | NULL | サンプリング割合（0.0～1.0）。NULLの場合は全件スキャン |
-| `P_NOTE` | STRING | - | `'manual weekly all-tables run'` | 実行メモ（運用管理用） |
+| P_TARGET_DB | STRING | ✅ | - | プロファイル対象のデータベース名 |
+| P_TARGET_SCHEMA | STRING | ✅ | - | プロファイル対象のスキーマ名 |
+| P_SAMPLE_PCT | FLOAT | - | NULL | サンプリング割合（0.0～1.0）。NULLの場合は全件スキャン |
+| P_NOTE | STRING | - | `'manual weekly all-tables run'` | 実行メモ（運用管理用） |
 
 ### パラメータ設計の背景
 - P_SAMPLE_PCT: 大規模テーブル（数億行）に対しては、サンプリングでコスト削減が可能。NULLの場合は正確性を優先
@@ -378,7 +378,7 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 
 ### 入力バリデーション
 - `P_TARGET_DB` / `P_TARGET_SCHEMA`: 存在しない場合、INFORMATION_SCHEMA.TABLESで0件となり、空の結果を返す
-- `P_SAMPLE_PCT`: 範囲外の値（負数、1超）は [[design.PROFILE_TABLE]] 側でバリデーション
+- P_SAMPLE_PCT: 範囲外の値（負数、1超）は [[design.PROFILE_TABLE]] 側でバリデーション
 
 ### 結果の妥当性チェック
 - 想定テーブル数との照合: 事前に `SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.TABLES` で期待値を確認

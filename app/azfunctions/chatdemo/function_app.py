@@ -6,6 +6,7 @@ import time
 import requests
 from datetime import datetime
 from snowflake_cortex import SnowflakeCortexClient
+from db_review_agent import DBReviewAgent
 
 # モックデータ（開発用 - USE_MOCK=Trueの場合のみ使用）
 mock_messages = []
@@ -643,3 +644,121 @@ def chat_stream_sse(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.exception("chat_stream_sse failed")
         return _json({"ok": False, "error": str(e)}, 500)
+
+
+@app.route(route="review/schema", methods=["POST", "OPTIONS"])
+def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    DB設計レビューエージェントを呼び出すエンドポイント
+    
+    Request Body:
+    {
+        "target_schema": "DB_DESIGN",
+        "max_tables": 100  // optional
+    }
+    
+    Response:
+    {
+        "success": true,
+        "message": "レビュー完了",
+        "markdown": "...",
+        "metadata": {
+            "target_schema": "DB_DESIGN",
+            "review_date": "2026-01-02"
+        }
+    }
+    """
+    logging.info('DB Review endpoint triggered')
+    
+    # OPTIONSリクエスト（CORS preflight）への対応
+    if req.method == "OPTIONS":
+        return func.HttpResponse(
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type"
+            }
+        )
+    
+    try:
+        # リクエストボディを取得
+        req_body = req.get_json()
+        target_schema = req_body.get('target_schema')
+        max_tables = req_body.get('max_tables')
+        
+        if not target_schema:
+            return func.HttpResponse(
+                json.dumps({
+                    "success": False,
+                    "error": "target_schema パラメータが必要です"
+                }),
+                mimetype="application/json",
+                status_code=400,
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
+        
+        # DB設計レビューAgent呼び出し
+        agent = DBReviewAgent()
+        success, message, markdown = agent.review_schema(
+            target_schema=target_schema,
+            max_tables=max_tables
+        )
+        
+        if not success:
+            return func.HttpResponse(
+                json.dumps({
+                    "success": False,
+                    "error": message
+                }, ensure_ascii=False),
+                mimetype="application/json",
+                status_code=500,
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
+        
+        # レビュー日時の取得
+        review_date = datetime.now().strftime("%Y-%m-%d")
+        
+        response_data = {
+            "success": True,
+            "message": message,
+            "markdown": markdown,
+            "metadata": {
+                "target_schema": target_schema,
+                "review_date": review_date,
+                "max_tables": max_tables
+            }
+        }
+        
+        return func.HttpResponse(
+            json.dumps(response_data, ensure_ascii=False),
+            mimetype="application/json",
+            status_code=200,
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+        
+    except ValueError as e:
+        # JSON解析エラー
+        logging.error(f"Invalid JSON: {str(e)}")
+        return func.HttpResponse(
+            json.dumps({
+                "success": False,
+                "error": "Invalid JSON format"
+            }),
+            mimetype="application/json",
+            status_code=400,
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+    
+    except Exception as e:
+        logging.error(f"DB review error: {str(e)}")
+        return func.HttpResponse(
+            json.dumps({
+                "success": False,
+                "error": str(e)
+            }, ensure_ascii=False),
+            mimetype="application/json",
+            status_code=500,
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+

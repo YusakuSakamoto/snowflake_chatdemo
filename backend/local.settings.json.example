@@ -3,11 +3,18 @@
   "Values": {
     "AzureWebJobsStorage": "",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "SNOWFLAKE_ACCOUNT": "your-account.region",
+    "USE_MOCK": "true",
+    "SNOWFLAKE_ACCOUNT": "your-account",
+    "SNOWFLAKE_HOST": "your-account.snowflakecomputing.com",
     "SNOWFLAKE_USER": "your-user",
-    "SNOWFLAKE_PASSWORD": "your-password",
+    "SNOWFLAKE_PAT": "your-personal-access-token",
     "SNOWFLAKE_WAREHOUSE": "your-warehouse",
     "SNOWFLAKE_DATABASE": "your-database",
-    "SNOWFLAKE_SCHEMA": "public"
+    "SNOWFLAKE_SCHEMA": "public",
+    "SNOWFLAKE_ROLE": "ACCOUNTADMIN"
+  },
+  "Host": {
+    "CORS": "*",
+    "CORSCredentials": false
   }
 }

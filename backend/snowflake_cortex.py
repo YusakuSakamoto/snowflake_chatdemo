@@ -10,45 +10,34 @@ class SnowflakeCortexClient:
     
     def __init__(self):
         self.account = os.getenv('SNOWFLAKE_ACCOUNT')
+        self.host = os.getenv('SNOWFLAKE_HOST', f"{self.account}.snowflakecomputing.com")
         self.user = os.getenv('SNOWFLAKE_USER')
-        self.password = os.getenv('SNOWFLAKE_PASSWORD')
+        self.pat = os.getenv('SNOWFLAKE_PAT')  # Personal Access Token
         self.warehouse = os.getenv('SNOWFLAKE_WAREHOUSE')
         self.database = os.getenv('SNOWFLAKE_DATABASE')
         self.schema = os.getenv('SNOWFLAKE_SCHEMA', 'PUBLIC')
         self.role = os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN')
         
         # Snowflake REST APIエンドポイント
-        self.base_url = f"https://{self.account}.snowflakecomputing.com/api/v2"
-        self.token = None
+        self.base_url = f"https://{self.host}/api/v2"
+        self.session = requests.Session()
         
     def authenticate(self) -> bool:
         """
-        Snowflake REST APIで認証を行う
+        Snowflake REST APIで認証を行う（PAT使用）
         """
-        auth_url = f"{self.base_url}/statements"
-        
-        headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Snowflake-Authorization-Token-Type': 'KEYPAIR_JWT'
-        }
-        
-        # ベーシック認証でトークンを取得
         try:
-            response = requests.post(
-                auth_url,
-                auth=(self.user, self.password),
-                headers=headers,
-                json={
-                    "statement": "SELECT CURRENT_VERSION()",
-                    "timeout": 60,
-                    "warehouse": self.warehouse
-                },
-                timeout=30
-            )
+            # PATが設定されているか確認
+            if not self.pat:
+                print("Personal Access Token (PAT)が設定されていません")
+                return False
             
-            if response.status_code == 200:
-                self.token = response.headers.get('X-Snowflake-Request-Id')
+            # 接続テスト
+            test_query = "SELECT CURRENT_VERSION()"
+            result = self.execute_query(test_query)
+            
+            if result:
+                print("Snowflake認証成功")
                 return True
             return False
         except Exception as e:
@@ -57,13 +46,15 @@ class SnowflakeCortexClient:
     
     def execute_query(self, query: str) -> Optional[Dict[str, Any]]:
         """
-        Snowflake REST API経由でクエリを実行
+        Snowflake REST API経由でクエリを実行（PAT認証）
         """
         url = f"{self.base_url}/statements"
         
         headers = {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {self.pat}',
+            'X-Snowflake-Authorization-Token-Type': 'KEYPAIR_JWT'
         }
         
         payload = {
@@ -76,12 +67,11 @@ class SnowflakeCortexClient:
         }
         
         try:
-            response = requests.post(
+            response = self.session.post(
                 url,
-                auth=(self.user, self.password),
                 headers=headers,
                 json=payload,
-                timeout=30
+                timeout=60
             )
             
             if response.status_code == 200:

@@ -3,7 +3,7 @@
 
 ## 概要
 [[DB_DESIGN.DOCS_OBSIDIAN]] は、Obsidian Vault 上の Markdown ファイルを 1ファイル = 1レコードとして取り込み、設計レビュー・検索・Agent 処理の一次ソースとして提供する内部テーブルである。  
-DB_DESIGN.DOCS_OBSIDIAN.`PATH`（Vault 内の相対パス）と DB_DESIGN.DOCS_OBSIDIAN.`CONTENT`（本文）を中心に保持し、Vault を正本とする設計思想のもとで、設計定義（master）・設計意図（design）・レビュー結果（reviews）を Snowflake 上で横断的に扱える状態を作る。
+[[DB_DESIGN.DOCS_OBSIDIAN.PATH]]（Vault 内の相対パス）と [[DB_DESIGN.DOCS_OBSIDIAN.CONTENT]]（本文）を中心に保持し、Vault を正本とする設計思想のもとで、設計定義（master）・設計意図（design）・レビュー結果（reviews）を Snowflake 上で横断的に扱える状態を作る。
 
 ## 関連コンポーネントとの関係
 
@@ -20,13 +20,13 @@ DB_DESIGN.DOCS_OBSIDIAN.`PATH`（Vault 内の相対パス）と DB_DESIGN.DOCS_O
     下流（検索サービス・Agent）向けに整形された提供層。
 
 [[design.DOCS_OBSIDIAN_V]] は [[design.DOCS_OBSIDIAN]] の内容を変更せず、参照用途のための投影・整形のみを行う。  
-Evidence の根拠単位は常に `DB_DESIGN.DOCS_OBSIDIAN.PATH` によって示される実在する .md ファイルであり、ビュー側でその意味を変えない。
+Evidence の根拠単位は常に [[DB_DESIGN.DOCS_OBSIDIAN.PATH]] によって示される実在する .md ファイルであり、ビュー側でその意味を変えない。
 
 ### [[design.DOCS_OBSIDIAN_V]] から `OBSIDIAN_VAULT_SEARCH` への連携
 DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、[[DB_DESIGN.DOCS_OBSIDIAN_V]] を検索インデックスの入力として利用する Cortex Search サービスである。
 
 - [[DB_DESIGN.DOCS_OBSIDIAN_V]] で提供されたテキストおよびメタ情報をインデックス化する
-- Agent は検索結果を探索の補助として利用するが、存在有無や正否判断は Vault 上の実在する `DB_DESIGN.DOCS_OBSIDIAN.PATH` を根拠とする
+- Agent は検索結果を探索の補助として利用するが、存在有無や正否判断は Vault 上の実在する [[DB_DESIGN.DOCS_OBSIDIAN.PATH]] を根拠とする
 
 検索結果のスコアやヒット有無のみを根拠に、設計定義やカラムの存在有無を判断しない。
 
@@ -37,8 +37,8 @@ DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、[[DB_DESIGN.DOCS_OBSIDIAN_V]] を検索イ
 - アプリケーション、分析クエリ、運用作業からの直接更新は行わない
 - 再実行時も結果が破綻しないよう、冪等な取り込みを前提とする
 
-`DB_DESIGN.DOCS_OBSIDIAN.FILE_LAST_MODIFIED` は Vault 側の更新時刻、  
-`DB_DESIGN.DOCS_OBSIDIAN.INGESTED_AT` は Snowflake への取り込み時刻を示し、両者を区別して扱う。
+[[DB_DESIGN.DOCS_OBSIDIAN.FILE_LAST_MODIFIED]] は Vault 側の更新時刻、  
+[[DB_DESIGN.DOCS_OBSIDIAN.INGESTED_AT]] は Snowflake への取り込み時刻を示し、両者を区別して扱う。
 
 ## 業務上の意味
 - このテーブルが表す概念  

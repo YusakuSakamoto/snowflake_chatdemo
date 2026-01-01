@@ -17,6 +17,6 @@ comment: アプリケーションログ集約（S3外部ステージ）
 - Snowflakeメトリクスログ
 
 ## 技術詳細
-- **ストレージ**: S3外部ステージ
-- **パーティション**: year/month/day/hour
-- **フォーマット**: JSON Lines (NDJSON)
+- ストレージ: S3外部ステージ
+- パーティション: year/month/day/hour
+- フォーマット: JSON Lines (NDJSON)

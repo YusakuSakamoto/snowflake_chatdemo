@@ -1,16 +1,16 @@
 # S3ストレージ設計：LOG外部テーブル用データレイク
 
 ## 概要
-本ドキュメントは、Snowflake LOGスキーマの外部テーブルが参照する **AWS S3 バケットの設計**を定義する。
+本ドキュメントは、Snowflake LOGスキーマの外部テーブルが参照する AWS S3 バケットの設計を定義する。
 
-4つの外部テーブル（CORTEX_CONVERSATIONS, AZFUNCTIONS_LOGS, AZSWA_LOGS, SNOWFLAKE_METRICS）のログデータを、S3に長期保管し、Snowflakeから効率的にクエリできる構造を設計する。
+4つの外部テーブル（CORTEX_CONVERSATIONS、AZFUNCTIONS_LOGS、AZSWA_LOGS、SNOWFLAKE_METRICS）のログデータを、S3に長期保管し、Snowflakeから効率的にクエリできる構造を設計する。
 
 ## 設計目標
-1. **コスト最適化**：S3ストレージコストとSnowflakeコンピュートコストの最小化
-2. **クエリ効率**：パーティションプルーニングによる高速クエリ
-3. **運用性**：自動化されたログ収集・ライフサイクル管理
-4. **セキュリティ**：IAMポリシーと暗号化によるデータ保護
-5. **スケーラビリティ**：データ量の増加に対する拡張性
+1. コスト最適化：S3ストレージコストとSnowflakeコンピュートコストの最小化
+2. クエリ効率：パーティションプルーニングによる高速クエリ
+3. 運用性：自動化されたログ収集・ライフサイクル管理
+4. セキュリティ：IAMポリシーと暗号化によるデータ保護
+5. スケーラビリティ：データ量の増加に対する拡張性
 
 ## S3バケット構造
 
@@ -60,18 +60,18 @@ snowflake-chatdemo-logs-prod/
 ### パーティション戦略
 
 #### Hive形式のパーティション
-- **形式**：`year=YYYY/month=MM/day=DD/hour=HH/`
-- **理由**：Snowflake External Tableの`PARTITION BY`が`key=value`形式を認識
-- **パーティションプルーニング**：WHERE句で`year`, `month`, `day`, `hour`を指定することで、必要なファイルのみスキャン
+- 形式：`year=YYYY/month=MM/day=DD/hour=HH/`
+- 理由：Snowflake External Tableの`PARTITION BY`が`key=value`形式を認識
+- パーティションプルーニング：WHERE句で`year`, `month`, `day`, `hour`を指定することで、必要なファイルのみスキャン
 
 #### パーティション粒度の選択理由
-- **時間単位（hour）**：
+- 時間単位（hour）：
   - 利点：クエリ範囲を細かく絞り込める、ファイルサイズが適切（数MB〜数十MB）
   - 欠点：ディレクトリ数が多くなる（LIST操作のコスト）
-- **日単位（day）ではない理由**：
+- 日単位（day）ではない理由：
   - 1日分のログが巨大になる可能性（特にアクセスログ）
   - 時間帯別の分析（ピーク時間帯の特定）が重要
-- **分単位（minute）ではない理由**：
+- 分単位（minute）ではない理由：
   - ディレクトリ数が爆発的に増加
   - ファイルサイズが小さくなりすぎる（small file problem）
 
@@ -82,10 +82,10 @@ snowflake-chatdemo-logs-prod/
 {YYYYMMDD}-{HHMMSS}-{uuid}.json
 ```
 
-- **YYYYMMDD**：日付（パーティションと重複するが、ファイル単位での識別に便利）
-- **HHMMSS**：時刻（秒単位）
-- **uuid**：一意識別子（8文字の短縮UUID）
-- **拡張子**：`.json`（JSON Lines形式）
+- YYYYMMDD：日付（パーティションと重複するが、ファイル単位での識別に便利）
+- HHMMSS：時刻（秒単位）
+- uuid：一意識別子（8文字の短縮UUID）
+- 拡張子：`.json`（JSON Lines形式）
 
 ### 例
 ```
@@ -109,45 +109,45 @@ snowflake-chatdemo-logs-prod/
 ```
 
 #### フォーマット選択理由
-- **追記専用（Append-Only）に最適**：新しいログを行単位で追記可能
-- **スキーマレス**：VARIANT型で柔軟にメタデータを格納
-- **圧縮効率**：gzip圧縮で70-80%削減
-- **パース効率**：Snowflakeの半構造化データ処理に最適
+- 追記専用（Append-Only）に最適：新しいログを行単位で追記可能
+- スキーマレス：VARIANT型で柔軟にメタデータを格納
+- 圧縮効率：gzip圧縮で70-80%削減
+- パース効率：Snowflakeの半構造化データ処理に最適
 
 ### 圧縮形式
-- **圧縮**：gzip（`.json.gz` も検討）
-- **圧縮レベル**：6（デフォルト、バランス型）
-- **非圧縮の場合**：リアルタイム性が必要な直近データのみ
+- 圧縮：gzip（`.json.gz` も検討）
+- 圧縮レベル：6（デフォルト、バランス型）
+- 非圧縮の場合：リアルタイム性が必要な直近データのみ
 
 ## ライフサイクルポリシー
 
 ### ストレージクラスの移行
 
 #### Tier 1：ホットデータ（直近30日）
-- **ストレージクラス**：S3 Standard
-- **アクセス頻度**：高頻度（日次クエリ）
-- **料金**：$0.023/GB/月（us-east-1）
-- **対象**：全テーブル
+- ストレージクラス：S3 Standard
+- アクセス頻度：高頻度（日次クエリ）
+- 料金：$0.023/GB/月（us-east-1）
+- 対象：全テーブル
 
 #### Tier 2：ウォームデータ（31-90日）
-- **ストレージクラス**：S3 Standard-IA（Infrequent Access）
-- **アクセス頻度**：週次程度
-- **料金**：$0.0125/GB/月
-- **取得料金**：$0.01/GB（アクセス時）
-- **対象**：cortex_conversations, azfunctions, azswa
+- ストレージクラス：S3 Standard-IA（Infrequent Access）
+- アクセス頻度：週次程度
+- 料金：$0.0125/GB/月
+- 取得料金：$0.01/GB（アクセス時）
+- 対象：cortex_conversations, azfunctions, azswa
 
 #### Tier 3：コールドデータ（91-365日）
-- **ストレージクラス**：S3 Intelligent-Tiering
-- **アクセス頻度**：月次程度
-- **料金**：自動最適化（$0.0025-0.023/GB/月）
-- **対象**：全テーブル
+- ストレージクラス：S3 Intelligent-Tiering
+- アクセス頻度：月次程度
+- 料金：自動最適化（$0.0025-0.023/GB/月）
+- 対象：全テーブル
 
 #### Tier 4：アーカイブ（1年超）
-- **ストレージクラス**：S3 Glacier Flexible Retrieval
-- **アクセス頻度**：監査・コンプライアンス用（ほぼアクセスなし）
-- **料金**：$0.004/GB/月
-- **取得時間**：数時間〜12時間
-- **対象**：cortex_conversations, azfunctions, azswa（snowflake_metricsは削除）
+- ストレージクラス：S3 Glacier Flexible Retrieval
+- アクセス頻度：監査・コンプライアンス用（ほぼアクセスなし）
+- 料金：$0.004/GB/月
+- 取得時間：数時間〜12時間
+- 対象：cortex_conversations, azfunctions, azswa（snowflake_metricsは削除）
 
 ### ライフサイクルルール定義
 
@@ -206,16 +206,16 @@ snowflake-chatdemo-logs-prod/
 | CORTEX_CONVERSATIONS | Standard | Standard-IA | Intelligent-Tiering | Glacier |
 | AZFUNCTIONS_LOGS | Standard | Standard-IA | Intelligent-Tiering | Glacier |
 | AZSWA_LOGS | Standard | Standard-IA | Intelligent-Tiering | Glacier |
-| SNOWFLAKE_METRICS | Standard | Standard-IA | Intelligent-Tiering | **削除** |
+| SNOWFLAKE_METRICS | Standard | Standard-IA | Intelligent-Tiering | 削除 |
 
 ## セキュリティ設計
 
 ### 暗号化
 
 #### サーバーサイド暗号化（SSE）
-- **方式**：SSE-S3（AES-256）
-- **設定**：バケットのデフォルト暗号化を有効化
-- **コスト**：無料
+- 方式：SSE-S3（AES-256）
+- 設定：バケットのデフォルト暗号化を有効化
+- コスト：無料
 
 ```json
 {
@@ -328,28 +328,28 @@ Azure Functions / SWA がログを書き込むためのIAMユーザー：
 | 91-365日 | 486GB | Intelligent-Tiering | $0.01/GB（平均） | $4.86 |
 | 1年超 | 640GB/年 | Glacier | $0.004/GB | $2.56/年 |
 
-**月次合計**：約$7.45 + Glacier $0.21 = **$7.66/月**
+月次合計：約$7.45 + Glacier $0.21 = $7.66/月
 
 ### データ転送コスト
-- **S3 → Snowflake**：同一リージョン内であれば無料（us-east-1同士など）
-- **クロスリージョン**：$0.02/GB（us-east-1 → us-west-2の場合）
+- S3 → Snowflake：同一リージョン内であれば無料（us-east-1同士など）
+- クロスリージョン：$0.02/GB（us-east-1 → us-west-2の場合）
 
 ### API リクエストコスト
-- **LIST操作**：$0.005 per 1,000 requests（External Table REFRESH時）
-- **GET操作**：$0.0004 per 1,000 requests（クエリ時）
-- **PUT操作**：$0.005 per 1,000 requests（ログ書き込み時）
+- LIST操作：$0.005 per 1,000 requests（External Table REFRESH時）
+- GET操作：$0.0004 per 1,000 requests（クエリ時）
+- PUT操作：$0.005 per 1,000 requests（ログ書き込み時）
 
 月次推定：
 - LIST：1,000回/日 × 30日 = 30,000回 → $0.15
 - GET：10,000回/日（クエリ） × 30日 = 300,000回 → $0.12
 - PUT：100,000回/日（ログ書き込み） × 30日 = 3,000,000回 → $15.00
 
-**API合計**：約$15.27/月
+API合計：約$15.27/月
 
 ### 総コスト見積もり
 - ストレージ：$7.66/月
 - API：$15.27/月
-- **合計：約$23/月**
+- 合計：約$23/月
 
 ## 運用設計
 
@@ -398,10 +398,10 @@ Snowflake Task で定期実行し、S3 に PUT。
 ### モニタリング
 
 #### CloudWatch メトリクス
-- **BucketSize**：バケットサイズの推移
-- **NumberOfObjects**：オブジェクト数の推移
-- **AllRequests**：API リクエスト数
-- **4xxErrors / 5xxErrors**：エラー率
+- BucketSize：バケットサイズの推移
+- NumberOfObjects：オブジェクト数の推移
+- AllRequests：API リクエスト数
+- 4xxErrors / 5xxErrors：エラー率
 
 #### アラート設定
 ```json
@@ -418,11 +418,11 @@ Snowflake Task で定期実行し、S3 に PUT。
 ### バックアップ
 
 #### クロスリージョンレプリケーション（任意）
-- **レプリケーション先**：us-west-2（DR用）
-- **対象**：cortex_conversations のみ（重要度が高い）
-- **コスト**：+$0.02/GB（転送） + ストレージ
+- レプリケーション先：us-west-2（DR用）
+- 対象：cortex_conversations のみ（重要度が高い）
+- コスト：+$0.02/GB（転送） + ストレージ
 
-**注記**：ログデータは追記専用（Append-Only）のため、バージョニングは不要。誤削除のリスクは IAM ポリシーとバケットポリシーで制御する。
+注記：ログデータは追記専用（Append-Only）のため、バージョニングは不要。誤削除のリスクは IAM ポリシーとバケットポリシーで制御する。
 
 ## 拡張計画
 

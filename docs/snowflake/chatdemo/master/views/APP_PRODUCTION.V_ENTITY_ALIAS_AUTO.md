@@ -20,7 +20,7 @@ comment: 自動生成エイリアス辞書（部署/顧客/案件/オーダー�
 | ENTITY_NAME      | 正式名称（表示用）                                         |
 | CONFIDENCE       | 別名の信頼度（0.0〜1.0）                                   |
 | PRIORITY         | 優先度（小さいほど優先）                                      |
-| IS_ACTIVE        | 優先度（小さいほど優先）                                      |
+| IS_ACTIVE        | 有効フラグ                                              |
 
 ## SQL
 ```sql

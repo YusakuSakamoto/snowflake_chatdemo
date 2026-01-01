@@ -1,12 +1,12 @@
 
-# テーブル設計：PROFILE_RESULTS
+# 外部テーブル設計：PROFILE_RESULTS
 
 ## 概要
-[[DB_DESIGN.PROFILE_RESULTS]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果を保持するテーブルである。  
+DB_DESIGN.PROFILE_RESULTS は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上に保持し、Snowflakeから外部テーブルとして参照するテーブルである。  
 1行が「1回のプロファイル実行（run）」における「1カラム分の計測結果」を表し、  
-[[DB_DESIGN.PROFILE_RUNS.RUN_ID]] を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
+DB_DESIGN.PROFILE_RUNS.RUN_ID を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
 
-本テーブルは、プロファイル処理の結果を永続化し、品質確認・比較・監査・設計レビューの根拠として利用される。
+本テーブルは、プロファイル処理の結果を外部テーブルとして永続化し、品質確認・比較・監査・設計レビューの根拠として利用される。
 
 ## 業務上の意味
 - このテーブルが表す概念  
@@ -36,7 +36,7 @@ PROFILE_RESULTS はその run に紐づく結果詳細を保持する。
 PROFILE_RESULTS は、必ず既存の run に紐づく結果としてのみ存在する前提とする。
 
 ### PROFILE_TABLE との関係
-[[DB_DESIGN.PROFILE_TABLE]] は、**単一テーブルを対象としてプロファイル処理を実行するためのストアドプロシージャ**である。
+[[DB_DESIGN.PROFILE_TABLE]] は、単一テーブルを対象としてプロファイル処理を実行するためのストアドプロシージャである。
 
 - PROFILE_TABLE は指定された  
   TARGET_DB / TARGET_SCHEMA / TARGET_TABLE  
@@ -46,7 +46,7 @@ PROFILE_RESULTS は、必ず既存の run に紐づく結果としてのみ存�
 - PROFILE_RESULTS は、PROFILE_TABLE による実行結果を永続化する格納先となる。
 
 ### PROFILE_COLUMN との関係
-[[DB_DESIGN.PROFILE_COLUMN]] は、**単一カラムを対象に即時計測を行うためのプロシージャ**である。
+[[DB_DESIGN.PROFILE_COLUMN]] は、単一カラムを対象に即時計測を行うためのプロシージャである。
 
 - PROFILE_COLUMN は参照・計算用途を主目的とし、  
   原則として PROFILE_RESULTS への永続書き込みは行わない。
@@ -55,7 +55,7 @@ PROFILE_RESULTS は、必ず既存の run に紐づく結果としてのみ存�
 - これにより、単発計測結果と永続結果を同一の解釈軸で扱える。
 
 ### PROFILE_ALL_TABLES との関係
-[[DB_DESIGN.PROFILE_ALL_TABLES]] は、**複数テーブル（スキーマ単位、DB単位など）を横断してプロファイル処理を実行するオーケストレーション用プロシージャ**である。
+[[DB_DESIGN.PROFILE_ALL_TABLES]] は、複数テーブル（スキーマ単位、DB単位など）を横断してプロファイル処理を実行するオーケストレーション用プロシージャである。
 
 - PROFILE_ALL_TABLES は内部で  
   [[DB_DESIGN.PROFILE_TABLE]] を複数回呼び出す構成を取る。

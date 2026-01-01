@@ -1,7 +1,7 @@
 # プロシージャ設計：INGEST_VAULT_MD
 
 ## 概要
-[[DB_DESIGN.INGEST_VAULT_MD]] は、**S3ステージに同期されたObsidian VaultのMarkdownファイルを読み込み、[[DB_DESIGN.DOCS_OBSIDIAN]] テーブルに取り込むための専用プロシージャ**である。
+DB_DESIGN.INGEST_VAULT_MD は、S3ステージに同期されたObsidian VaultのMarkdownファイルを読み込み、DB_DESIGN.DOCS_OBSIDIAN テーブルに取り込むための専用プロシージャである。
 
 本プロシージャは、GitHub → S3 → Snowflake の同期フローにおいて、Snowflake側のデータ取り込みを担当する唯一の書き込み経路である。
 
@@ -12,7 +12,7 @@
 - 主な利用シーン  
   - Obsidian Vault更新後、GitHub Actions経由でS3に同期された後、手動またはタスクで実行
   - Cortex Agentが最新の設計ドキュメントを参照できるようにする
-  - **注記**：プロファイル結果は外部テーブル（PROFILE_RESULTS_EXTERNAL）で直接参照するため、本プロシージャの対象外
+  - 注記：プロファイル結果は外部テーブル（DB_DESIGN.PROFILE_RESULTS_EXTERNAL）で直接参照するため、本プロシージャの対象外
 
 ## 設計上の位置づけ
 
@@ -31,21 +31,21 @@ Snowflake: DB_DESIGN.DOCS_OBSIDIAN
 Cortex Agent (SNOWFLAKE_DEMO_AGENT)
 ```
 
-本プロシージャは、**S3からSnowflakeへの橋渡し**を担当する。
+本プロシージャは、S3からSnowflakeへの橋渡しを担当する。
 
 ### DOCS_OBSIDIANテーブルとの関係
-- [[DB_DESIGN.DOCS_OBSIDIAN]] への INSERT / UPDATE / DELETE は、**本プロシージャのみが行う**
+- DB_DESIGN.DOCS_OBSIDIAN への INSERT / UPDATE / DELETE は、本プロシージャのみが行う
 - 直接のDML（手動INSERT/UPDATEなど）は禁止
 - データ整合性と一元管理のため、取り込みロジックを本プロシージャに集約
 
 ### External Tableとの違い
-External Tableとして `DB_DESIGN.DOCS_OBSIDIAN` を定義する案もあるが、本設計では**内部テーブル + INGEST_VAULT_MD** を採用：
+External Tableとして `DB_DESIGN.DOCS_OBSIDIAN` を定義する案もあるが、本設計では内部テーブル + INGEST_VAULT_MD を採用：
 
 #### 内部テーブル + プロシージャの利点
-- **クエリ高速化**：Cortex Agentが頻繁にアクセスするため、内部テーブルの方が高速
-- **全文検索の最適化**：Search Optimization Serviceが利用可能
-- **変換処理**：ファイルパスの正規化、メタデータ抽出、ハッシュ計算を事前実行
-- **バージョン管理**：UPDATED_ATでVault更新履歴を追跡
+- クエリ高速化：Cortex Agentが頻繁にアクセスするため、内部テーブルの方が高速
+- 全文検索の最適化：Search Optimization Serviceが利用可能
+- 変換処理：ファイルパスの正規化、メタデータ抽出、ハッシュ計算を事前実行
+- バージョン管理：UPDATED_ATでVault更新履歴を追跡
 
 #### External Tableとの比較
 | 項目 | Internal Table + INGEST_VAULT_MD | External Table |
@@ -56,21 +56,21 @@ External Tableとして `DB_DESIGN.DOCS_OBSIDIAN` を定義する案もあるが
 | リアルタイム性 | △ 手動/定期実行 | ◎ AUTO_REFRESH |
 | データ変換 | ◎ 柔軟 | △ 制限あり |
 
-本設計では、**クエリ性能を優先**し、内部テーブル方式を採用する。
+本設計では、クエリ性能を優先し、内部テーブル方式を採用する。
 
 ## プロシージャの設計方針
 
 ### 入力パラメータ
 
 #### 1. STAGE_NAME (VARCHAR)
-- **意味**：読み込み対象のSnowflake External Stage名
-- **値例**：`@DB_DESIGN.OBSIDIAN_VAULT_STAGE`
-- **用途**：S3バケット（`s3://snowflake-chatdemo-vault-prod/`）をマウントしたステージ
+- 意味：読み込み対象のSnowflake External Stage名
+- 値例：`@DB_DESIGN.OBSIDIAN_VAULT_STAGE`
+- 用途：S3バケット（`s3://snowflake-chatdemo-vault-prod/`）をマウントしたステージ
 
 #### 2. PATTERN (VARCHAR)
-- **意味**：取り込み対象ファイルのパターン（glob）
-- **値例**：`'.*\\.md'`（全Markdownファイル）、`'design/.*\\.md'`（design/配下のみ）
-- **用途**：特定ディレクトリのみを取り込む場合に絞り込み
+- 意味：取り込み対象ファイルのパターン（glob）
+- 値例：`'.*\\.md'`（全Markdownファイル）、`'design/.*\\.md'`（design/配下のみ）
+- 用途：特定ディレクトリのみを取り込む場合に絞り込み
 
 ### 処理フロー
 
@@ -110,7 +110,7 @@ def _to_relpath(name: str) -> str:
     return n
 ```
 
-`s3://135365622922-snowflake-dbdesign/design/APP_PRODUCTION/design.ANKEN_MEISAI.md`
+`s3://snowflake-chatdemo-vault-prod/design/APP_PRODUCTION/design.ANKEN_MEISAI.md`
   ↓
 `design/APP_PRODUCTION/design.ANKEN_MEISAI.md`
 
@@ -149,9 +149,9 @@ session.sql(f"""
 """).collect()
 ```
 
-- **MATCHED AND content_hash != content_hash**：ファイルが変更された場合のみUPDATE
-- **NOT MATCHED**：新規ファイルをINSERT
-- **変更なし**：何もしない（効率化）
+- MATCHED AND content_hash != content_hash：ファイルが変更された場合のみUPDATE
+- NOT MATCHED：新規ファイルをINSERT
+- 変更なし：何もしない（効率化）
 
 #### ステップ6：処理結果の返却
 ```python
@@ -165,16 +165,16 @@ return {
 ### エラーハンドリング
 
 #### ファイル読み込みエラー
-- **発生条件**：S3のファイルが破損、エンコーディングエラー
-- **対処**：エラーカウントを増やし、次のファイルへ続行（全体中断しない）
+- 発生条件：S3のファイルが破損、エンコーディングエラー
+- 対処：エラーカウントを増やし、次のファイルへ続行（全体中断しない）
 
 #### ステージアクセスエラー
-- **発生条件**：IAM権限不足、ステージ名が間違っている
-- **対処**：例外をスローし、プロシージャ全体を失敗させる
+- 発生条件：IAM権限不足、ステージ名が間違っている
+- 対処：例外をスローし、プロシージャ全体を失敗させる
 
 #### 文字エンコーディングエラー
-- **発生条件**：UTF-8以外のエンコーディングのファイル
-- **対処**：エラーログに記録し、スキップ
+- 発生条件：UTF-8以外のエンコーディングのファイル
+- 対処：エラーログに記録し、スキップ
 
 ## 運用設計
 
@@ -303,7 +303,7 @@ WHERE file_path NOT IN (
 ## プロファイル結果の参照方法
 
 ### 外部テーブルで直接参照（推奨設計）
-プロファイル結果は、**外部テーブル（PROFILE_RESULTS_EXTERNAL / PROFILE_RUNS_EXTERNAL）で直接S3を参照**する設計を採用：
+プロファイル結果は、外部テーブル（PROFILE_RESULTS_EXTERNAL / PROFILE_RUNS_EXTERNAL）で直接S3を参照する設計を採用：
 
 ```
 PROFILE_ALL_TABLES (プロファイル実行)

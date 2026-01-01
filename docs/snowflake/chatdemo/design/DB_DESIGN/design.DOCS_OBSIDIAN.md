@@ -2,8 +2,8 @@
 # テーブル設計：DOCS_OBSIDIAN
 
 ## 概要
-[[DB_DESIGN.DOCS_OBSIDIAN]] は、Obsidian Vault 上の Markdown ファイルを 1ファイル = 1レコードとして取り込み、設計レビュー・検索・Agent 処理の一次ソースとして提供するテーブルである。  
-[[DB_DESIGN.DOCS_OBSIDIAN.PATH]]（Vault 内の相対パス）と [[DB_DESIGN.DOCS_OBSIDIAN.CONTENT]]（本文）を中心に保持し、Vault を正本とする設計思想のもとで、設計定義（master）・設計意図（design）・レビュー結果（reviews）を Snowflake 上で横断的に扱える状態を作る。
+DB_DESIGN.DOCS_OBSIDIAN は、Obsidian Vault 上の Markdown ファイルを 1ファイル = 1レコードとして取り込み、設計レビュー・検索・Agent 処理の一次ソースとして提供する内部テーブルである。  
+DB_DESIGN.DOCS_OBSIDIAN.PATH（Vault 内の相対パス）と DB_DESIGN.DOCS_OBSIDIAN.CONTENT（本文）を中心に保持し、Vault を正本とする設計思想のもとで、設計定義（master）・設計意図（design）・レビュー結果（reviews）を Snowflake 上で横断的に扱える状態を作る。
 
 ## 関連コンポーネントとの関係
 

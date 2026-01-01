@@ -1,7 +1,7 @@
 # VIEW設計：V_ENTITY_ALIAS_AUTO（自動生成 別名辞書）
 
 ## 概要
-[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]] は、名称解決で利用する別名（alias）を **業務データから自動生成**する参照用VIEWである。  
+[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]] は、名称解決で利用する別名（alias）を 業務データから自動生成する参照用VIEWである。  
 部署・顧客・案件・オーダー等の「人が入力しうる名称」を網羅的に列挙し、正規化済みキー（alias_normalized）を付与して辞書化する。
 
 本VIEWは「自動生成できる範囲」を担い、例外・略称・社内用語・ルビ等の手動補完は [[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]] に委ねる。  

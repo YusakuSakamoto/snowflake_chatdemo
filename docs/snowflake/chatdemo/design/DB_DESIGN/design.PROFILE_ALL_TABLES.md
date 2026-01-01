@@ -4,11 +4,11 @@
 
 `DB_DESIGN.PROFILE_ALL_TABLES` は、指定されたデータベース・スキーマ内のすべてのテーブルに対して、プロファイル処理を一括実行するオーケストレーション用プロシージャです。
 
-- **スキーマ**: DB_DESIGN (SCH_20251226180633)
-- **オブジェクトタイプ**: PROCEDURE
-- **言語**: SQL
-- **実行モード**: EXECUTE AS OWNER
-- **戻り値**: VARIANT (処理結果のJSON)
+- スキーマ: DB_DESIGN (SCH_20251226180633)
+- オブジェクトタイプ: PROCEDURE
+- 言語: SQL
+- 実行モード: EXECUTE AS OWNER
+- 戻り値: VARIANT (処理結果のJSON)
 
 ---
 
@@ -18,10 +18,10 @@
 大規模なスキーマに対して、全テーブルの品質プロファイルを効率的に収集するための自動化ツールです。手動で1テーブルずつプロファイルを実行するオペレーション負担を削減し、定期的なデータ品質レビューを実現します。
 
 ### 利用シーン
-- **週次/月次の品質レビュー**: 全テーブルのプロファイルを定期実行し、品質トレンドを追跡
-- **新規スキーマのベースライン作成**: 初回プロファイル実行で基準データを確立
-- **マイグレーション後の検証**: 移行前後の品質比較のために全テーブルを一括プロファイル
-- **データ棚卸し**: 使用状況やデータ品質の全体像把握
+- 週次/月次の品質レビュー: 全テーブルのプロファイルを定期実行し、品質トレンドを追跡
+- 新規スキーマのベースライン作成: 初回プロファイル実行で基準データを確立
+- マイグレーション後の検証: 移行前後の品質比較のために全テーブルを一括プロファイル
+- データ棚卸し: 使用状況やデータ品質の全体像把握
 
 ---
 
@@ -48,23 +48,23 @@ DOCS_OBSIDIAN (Cortex Agentが参照)
 ```
 
 ### 他コンポーネントとの連携
-- **上流**: INFORMATION_SCHEMA (Snowflake標準ビュー)
-- **下流**: [[DB_DESIGN.PROFILE_TABLE]] (個別テーブルプロファイル実行)
-- **並列処理**: [[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (結果をMarkdownでエクスポート)
-- **集約層**: [[DB_DESIGN.PROFILE_RESULTS]], [[DB_DESIGN.PROFILE_RUNS]]
+- 上流: INFORMATION_SCHEMA (Snowflake標準ビュー)
+- 下流: [[DB_DESIGN.PROFILE_TABLE]] (個別テーブルプロファイル実行)
+- 並列処理: [[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (結果をMarkdownでエクスポート)
+- 集約層: [[DB_DESIGN.PROFILE_RESULTS]], [[DB_DESIGN.PROFILE_RUNS]]
 
 ---
 
 ## 設計方針
 
 ### 1. オーケストレーション設計
-**方針**: 単純なループ処理で全テーブルを順次実行  
-**理由**:
+方針: 単純なループ処理で全テーブルを順次実行  
+理由:
 - Snowflakeのクエリキューイングにより、並列化は不要
 - エラーハンドリングを個別テーブルレベルで実施
 - 1テーブルの失敗が全体をブロックしない設計
 
-**実装**:
+実装:
 ```sql
 FOR REC IN V_TBL_RS DO
   BEGIN
@@ -78,23 +78,23 @@ END FOR;
 ```
 
 ### 2. エラーハンドリング
-**方針**: Graceful Degradation（部分失敗を許容）  
-**理由**:
+方針: Graceful Degradation（部分失敗を許容）  
+理由:
 - 1つのテーブルにアクセス権限がなくても、他のテーブルはプロファイル可能にする
 - 大規模スキーマ（100テーブル以上）でも安定稼働を保証
 
-**実装**:
+実装:
 - テーブルごとにTRY-CATCHで個別ハンドリング
 - 失敗したテーブルは `status: 'FAILED'` として結果配列に記録
 - 最終結果に `tables_processed`, `results` を含めることで、成功/失敗の内訳を可視化
 
 ### 3. 動的SQL設計
-**方針**: 可変DB/スキーマに対応するため、動的SQLでテーブル一覧を取得  
-**理由**:
+方針: 可変DB/スキーマに対応するため、動的SQLでテーブル一覧を取得  
+理由:
 - INFORMATION_SCHEMAは読み取り時にDBコンテキストが必要
 - 他のデータベースに対してもプロファイル可能にする汎用性
 
-**実装**:
+実装:
 ```sql
 V_SQL_LIST := '
 SELECT TABLE_NAME
@@ -106,12 +106,12 @@ ORDER BY TABLE_NAME
 ```
 
 ### 4. クォート・エスケープ処理
-**方針**: SQLインジェクション対策として厳格にエスケープ  
-**理由**:
+方針: SQLインジェクション対策として厳格にエスケープ  
+理由:
 - DB名/スキーマ名に特殊文字が含まれる可能性
 - ダブルクォート（識別子）とシングルクォート（文字列リテラル）を使い分け
 
-**実装**:
+実装:
 ```sql
 V_QDB := '"' || REPLACE(P_TARGET_DB,'"','""') || '"';
 V_QSC := '''' || REPLACE(P_TARGET_SCHEMA,'''','''''') || '''';
@@ -129,8 +129,8 @@ V_QSC := '''' || REPLACE(P_TARGET_SCHEMA,'''','''''') || '''';
 | `P_NOTE` | STRING | - | `'manual weekly all-tables run'` | 実行メモ（運用管理用） |
 
 ### パラメータ設計の背景
-- **P_SAMPLE_PCT**: 大規模テーブル（数億行）に対しては、サンプリングでコスト削減が可能。NULLの場合は正確性を優先
-- **P_NOTE**: 定期実行 vs アドホック実行の区別、担当者の記録など、運用トレーサビリティ確保
+- P_SAMPLE_PCT: 大規模テーブル（数億行）に対しては、サンプリングでコスト削減が可能。NULLの場合は正確性を優先
+- P_NOTE: 定期実行 vs アドホック実行の区別、担当者の記録など、運用トレーサビリティ確保
 
 ---
 
@@ -188,9 +188,9 @@ ORDER BY TABLE_NAME
 ';
 V_TBL_RS := (EXECUTE IMMEDIATE :V_SQL_LIST);
 ```
-- **INFORMATION_SCHEMA.TABLES**: Snowflake標準ビューでテーブルメタデータ取得
-- **フィルタ**: `TABLE_TYPE = 'BASE TABLE'` でビュー/マテリアライズドビューを除外
-- **ソート**: `ORDER BY TABLE_NAME` で処理順序を安定化
+- INFORMATION_SCHEMA.TABLES: Snowflake標準ビューでテーブルメタデータ取得
+- フィルタ: `TABLE_TYPE = 'BASE TABLE'` でビュー/マテリアライズドビューを除外
+- ソート: `ORDER BY TABLE_NAME` で処理順序を安定化
 
 ### ステップ3: ループ実行（個別テーブルプロファイル）
 ```sql
@@ -225,10 +225,10 @@ FOR REC IN V_TBL_RS DO
 END FOR;
 ```
 
-**重要な実装ポイント**:
-- **RESULT_SCAN(LAST_QUERY_ID())**: PROFILE_TABLEの戻り値（RUN_ID）を取得
-- **列名依存回避**: `$1::STRING` で最初の列を取得（列名に依存しない）
-- **TRY-CATCH**: 個別テーブルの失敗が全体に波及しない
+重要な実装ポイント:
+- RESULT_SCAN(LAST_QUERY_ID()): PROFILE_TABLEの戻り値（RUN_ID）を取得
+- 列名依存回避: `$1::STRING` で最初の列を取得（列名に依存しない）
+- TRY-CATCH: 個別テーブルの失敗が全体に波及しない
 
 ### ステップ4: 結果返却
 ```sql
@@ -301,29 +301,29 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 ```
 
 ### モニタリング指標
-- **実行時間**: `ARRAY_SIZE(results)` で処理テーブル数を確認、予想実行時間を推定
-- **失敗率**: `results` 配列内の `status='FAILED'` 件数を集計
-- **アラート条件**: 失敗率が20%を超える場合は権限問題を疑う
+- 実行時間: `ARRAY_SIZE(results)` で処理テーブル数を確認、予想実行時間を推定
+- 失敗率: `results` 配列内の `status='FAILED'` 件数を集計
+- アラート条件: 失敗率が20%を超える場合は権限問題を疑う
 
 ---
 
 ## パフォーマンス考慮
 
 ### 実行時間の見積もり
-- **1テーブルあたり**: 平均30秒～2分（テーブルサイズに依存）
-- **100テーブルのスキーマ**: 約50分～3時間
-- **推奨**: 大規模スキーマは深夜バッチで実行
+- 1テーブルあたり: 平均30秒～2分（テーブルサイズに依存）
+- 100テーブルのスキーマ: 約50分～3時間
+- 推奨: 大規模スキーマは深夜バッチで実行
 
 ### コスト最適化
-- **サンプリング活用**: `P_SAMPLE_PCT = 0.1` で90%のコスト削減が可能
-- **Warehouse選択**: `EXECUTE AS OWNER` のため、プロシージャ実行者のデフォルトWHを使用。専用WHの設定を推奨
-- **AUTO_SUSPEND**: プロファイル完了後、WHが自動停止するよう設定
+- サンプリング活用: `P_SAMPLE_PCT = 0.1` で90%のコスト削減が可能
+- Warehouse選択: `EXECUTE AS OWNER` のため、プロシージャ実行者のデフォルトWHを使用。専用WHの設定を推奨
+- AUTO_SUSPEND: プロファイル完了後、WHが自動停止するよう設定
 
 ### 並列化の検討（将来拡張）
 現行はシーケンシャル実行だが、将来的には以下の並列化が可能：
-- **Snowflake Task DAG**: 複数のTaskで異なるスキーマを並列実行
-- **Pythonプロシージャ**: `concurrent.futures` でマルチスレッド化
-- **外部オーケストレーター**: Airflow等で複数プロファイルジョブを並列スケジュール
+- Snowflake Task DAG: 複数のTaskで異なるスキーマを並列実行
+- Pythonプロシージャ: `concurrent.futures` でマルチスレッド化
+- 外部オーケストレーター: Airflow等で複数プロファイルジョブを並列スケジュール
 
 ---
 
@@ -338,17 +338,17 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 | `Warehouse suspended` | 実行中にWH停止 | WHのAUTO_RESUME設定を確認 |
 
 ### リトライ戦略
-- **自動リトライ**: 実装なし（個別テーブルの失敗は記録のみ）
-- **手動リトライ**: 失敗したテーブルのみを後から `PROFILE_TABLE` で個別実行
-- **冪等性**: 同じテーブルを複数回実行しても問題なし（新しいRUN_IDで記録）
+- 自動リトライ: 実装なし（個別テーブルの失敗は記録のみ）
+- 手動リトライ: 失敗したテーブルのみを後から `PROFILE_TABLE` で個別実行
+- 冪等性: 同じテーブルを複数回実行しても問題なし（新しいRUN_IDで記録）
 
 ---
 
 ## セキュリティとアクセス制御
 
 ### 実行権限
-- **EXECUTE AS OWNER**: プロシージャ所有者の権限で実行
-- **必要な権限**:
+- EXECUTE AS OWNER: プロシージャ所有者の権限で実行
+- 必要な権限:
   - `SELECT` on `INFORMATION_SCHEMA.TABLES`
   - `USAGE` on target database and schema
   - `SELECT` on all tables in target schema
@@ -381,8 +381,8 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 - `P_SAMPLE_PCT`: 範囲外の値（負数、1超）は `PROFILE_TABLE` 側でバリデーション
 
 ### 結果の妥当性チェック
-- **想定テーブル数との照合**: 事前に `SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES` で期待値を確認
-- **失敗テーブルの調査**: `status='FAILED'` のテーブルはエラーメッセージを確認し、権限/データ品質問題を特定
+- 想定テーブル数との照合: 事前に `SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES` で期待値を確認
+- 失敗テーブルの調査: `status='FAILED'` のテーブルはエラーメッセージを確認し、権限/データ品質問題を特定
 
 ---
 
@@ -434,8 +434,8 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 
 ## メタデータ
 
-- **作成日**: 2026-01-02
-- **最終更新日**: 2026-01-02
-- **ステータス**: 運用中
-- **レビュー担当**: DB設計チーム
-- **次回レビュー予定**: 2026-02-01
+- 作成日: 2026-01-02
+- 最終更新日: 2026-01-02
+- ステータス: 運用中
+- レビュー担当: DB設計チーム
+- 次回レビュー予定: 2026-02-01

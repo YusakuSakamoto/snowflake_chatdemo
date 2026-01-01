@@ -1,7 +1,7 @@
 # 外部テーブル設計：CORTEX_CONVERSATIONS
 
 ## 概要
-[[LOG.CORTEX_CONVERSATIONS]] は、**Snowflake Cortex Agent との会話履歴を長期保管・分析するための外部テーブル**である。
+LOG.CORTEX_CONVERSATIONS は、Snowflake Cortex Agent との会話履歴を長期保管・分析するための外部テーブルである。
 
 本テーブルは、S3に保存されたJSON Lines形式のログファイルを、Snowflakeから直接クエリ可能にする。  
 `APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT` を含む、全Cortex Agentの会話ログを統合的に管理する。
@@ -21,7 +21,7 @@
 [[LOG.CORTEX_CONVERSATIONS]] は、以下の観測性（Observability）スタックの一部として機能する：
 
 - アプリケーションログ（Azure Functions / SWA）
-- **Cortex Agent会話ログ** ← 本テーブル
+- Cortex Agent会話ログ ← 本テーブル
 - Snowflake メトリクス（クエリ実行統計）
 
 これらを横断的に分析することで、システム全体の健全性を把握できる。
@@ -30,30 +30,30 @@
 
 ### 外部テーブルを採用する理由
 
-本テーブルでは、**EXTERNAL TABLE（外部テーブル）** を採用する。
+本テーブルでは、EXTERNAL TABLE（外部テーブル）を採用する。
 
 #### メリット：
-1. **コスト最適化**  
+1. コスト最適化  
    - 会話ログは膨大になる可能性があるが、S3ストレージは Snowflake 内部ストレージより大幅に安価
    - クエリ時のみ課金されるため、長期保管コストを抑制
 
-2. **柔軟な保持期間管理**  
+2. 柔軟な保持期間管理  
    - S3のライフサイクルポリシーで古いログを自動アーカイブ（Glacier等）
    - Snowflake側のテーブル定義を変更せずにストレージ階層を変更可能
 
-3. **スキーマ進化の容易性**  
+3. スキーマ進化の容易性  
    - 会話ログのフォーマットが変わっても、新しいパーティションから新スキーマを適用
    - 過去ログの再ロード不要
 
 #### デメリットと対処：
-- **クエリ速度**：内部テーブルより遅い → 頻繁にクエリする集計結果はマテリアライズドビューで高速化
-- **クラスタリング不可**：外部テーブルはクラスタリングキーが使えない → パーティションによる時系列最適化で代替
+- クエリ速度：内部テーブルより遅い → 頻繁にクエリする集計結果はマテリアライズドビューで高速化
+- クラスタリング不可：外部テーブルはクラスタリングキーが使えない → パーティションによる時系列最適化で代替
 
 ### パーティション設計の詳細
 
 S3パス構造：
 ```
-s3://bucket/logs/cortex_conversations/
+s3://snowflake-chatdemo-vault-prod/logs/cortex_conversations/
   year=2026/
     month=01/
       day=02/
@@ -74,16 +74,16 @@ SELECT * FROM LOG.CORTEX_CONVERSATIONS
 WHERE timestamp > CURRENT_TIMESTAMP() - INTERVAL '1 day';
 ```
 
-**重要**：時系列クエリでは必ず `year`, `month`, `day` を WHERE句に含めること。
+重要：時系列クエリでは必ず `year`, `month`, `day` を WHERE句に含めること。
 
 ### JSON Lines フォーマットの選択理由
 
-各ログファイルは **1行=1メッセージ** の JSON Lines (NDJSON) 形式で保存される。
+各ログファイルは 1行=1メッセージ の JSON Lines (NDJSON) 形式で保存される。
 
 #### 利点：
-- **追記専用（Append-Only）に最適**：会話ログは追記のみなので、行単位追記が効率的
-- **スキーマレス**：VARIANT型で柔軟にメタデータを格納可能
-- **Snowflake の JSON サポート**：半構造化データに対する豊富な関数群（`FLATTEN`, `GET` など）
+- 追記専用（Append-Only）に最適：会話ログは追記のみなので、行単位追記が効率的
+- スキーマレス：VARIANT型で柔軟にメタデータを格納可能
+- Snowflake の JSON サポート：半構造化データに対する豊富な関数群（`FLATTEN`, `GET` など）
 
 ## カラム設計の判断
 
@@ -96,9 +96,9 @@ WHERE timestamp > CURRENT_TIMESTAMP() - INTERVAL '1 day';
 ### 各カラムの設計意図
 
 #### `conversation_id` (VARCHAR)
-- **意味**：1つの会話スレッドを一意識別するID
-- **生成方法**：フロントエンドで UUID 生成し、すべてのメッセージに付与
-- **利用例**：特定の会話の全履歴を取得
+- 意味：1つの会話スレッドを一意識別するID
+- 生成方法：フロントエンドで UUID 生成し、すべてのメッセージに付与
+- 利用例：特定の会話の全履歴を取得
 
 ```sql
 SELECT * FROM LOG.CORTEX_CONVERSATIONS
@@ -107,24 +107,24 @@ ORDER BY timestamp;
 ```
 
 #### `session_id` (VARCHAR)
-- **意味**：ユーザーセッションを識別するID
-- **conversation_id との違い**：1セッション内で複数の会話が行われる可能性
-- **利用例**：ユーザーの行動パターン分析（セッション時間、会話数）
+- 意味：ユーザーセッションを識別するID
+- conversation_id との違い：1セッション内で複数の会話が行われる可能性
+- 利用例：ユーザーの行動パターン分析（セッション時間、会話数）
 
 #### `user_id` (VARCHAR, nullable)
-- **意味**：ユーザーを識別するID（匿名ユーザーの場合は NULL）
-- **プライバシー配慮**：実名ではなく、ハッシュ化されたIDまたは仮名IDを使用
-- **GDPR対応**：ユーザーから削除要求があった場合、`user_id` で絞り込んでログ削除
+- 意味：ユーザーを識別するID（匿名ユーザーの場合は NULL）
+- プライバシー配慮：実名ではなく、ハッシュ化されたIDまたは仮名IDを使用
+- GDPR対応：ユーザーから削除要求があった場合、`user_id` で絞り込んでログ削除
 
 #### `agent_name` (VARCHAR)
-- **意味**：どのCortex Agentが回答したか
-- **値例**：`SNOWFLAKE_DEMO_AGENT`, `CUSTOMER_SUPPORT_AGENT` など
-- **利用例**：Agent別の回答品質比較
+- 意味：どのCortex Agentが回答したか
+- 値例：`SNOWFLAKE_DEMO_AGENT`, `CUSTOMER_SUPPORT_AGENT` など
+- 利用例：Agent別の回答品質比較
 
 #### `message_role` (VARCHAR)
-- **意味**：発話者の識別
-- **値**：`user` または `assistant`
-- **利用例**：ユーザーの質問だけを抽出、Agentの回答だけを抽出
+- 意味：発話者の識別
+- 値：`user` または `assistant`
+- 利用例：ユーザーの質問だけを抽出、Agentの回答だけを抽出
 
 ```sql
 -- ユーザーの質問TOP10
@@ -139,8 +139,8 @@ LIMIT 10;
 ```
 
 #### `message_content` (VARIANT)
-- **意味**：メッセージ本体と関連メタデータを含むJSON
-- **構造例**：
+- 意味：メッセージ本体と関連メタデータを含むJSON
+- 構造例：
 ```json
 {
   "text": "What is the total sales for department A?",
@@ -150,7 +150,7 @@ LIMIT 10;
   "error": null
 }
 ```
-- **利用例**：エラーメッセージの分析
+- 利用例：エラーメッセージの分析
 
 ```sql
 -- エラーが発生したメッセージを抽出
@@ -162,14 +162,14 @@ WHERE message_content:error IS NOT NULL;
 ```
 
 #### `timestamp` (TIMESTAMP_NTZ)
-- **意味**：メッセージが生成された日時（タイムゾーンなし）
-- **なぜNTZ？**：ログは UTC で統一し、表示時にアプリケーション側で変換
-- **利用例**：時系列分析、レスポンスタイム計算
+- 意味：メッセージが生成された日時（タイムゾーンなし）
+- なぜNTZ？：ログは UTC で統一し、表示時にアプリケーション側で変換
+- 利用例：時系列分析、レスポンスタイム計算
 
 #### `metadata` (VARIANT)
-- **意味**：実行時コンテキスト（使用モデル、トークン数、課金情報など）
-- **柔軟性**：将来的に追加したい情報を自由に格納できる
-- **利用例**：コスト分析、パフォーマンス分析
+- 意味：実行時コンテキスト（使用モデル、トークン数、課金情報など）
+- 柔軟性：将来的に追加したい情報を自由に格納できる
+- 利用例：コスト分析、パフォーマンス分析
 
 ```sql
 -- Agent別の平均レスポンスタイム
@@ -182,9 +182,9 @@ GROUP BY 1;
 ```
 
 #### パーティションカラム（`year`, `month`, `day`, `hour`）
-- **意味**：S3パスから抽出されるパーティション情報
-- **データ型**：NUMBER（0埋めなしの整数）
-- **利用**：必ず WHERE句で指定してパーティションプルーニングを有効化
+- 意味：S3パスから抽出されるパーティション情報
+- データ型：NUMBER（0埋めなしの整数）
+- 利用：必ず WHERE句で指定してパーティションプルーニングを有効化
 
 ## クエリパターン例
 
@@ -255,10 +255,10 @@ ALTER EXTERNAL TABLE LOG.CORTEX_CONVERSATIONS REFRESH;
 4. Snowflake が AUTO_REFRESH で自動検知
 
 ### データ保持ポリシー
-- **直近30日**：高頻度クエリ用に内部テーブルへコピー（任意）
-- **31-90日**：S3 Standard（外部テーブルで直接クエリ）
-- **91-365日**：S3 Intelligent-Tiering
-- **1年超**：S3 Glacier（長期アーカイブ、クエリ不可）
+- 直近30日：高頻度クエリ用に内部テーブルへコピー（任意）
+- 31-90日：S3 Standard（外部テーブルで直接クエリ）
+- 91-365日：S3 Intelligent-Tiering
+- 1年超：S3 Glacier（長期アーカイブ、クエリ不可）
 
 ## セキュリティ・プライバシー
 
@@ -282,7 +282,7 @@ GRANT SELECT ON LOG.CORTEX_CONVERSATIONS TO ROLE LOG_VIEWER;
 CREATE MASKING POLICY mask_user_id AS (val VARCHAR) RETURNS VARCHAR ->
   CASE 
     WHEN CURRENT_ROLE() IN ('LOG_ADMIN', 'PRIVACY_OFFICER') THEN val
-    ELSE '***MASKED***'
+    ELSE '*MASKED*'
   END;
 
 ALTER TABLE LOG.CORTEX_CONVERSATIONS MODIFY COLUMN user_id 

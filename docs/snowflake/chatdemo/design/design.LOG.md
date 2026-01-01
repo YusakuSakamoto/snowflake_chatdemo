@@ -13,13 +13,13 @@ SORT schema_id, physical
 
 ## 1. このスキーマの位置づけ
 
-`LOG` スキーマは、**全アプリケーション・サービスのログを統合集約するための専用スキーマ**である。
+`LOG` スキーマは、全アプリケーション・サービスのログを統合集約するための専用スキーマである。
 
 本スキーマの役割は次の3点に集約される：
 
-> 1. **Snowflake Cortex Agent会話ログの長期保管・分析基盤**
-> 2. **Azure Functions / SWA のアプリケーションログの統合**
-> 3. **Snowflake自体のメトリクス・監査ログの蓄積**
+> 1. Snowflake Cortex Agent会話ログの長期保管・分析基盤
+> 2. Azure Functions / SWA のアプリケーションログの統合
+> 3. Snowflake自体のメトリクス・監査ログの蓄積
 
 つまり `LOG` は、
 
@@ -28,7 +28,7 @@ SORT schema_id, physical
 - ユーザー行動分析の基礎データ
 - コスト・パフォーマンス分析の根拠
 
-を提供するための**観測性（Observability）基盤スキーマ**である。
+を提供するための観測性（Observability）基盤スキーマである。
 
 ---
 
@@ -36,47 +36,47 @@ SORT schema_id, physical
 
 ### 2.1 外部テーブル + S3 パーティション構成を採用する理由
 
-本基盤では、**すべてのログテーブルを外部テーブル（EXTERNAL TABLE）として実装**する。
+本基盤では、すべてのログテーブルを外部テーブル（EXTERNAL TABLE）として実装する。
 
 #### 理由：
 
-1. **コスト最適化**
+1. コスト最適化
    - S3ストレージコストは Snowflakeストレージより大幅に安価
    - 古いログは自動的にS3のライフサイクルポリシーで低コストストレージへ移行可能
    - クエリ時のみ課金されるため、長期保管でもコスト増加が抑えられる
 
-2. **柔軟な保持期間管理**
+2. 柔軟な保持期間管理
    - S3バケットポリシーでログ保持期間を柔軟に設定可能
    - 例：直近90日はStandard、91-365日はIA、1年超はGlacier
 
-3. **スキーマ進化の容易性**
+3. スキーマ進化の容易性
    - ログフォーマット変更時も、新しいパーティションから新スキーマを適用可能
    - 過去ログを再ロードする必要がない
 
-4. **パフォーマンス**
+4. パフォーマンス
    - year/month/day/hour のパーティションにより、時系列クエリが高速化
    - 必要な期間のパーティションのみスキャンされる（パーティションプルーニング）
 
 #### デメリットと対処：
 
-- **デメリット**: 外部テーブルはクラスタリングキーや検索最適化サービスが使えない
-- **対処**: 頻繁にクエリするログは定期的に内部テーブルへ集約（マテリアライズドビュー化）
+- デメリット: 外部テーブルはクラスタリングキーや検索最適化サービスが使えない
+- 対処: 頻繁にクエリするログは定期的に内部テーブルへ集約（マテリアライズドビュー化）
 
 ### 2.2 JSON Lines (NDJSON) フォーマットを採用する理由
 
-各ログは **1行=1レコード の JSON Lines形式** でS3に保存する。
+各ログは 1行=1レコード の JSON Lines形式 でS3に保存する。
 
 #### 理由：
 
-1. **スキーマレス**
+1. スキーマレス
    - ログにフィールドを追加してもテーブル定義変更不要
    - VARIANT型でメタデータを柔軟に格納可能
 
-2. **追記専用（Append-Only）に最適**
+2. 追記専用（Append-Only）に最適
    - ログは基本的に追記のみ
    - JSONLは行単位で追記できるため、ストリーミング書き込みに適している
 
-3. **Snowflake の JSON サポート**
+3. Snowflake の JSON サポート
    - Snowflake は JSON の高速パースとクエリ最適化をサポート
    - 半構造化データに対する豊富な関数群（FLATTEN, GET, など）
 
@@ -235,26 +235,26 @@ LIMIT 10;
 
 各アプリケーションは以下の方法でS3にログを書き込む：
 
-1. **Azure Functions / SWA**
+1. Azure Functions / SWA
    - Application Insights → Stream Analytics → S3
    - または直接 AWS SDK で S3 PUT
 
-2. **Cortex Agent会話ログ**
+2. Cortex Agent会話ログ
    - Snowflakeストアドプロシージャで会話終了時にS3へ `COPY INTO @stage`
 
-3. **Snowflakeメトリクス**
+3. Snowflakeメトリクス
    - 定期タスク（TASK）で `QUERY_HISTORY` から抽出し S3 へエクスポート
 
 ### 4.2 パーティション設計詳細
 
 S3パス構造：
 ```
-s3://bucket/logs/{log_type}/year=YYYY/month=MM/day=DD/hour=HH/{uuid}.json
+s3://snowflake-chatdemo-vault-prod/logs/{log_type}/year=YYYY/month=MM/day=DD/hour=HH/{uuid}.json
 ```
 
 例：
 ```
-s3://logs/cortex_conversations/year=2026/month=01/day=02/hour=14/abc123.json
+s3://snowflake-chatdemo-vault-prod/logs/cortex_conversations/year=2026/month=01/day=02/hour=14/abc123.json
 ```
 
 - `year=YYYY` : 年でのパーティション（長期保管時の粗い絞り込み）

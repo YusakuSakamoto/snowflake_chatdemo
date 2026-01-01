@@ -1,9 +1,9 @@
 # VIEW設計：V_ENTITY_ALIAS_ALL（別名辞書の統合・winner決定）
 
 ## 概要
-[[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]] は、名称解決で利用する別名辞書を **統合し、重複を排除して winner を決定する参照用VIEW**である。  
+[[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]] は、名称解決で利用する別名辞書を 統合し、重複を排除して winner を決定する参照用VIEWである。  
 手動辞書（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]）と自動生成辞書（[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]]）を UNION し、  
-同一の (alias_normalized, entity_type) に対して **priority / confidence に基づき1件に確定**する。
+同一の (alias_normalized, entity_type) に対して priority / confidence に基づき1件に確定する。
 
 本VIEWの出力は、物理検索用テーブル（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]]）へ refresh により materialize され、  
 Agent / Procedure は原則として物理テーブル側を参照する（V_ENTITY_ALIAS_ALL は「定義」と「確認」に使う）。

@@ -1,17 +1,17 @@
 # Obsidian DB設計ノート README
 
-この Vault は **Obsidian を DB 設計の正本（Single Source of Truth）として扱う**ための設計ノートです。  
-Markdown + YAML + Dataview を用いて、**設計の再現性・レビュー性・自動化耐性**を重視した構成を採用しています。
-- schema / table / column を **1定義1ファイル**で正規化
+この Vault は Obsidian を DB 設計の正本（Single Source of Truth）として扱うための設計ノートです。  
+Markdown + YAML + Dataview を用いて、設計の再現性・レビュー性・自動化耐性を重視した構成を採用しています。
+- schema / table / column を 1定義1ファイルで正規化
 - 設計意図と定義を明確に分離
 - Snowflake DDL 生成・Cortex Search / Agent 連携を前提とした設計
 
 ---
 ## 目的
 
-- DB 設計情報を **Obsidian Vault に一元集約**する
-- schema / table / column を **不変 ID で管理**する
-- 設計判断・レビュー履歴を **構造化された Markdown として保存**する
+- DB 設計情報を Obsidian Vault に一元集約する
+- schema / table / column を 不変 ID で管理する
+- 設計判断・レビュー履歴を 構造化された Markdown として保存する
 - Dataview により
     - 定義一覧
     - 横断レビュー
@@ -19,7 +19,7 @@ Markdown + YAML + Dataview を用いて、**設計の再現性・レビュー性
         を自動生成する
 
 ※ 実 DB への反映、マイグレーション管理、データ操作は対象外  
-（本 Vault は **設計・合意・レビュー・改善サイクル専用**）
+（本 Vault は設計・合意・レビュー・改善サイクル専用）
 
 ---
 
@@ -28,10 +28,11 @@ Markdown + YAML + Dataview を用いて、**設計の再現性・レビュー性
 - Obsidian 最新版
 - 有効化しているプラグイン
   - Dataview（必須・JavaScript クエリ有効）
-  - **Bases**（コアプラグイン）
-  - （任意）Templater / QuickAdd / Advanced Tables
+  - Templater（任意）
+  - QuickAdd（任意）
+  - Advanced Tables（任意）
 
-※ **Bases は使用しません**
+※ Bases プラグインは使用しません
 （再現性・Git 管理・外部連携の都合上、Dataview のみを正とします）
 
 ---
@@ -75,14 +76,14 @@ Markdown + YAML + Dataview を用いて、**設計の再現性・レビュー性
 
 |フォルダ|役割|
 |---|---|
-|master|**定義の正本**（DDL 生成・自動処理対象）|
+|master|定義の正本（DDL 生成・自動処理対象）|
 |design|設計意図・判断理由・前提条件|
 |reviews|人・Agent によるレビュー結果・履歴|
 |views|一覧表示・横断チェック・DDL 生成（参照専用）|
 
-- **定義は必ず `master/` を編集する**
-- `design/`・`reviews/`・`views/` には定義を書かない 
-- Agent / Analyst / 計測処理が `master/` を直接変更することは禁止
+- 定義は必ず master/ を編集する
+- design/・reviews/・views/ には定義を書かない 
+- Agent / Analyst / 計測処理が master/ を直接変更することは禁止
 
 ---
 
@@ -101,7 +102,7 @@ comment: 公開用スキーマ
 ```
 
 ### table 定義（例）
-**1 table = 1 ファイル**
+1 table = 1 ファイル
 
 `master/tables/<SCHEMA>.<TABLE>.md`
 ```yaml
@@ -119,7 +120,7 @@ comment: プロファイル実行の履歴管理テーブル
 
 ### column 定義（例）
 
-**1 column = 1 ファイル**
+1 column = 1 ファイル
 
 `master/columns/<SCHEMA>.<TABLE>.<COLUMN>.md`
 ```yaml
@@ -149,7 +150,7 @@ comment: プロファイル実行を一意に識別するID
 - 制約ポリシー（DDLで縛らない理由等）
 - 例外・アンチパターン
 
-※ **レビュー時・Agent実行時に必ず参照される前提**
+※ レビュー時・Agent実行時に必ず参照される前提
 
 ---
 
@@ -180,7 +181,7 @@ comment: プロファイル実行を一意に識別するID
 - 設計との乖離指摘
 - 次アクション提案
 
-※ 実データの計測結果も **Vault 上の md が正本**
+※ 実データの計測結果も Vault 上の md が正本
 
 ---
 
@@ -188,7 +189,7 @@ comment: プロファイル実行を一意に識別するID
 
 ### table 一覧
 
-**DB全体のテーブル俯瞰・レビュー用**
+DB全体のテーブル俯瞰・レビュー用
 
 `views/tables.md`
 ```
@@ -205,7 +206,7 @@ SORT schema_id, physical
 
 ### column 一覧
 
-**全カラム横断チェック用**
+全カラム横断チェック用
 
 `views/columns.md`
 ```
@@ -224,10 +225,10 @@ SORT table_id, pk desc
 
 ## 補足ルール（厳守）
 
-- schema / table / column は **必ず不変 ID で関連付ける**    
+- schema / table / column は必ず不変 ID で関連付ける
 - ファイル名が変わっても ID は変えない
 - Agent は Vault（md）しか参照しない
-- Evidence は必ず **実在する md パス**を使用する
+- Evidence は必ず実在する md パスを使用する
 - Git 管理・再現性を最優先する
 
 

@@ -2,11 +2,11 @@
 設計資産・名称解決・売上データ基盤 README
 
 本リポジトリ（Obsidian Vault）は、  
-**DB設計・設計レビュー・名称解決・売上分析アプリケーション**を  
+DB設計・設計レビュー・名称解決・売上分析アプリケーションを  
 Snowflake 上で再現性高く運用するための設計正本である。
 
 設計・判断・レビュー・生成結果を明確に分離し、  
-LLM / Agent を含む自動化を **推測に頼らず安全に成立させる** ことを目的とする。
+LLM / Agent を含む自動化を推測に頼らず安全に成立させることを目的とする。
 
 ---
 
@@ -22,7 +22,7 @@ WHERE !startswith(file.path, "master/")
 
 ## 全体思想（最重要）
 
-- **Obsidian Vault 上の Markdown（.md）が唯一の設計正本**
+- Obsidian Vault 上の Markdown（.md）が唯一の設計正本
 - Snowflake 上の DDL / VIEW / TABLE / PROCEDURE / AGENT はすべて「結果物」
 - Agent は実DBや実データを直接解釈しない
 - 判断・存在確認・不足指摘は、必ず Vault 上の実在する .md を根拠とする
@@ -45,8 +45,8 @@ WHERE !startswith(file.path, "master/")
 
 ## APP_PRODUCTION（楽々販売データ）について
 
-APP_PRODUCTION は、楽々販売由来の売上・案件・部署データを扱う **業務ドメイン**である。  
-APP_PRODUCTION は **単一スキーマではなく、用途別スキーマに分散して配置される**。
+APP_PRODUCTION は、楽々販売由来の売上・案件・部署データを扱う業務ドメインである。  
+APP_PRODUCTION は単一スキーマではなく、用途別スキーマに分散して配置される。
 
 ※ APP_PRODUCTION は業務ドメイン名であり、Snowflake のスキーマ名ではない。
 
@@ -67,7 +67,7 @@ APP_PRODUCTION は **単一スキーマではなく、用途別スキーマに�
 
 ### NAME_RESOLUTION
 
-- 業務データ全体で共通利用する **名称解決の手動辞書**を保持する
+- 業務データ全体で共通利用する 名称解決の手動辞書を保持する
 - APP_PRODUCTION 固有・全社共通を問わず、人手で管理する別名はここに集約する
 
 例：
@@ -117,10 +117,10 @@ APP_PRODUCTION は **単一スキーマではなく、用途別スキーマに�
 ## DEV → PROD 反映ルール
 
 本リポジトリにおける DEV / PROD の切り替えは、  
-**「設計の差」ではなく「配置先スキーマの差」**のみで表現する。
+「設計の差」ではなく「配置先スキーマの差」のみで表現する。
 
 ### 基本方針
-- APP_DEVELOPMENT と APP_PRODUCTION は **同一仕様**
+- APP_DEVELOPMENT と APP_PRODUCTION は同一仕様
 - SQL / VIEW / FUNCTION / PROCEDURE / AGENT は原則として同一コード
 - 差異は以下に限定する
   - データ量

@@ -4,27 +4,27 @@
 
 `DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL` は、プロファイル結果（PROFILE_RESULTSテーブル）をMarkdown形式およびJSON形式でS3バケットにエクスポートするプロシージャです。Cortex Agentがデータ品質エビデンスとして参照できるよう、Obsidian Vault形式で構造化されたドキュメントを生成します。
 
-- **スキーマ**: DB_DESIGN (SCH_20251226180633)
-- **オブジェクトタイプ**: PROCEDURE
-- **言語**: SQL
-- **実行モード**: EXECUTE AS CALLER
-- **戻り値**: VARIANT (エクスポート結果のJSON)
+- スキーマ: DB_DESIGN (SCH_20251226180633)
+- オブジェクトタイプ: PROCEDURE
+- 言語: SQL
+- 実行モード: EXECUTE AS CALLER
+- 戻り値: VARIANT (エクスポート結果のJSON)
 
 ---
 
 ## 業務上の意味
 
 ### 目的
-プロファイル結果を**人間が読める形式（Markdown）**と**機械処理可能な形式（JSON）**の両方で出力し、以下のユースケースを実現します：
+プロファイル結果を人間が読める形式（Markdown）と機械処理可能な形式（JSON）の両方で出力し、以下のユースケースを実現します：
 
-1. **Cortex Agentの知識ベース更新**: Obsidian Vaultに格納することで、DB設計レビューエージェントがデータ品質情報を参照可能
-2. **データ品質レポート**: Markdownファイルをそのままドキュメンテーションツール（Obsidian, Notion等）で閲覧
-3. **アーカイブ**: S3に長期保存することで、品質トレンドの履歴管理が可能
+1. Cortex Agentの知識ベース更新: Obsidian Vaultに格納することで、DB設計レビューエージェントがデータ品質情報を参照可能
+2. データ品質レポート: Markdownファイルをそのままドキュメンテーションツール（Obsidian, Notion等）で閲覧
+3. アーカイブ: S3に長期保存することで、品質トレンドの履歴管理が可能
 
 ### 利用シーン
-- **定期レポート作成**: 週次プロファイル実行後、自動的にMarkdownレポートを生成
-- **データ品質監査**: 過去のプロファイル結果をS3から取得し、品質劣化の原因分析
-- **Cortex Agentとの統合**: INGEST_VAULT_MDでMarkdownを再取り込みし、エージェントの回答精度向上
+- 定期レポート作成: 週次プロファイル実行後、自動的にMarkdownレポートを生成
+- データ品質監査: 過去のプロファイル結果をS3から取得し、品質劣化の原因分析
+- Cortex Agentとの統合: INGEST_VAULT_MDでMarkdownを再取り込みし、エージェントの回答精度向上
 
 ---
 
@@ -49,32 +49,32 @@ APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT (DB設計レビューエージェント)
 ```
 
 ### 他コンポーネントとの連携
-- **上流**: [[DB_DESIGN.PROFILE_ALL_TABLES]] → [[DB_DESIGN.PROFILE_RESULTS]] (プロファイル結果のソース)
-- **下流**: [[DB_DESIGN.INGEST_VAULT_MD]] (エクスポートしたMarkdownを再取り込み)
-- **外部システム**: S3バケット `snowflake-chatdemo-vault-prod`（[[S3_DESIGN_VAULT_DB_DOCS]]参照）
-- **最終消費者**: [[APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT]] (Cortex Agent)
+- 上流: [[DB_DESIGN.PROFILE_ALL_TABLES]] → [[DB_DESIGN.PROFILE_RESULTS]] (プロファイル結果のソース)
+- 下流: [[DB_DESIGN.INGEST_VAULT_MD]] (エクスポートしたMarkdownを再取り込み)
+- 外部システム: S3バケット `snowflake-chatdemo-vault-prod`（[[S3_DESIGN_VAULT_DB_DOCS]]参照）
+- 最終消費者: [[APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT]] (Cortex Agent)
 
 ---
 
 ## 設計方針
 
 ### 1. 二重フォーマット出力（Markdown + JSON）
-**方針**: 同じデータを2つの形式で出力  
-**理由**:
-- **Markdown**: 人間が直接閲覧・編集可能。ObsidianやGitHubでレンダリング
-- **JSON**: プログラムによる解析・集計が容易。将来のBI連携を見据える
+方針: 同じデータを2つの形式で出力  
+理由:
+- Markdown: 人間が直接閲覧・編集可能。ObsidianやGitHubでレンダリング
+- JSON: プログラムによる解析・集計が容易。将来のBI連携を見据える
 
-**実装**:
+実装:
 - Markdown: `{schema}/{table}.md` - サマリーテーブル形式
 - JSON: `{schema}/{table}.raw.json_0_0_0` - 全カラムの詳細メトリクス
 
 ### 2. Obsidian Vault互換の構造
-**方針**: Obsidianのベストプラクティスに準拠したYAML frontmatter + Markdown本文  
-**理由**:
+方針: Obsidianのベストプラクティスに準拠したYAML frontmatter + Markdown本文  
+理由:
 - Cortex Agentは `DOCS_OBSIDIAN` テーブルをRAGソースとして利用
 - frontmatterで構造化メタデータを埋め込むことで、セマンティック検索の精度向上
 
-**実装例**:
+実装例:
 ```markdown
 ---
 type: profile_evidence
@@ -102,12 +102,12 @@ generated_on: 2026-01-02
 ```
 
 ### 3. S3パーティショニング戦略
-**方針**: 日付ベースのディレクトリ構造 + スキーマ/テーブル階層  
-**理由**:
+方針: 日付ベースのディレクトリ構造 + スキーマ/テーブル階層  
+理由:
 - 日付パーティションで古いレポートの削除が容易
 - スキーマ/テーブル階層でObsidianのフォルダ構造と一致
 
-**ディレクトリ構造**:
+ディレクトリ構造:
 ```
 s3://snowflake-chatdemo-vault-prod/
   reviews/
@@ -122,11 +122,11 @@ s3://snowflake-chatdemo-vault-prod/
 ```
 
 ### 4. エラーハンドリング（テーブル単位）
-**方針**: 1テーブルの失敗が全体をブロックしない  
-**理由**:
+方針: 1テーブルの失敗が全体をブロックしない  
+理由:
 - 100テーブルを処理中、1テーブルだけメトリクスが取得できない場合でも、残り99テーブルは出力
 
-**実装**:
+実装:
 ```sql
 BEGIN
   -- Markdown生成 + COPY INTO
@@ -153,10 +153,10 @@ END;
 | `P_TARGET_SCHEMA` | VARCHAR | - | NULL | プロファイル対象のスキーマ（NULLの場合は全スキーマ） |
 
 ### パラメータ設計の背景
-- **P_SOURCE_VIEW**: 最新のプロファイル結果のみをエクスポートするため、ビュー経由で取得
-- **P_RUN_DATE**: 実行日時を明示的に渡すことで、バッチジョブのタイムスタンプ管理が容易
-- **P_VAULT_PREFIX**: `reviews/profiles` 固定ではなく可変にすることで、将来的に別用途（例: `adhoc/profiles`）にも対応
-- **P_TARGET_SCHEMA**: NULL許容により、1回の実行で全スキーマを処理可能
+- P_SOURCE_VIEW: 最新のプロファイル結果のみをエクスポートするため、ビュー経由で取得
+- P_RUN_DATE: 実行日時を明示的に渡すことで、バッチジョブのタイムスタンプ管理が容易
+- P_VAULT_PREFIX: `reviews/profiles` 固定ではなく可変にすることで、将来的に別用途（例: `adhoc/profiles`）にも対応
+- P_TARGET_SCHEMA: NULL許容により、1回の実行で全スキーマを処理可能
 
 ---
 
@@ -195,8 +195,8 @@ v_schema_lit := CASE
   ELSE '''' || REPLACE(P_TARGET_SCHEMA, '''', '''''') || ''''
 END;
 ```
-- **FQN構築**: ビューの完全修飾名を生成
-- **SQLインジェクション対策**: シングルクォートをエスケープ
+- FQN構築: ビューの完全修飾名を生成
+- SQLインジェクション対策: シングルクォートをエスケープ
 
 ### ステップ2: 対象テーブル一覧の抽出
 ```sql
@@ -213,8 +213,8 @@ WHERE TARGET_DB = '{P_TARGET_DB}'
 
 SELECT COUNT(*) INTO v_total FROM TMP_TARGETS;
 ```
-- **一時テーブル作成**: ループ前に対象テーブルを確定
-- **フィルタリング**: `TARGET_DB` と `TARGET_SCHEMA` で絞り込み
+- 一時テーブル作成: ループ前に対象テーブルを確定
+- フィルタリング: `TARGET_DB` と `TARGET_SCHEMA` で絞り込み
 
 ### ステップ3: テーブルごとのMarkdown/JSON生成（ループ処理）
 ```sql
@@ -386,9 +386,9 @@ row_count: 1500000
 generated_on: 2026-01-02
 ---
 ```
-- **type**: Obsidianのタグとして機能。Cortex Agentが「これはプロファイルエビデンスである」と識別
-- **as_of_at**: プロファイル実行時刻（ISO 8601形式）
-- **run_id**: PROFILE_RUNSテーブルのプライマリキー。詳細トレーサビリティ確保
+- type: Obsidianのタグとして機能。Cortex Agentが「これはプロファイルエビデンスである」と識別
+- as_of_at: プロファイル実行時刻（ISO 8601形式）
+- run_id: PROFILE_RUNSテーブルのプライマリキー。詳細トレーサビリティ確保
 
 ### Markdownボディ
 ```markdown
@@ -405,8 +405,8 @@ generated_on: 2026-01-02
 | `EMAIL` | 0.02% | 1499700 |
 | `PHONE` | 5.3% | 1420000 |
 ```
-- **Raw metrics**: JSONファイルへのパス（Obsidian内リンクとして機能）
-- **Columns (summary)**: 人間が一目で品質を判断できるテーブル形式
+- Raw metrics: JSONファイルへのパス（Obsidian内リンクとして機能）
+- Columns (summary): 人間が一目で品質を判断できるテーブル形式
 
 ---
 
@@ -438,8 +438,8 @@ generated_on: 2026-01-02
   ]
 }
 ```
-- **metrics配列**: 全カラムの詳細メトリクスを含む
-- **VARIANT型保存**: `METRICS` カラムはVARIANT型で、カラムごとに異なるメトリクスセットを格納可能
+- metrics配列: 全カラムの詳細メトリクスを含む
+- VARIANT型保存: `METRICS` カラムはVARIANT型で、カラムごとに異なるメトリクスセットを格納可能
 
 ---
 
@@ -518,14 +518,14 @@ ALTER TASK DB_DESIGN.TASK_PROFILE_AND_EXPORT RESUME;
 ## パフォーマンス考慮
 
 ### 実行時間の見積もり
-- **1テーブルあたり**: 5秒～30秒（Markdown生成 + COPY INTO）
-- **100テーブルのスキーマ**: 約10分～50分
-- **ボトルネック**: `COPY INTO` のS3書き込み速度
+- 1テーブルあたり: 5秒～30秒（Markdown生成 + COPY INTO）
+- 100テーブルのスキーマ: 約10分～50分
+- ボトルネック: `COPY INTO` のS3書き込み速度
 
 ### コスト最適化
-- **Warehouse選択**: `EXECUTE AS CALLER` のため、呼び出し元のWHを使用。小規模WHで十分
-- **SINGLE = TRUE**: 1テーブル1ファイルで分割を防ぎ、COPY INTO回数を最小化
-- **COMPRESSION = NONE**: Markdown/JSONは可読性優先でgzip圧縮なし（S3のストレージコストは微小）
+- Warehouse選択: `EXECUTE AS CALLER` のため、呼び出し元のWHを使用。小規模WHで十分
+- SINGLE = TRUE: 1テーブル1ファイルで分割を防ぎ、COPY INTO回数を最小化
+- COMPRESSION = NONE: Markdown/JSONは可読性優先でgzip圧縮なし（S3のストレージコストは微小）
 
 ### 並列化の検討（将来拡張）
 - 現行はループ処理だが、複数テーブルを並列処理することでスループット向上が可能
@@ -544,16 +544,16 @@ ALTER TASK DB_DESIGN.TASK_PROFILE_AND_EXPORT RESUME;
 | `Object does not exist` | v_view_fqnが存在しない | P_SOURCE_VIEW名を確認 |
 
 ### リトライ戦略
-- **自動リトライ**: テーブル単位でTRY-CATCH、失敗しても次のテーブルへ進む
-- **手動リトライ**: `exported_failed > 0` の場合、ログを確認して原因解決後に再実行
+- 自動リトライ: テーブル単位でTRY-CATCH、失敗しても次のテーブルへ進む
+- 手動リトライ: `exported_failed > 0` の場合、ログを確認して原因解決後に再実行
 
 ---
 
 ## セキュリティとアクセス制御
 
 ### 実行権限
-- **EXECUTE AS CALLER**: 呼び出し元ユーザーの権限で実行
-- **必要な権限**:
+- EXECUTE AS CALLER: 呼び出し元ユーザーの権限で実行
+- 必要な権限:
   - `USAGE` on source database/schema
   - `SELECT` on source view
   - `USAGE` on `DB_DESIGN` schema
@@ -605,9 +605,9 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 - `P_VAULT_PREFIX`: スラッシュ始まり/終わりを含まないこと（例: `reviews/profiles` OK, `/reviews/profiles/` NG）
 
 ### 出力の妥当性チェック
-- **ファイル存在確認**: `LIST @STAGE/path/` で出力ファイルが生成されているか検証
-- **Markdown構文チェック**: Obsidianで開いてレンダリングが正常か目視確認
-- **JSON構文チェック**: `PARSE_JSON()` で読み取り可能か検証
+- ファイル存在確認: `LIST @STAGE/path/` で出力ファイルが生成されているか検証
+- Markdown構文チェック: Obsidianで開いてレンダリングが正常か目視確認
+- JSON構文チェック: `PARSE_JSON()` で読み取り可能か検証
 
 ---
 
@@ -658,8 +658,8 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 
 ## メタデータ
 
-- **作成日**: 2026-01-02
-- **最終更新日**: 2026-01-02
-- **ステータス**: 運用中
-- **レビュー担当**: DB設計チーム
-- **次回レビュー予定**: 2026-02-01
+- 作成日: 2026-01-02
+- 最終更新日: 2026-01-02
+- ステータス: 運用中
+- レビュー担当: DB設計チーム
+- 次回レビュー予定: 2026-02-01

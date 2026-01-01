@@ -1,7 +1,7 @@
 # スキーマ設計：NAME_RESOLUTION
 
 ## 概要
-[[NAME_RESOLUTION]] は、**エンティティの名称解決（別名解決）を提供する専用スキーマ**である。
+NAME_RESOLUTION は、エンティティの名称解決（別名解決）を提供する専用スキーマである。
 
 「部署A」「営業部」「Sales」といった異なる表記を、正規化した上で「DEPT_001（営業部）」という正式なエンティティに紐付けることで、自然言語クエリの精度を高める。
 
@@ -17,13 +17,13 @@
 ## 設計上の位置づけ
 NAME_RESOLUTION スキーマは、以下のデータフロー全体の「名前解決レイヤー」として機能する：
 
-1. **ユーザー入力**：あいまいな名称（略称、口語表現、表記ゆれ）
-2. **名称解決（NAME_RESOLUTION）** ← 本スキーマ
-3. **正式なエンティティID取得**
-4. **データアクセス（APP_PRODUCTION / APP_DEVELOPMENT）**
-5. **結果返却**
+1. ユーザー入力：あいまいな名称（略称、口語表現、表記ゆれ）
+2. 名称解決（NAME_RESOLUTION） ← 本スキーマ
+3. 正式なエンティティID取得
+4. データアクセス（APP_PRODUCTION / APP_DEVELOPMENT）
+5. 結果返却
 
-本スキーマは、**Cortex Agent や Procedure から常に参照される共通基盤**である。
+本スキーマは、Cortex Agent や Procedure から常に参照される共通基盤である。
 
 ## スキーマ設計の基本方針
 
@@ -31,37 +31,37 @@ NAME_RESOLUTION スキーマは、以下のデータフロー全体の「名前�
 NAME_RESOLUTION スキーマは、以下の2種類の辞書を統合する：
 
 #### 手動辞書（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]）
-- **目的**：人が追加・承認する別名（略称、社内用語、例外的な表記）
-- **特徴**：
+- 目的：人が追加・承認する別名（略称、社内用語、例外的な表記）
+- 特徴：
   - 正の根拠（source of truth）であり、削除ではなく無効化で管理
   - 自動生成辞書より常に優先（priority が小）
   - メンテナンス性を重視し、変更履歴を追跡
 
 #### 自動生成辞書（[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]] など）
-- **目的**：マスタテーブルから機械的に生成できる別名
-- **特徴**：
+- 目的：マスタテーブルから機械的に生成できる別名
+- 特徴：
   - 部署マスタ、顧客マスタなどから自動展開
   - 手動辞書に存在しない場合のフォールバック
   - VIEW として定義し、マスタ更新時に自動反映
 
 #### 統合規則（[[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]]）
-- **目的**：手動辞書と自動生成辞書を統合し、重複排除のルールを明示
-- **winner 決定ルール**：
+- 目的：手動辞書と自動生成辞書を統合し、重複排除のルールを明示
+- winner 決定ルール：
   1. priority が小さいものを優先
   2. priority が同じ場合は confidence が高いものを優先
   3. それでも同じ場合は手動辞書を優先（is_manual=true）
 
 ### 2. 物理検索用の確定辞書（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]]）
-- **目的**：統合規則（V_ENTITY_ALIAS_ALL）を物理化し、高速検索を実現
-- **特徴**：
+- 目的：統合規則（V_ENTITY_ALIAS_ALL）を物理化し、高速検索を実現
+- 特徴：
   - refresh により全量再生成される（INSERT OVERWRITE）
   - alias_normalized + entity_type で一意な候補（winner）を保持
   - Agent / Procedure は本テーブルのみを参照して名称解決
 
 ### 3. 正規化関数の適用
 名称解決では、以下の正規化関数を使用する：
-- **NORMALIZE_JA**：全角→半角、小文字化、記号除去
-- **NORMALIZE_JA_DEPT**：部署名専用（「部」「課」「グループ」などの接尾辞を除去）
+- NORMALIZE_JA：全角→半角、小文字化、記号除去
+- NORMALIZE_JA_DEPT：部署名専用（「部」「課」「グループ」などの接尾辞を除去）
 
 正規化により、表記ゆれを吸収：
 - 「営業部」「営業」「sales」→ すべて `eigyo` に正規化
@@ -70,8 +70,8 @@ NAME_RESOLUTION スキーマは、以下の2種類の辞書を統合する：
 ## テーブル構成
 
 ### 1. DIM_ENTITY_ALIAS_MANUAL（手動辞書）
-- **役割**：人が追加・承認する別名の管理
-- **主要カラム**：
+- 役割：人が追加・承認する別名の管理
+- 主要カラム：
   - `alias_raw`: 元の表記（「営業部」「Sales」など）
   - `alias_normalized`: 正規化後の文字列（「eigyo」など）
   - `entity_id`: 解決先のエンティティID（「DEPT_001」など）
@@ -81,19 +81,19 @@ NAME_RESOLUTION スキーマは、以下の2種類の辞書を統合する：
   - `created_by`: 登録者
   - `approved_by`: 承認者（ワークフローがある場合）
 
-- **運用**：
+- 運用：
   - UIまたはDMLで直接INSERT/UPDATE
   - 削除はせず、is_active=false で無効化
   - 変更履歴は audit テーブルで追跡（将来拡張）
 
 ### 2. V_ENTITY_ALIAS_AUTO（自動生成辞書・VIEW）
-- **役割**：マスタテーブルから自動生成できる別名
-- **生成元例**：
+- 役割：マスタテーブルから自動生成できる別名
+- 生成元例：
   - 部署マスタ（DEPARTMENT_MASTER）
   - 顧客マスタ（CUSTOMER_MASTER）
   - プロジェクトマスタ（PROJECT_MASTER）
 
-- **生成ロジック例**：
+- 生成ロジック例：
 ```sql
 -- 部署マスタから別名を自動生成
 SELECT 
@@ -110,8 +110,8 @@ WHERE is_active = TRUE;
 ```
 
 ### 3. V_ENTITY_ALIAS_ALL（統合規則・VIEW）
-- **役割**：手動辞書と自動生成辞書を統合し、winner を決定
-- **winner 決定ロジック**：
+- 役割：手動辞書と自動生成辞書を統合し、winner を決定
+- winner 決定ロジック：
 ```sql
 -- 重複排除（alias_normalized + entity_type で最優先の1件のみ）
 SELECT *
@@ -133,8 +133,8 @@ WHERE rank = 1;
 ```
 
 ### 4. DIM_ENTITY_ALIAS（物理検索用・確定辞書）
-- **役割**：V_ENTITY_ALIAS_ALL を物理化し、高速検索を実現
-- **主要カラム**：
+- 役割：V_ENTITY_ALIAS_ALL を物理化し、高速検索を実現
+- 主要カラム：
   - `alias_normalized`: 正規化後の文字列（PRIMARY KEY の一部）
   - `entity_type`: エンティティ種別（PRIMARY KEY の一部）
   - `entity_id`: 解決先のエンティティID
@@ -144,7 +144,7 @@ WHERE rank = 1;
   - `refresh_run_id`: refresh 実行単位の識別子
   - `refreshed_at`: refresh 実行時刻
 
-- **運用**：
+- 運用：
   - refresh タスク（日次 or on-demand）で全量再生成
   - INSERT OVERWRITE または SWAP で原子的に切替
 

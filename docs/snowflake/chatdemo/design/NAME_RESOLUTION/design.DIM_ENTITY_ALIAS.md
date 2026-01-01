@@ -1,19 +1,19 @@
 # テーブル設計：DIM_ENTITY_ALIAS（物理検索用・確定辞書）
 
 ## 概要
-[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]] は、名称解決（固有名詞解決）で利用する **物理検索用の確定辞書テーブル**である。  
-手動辞書（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]）および自動生成辞書（[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]] 等）を統合・重複排除した結果を、**決定論的に検索できる形**で保持する。
+[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]] は、名称解決（固有名詞解決）で利用する 物理検索用の確定辞書テーブルである。  
+手動辞書（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]）および自動生成辞書（[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]] 等）を統合・重複排除した結果を、決定論的に検索できる形で保持する。
 
 このテーブルは「検索のための最終形（materialized index）」であり、Agent / Procedure は原則として本テーブルのみを参照して候補解決を行う。  
 正の根拠（source of truth）は手動辞書と自動生成辞書の統合規則であり、
 [[NAME_RESOLUTION.DIM_ENTITY_ALIAS]] 自体は refresh により再生成される。
 
 ## 役割と位置づけ
-- 目的：**高速・安定・決定論**の名称解決を提供する
+- 目的：高速・安定・決定論の名称解決を提供する
 - 特徴：
-  - alias_normalized + entity_type をキーに **一意な候補（winner）**を保持
+  - alias_normalized + entity_type をキーに 一意な候補（winner）を保持
   - refresh_run_id により refresh 実行単位を追跡できる
-  - refresh は INSERT OVERWRITE 等により **全量再生成**される（部分更新前提にしない）
+  - refresh は INSERT OVERWRITE 等により 全量再生成される（部分更新前提にしない）
 
 ## 入力ソースとの関係
 
@@ -76,7 +76,7 @@
 ## 運用ルール（refresh）
 
 ### 基本方針
-- refresh は **全量再生成**（INSERT OVERWRITE / SWAP 等）を標準とする
+- refresh は 全量再生成（INSERT OVERWRITE / SWAP 等）を標準とする
 - publish（適用）は原子的切替を推奨する
   - 例：DIM_ENTITY_ALIAS__NEXT を作成 → 検査 → SWAP
 

@@ -1,7 +1,7 @@
 # テーブル設計：DIM_ENTITY_ALIAS_MANUAL（手動別名辞書）
 
 ## 概要
-[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]] は、名称解決（固有名詞解決）における **手動管理の別名辞書**である。  
+[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]] は、名称解決（固有名詞解決）における 手動管理の別名辞書である。  
 自動生成（AUTO）で拾えない略称・社内用語・例外表記・ルビ等を、人が責任を持って追加・維持する。
 
 このテーブルは NAME_RESOLUTION スキーマにのみ存在し、アプリケーション（DEV/PROD）から共通利用される。  

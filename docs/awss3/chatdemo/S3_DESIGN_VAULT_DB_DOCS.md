@@ -1,16 +1,16 @@
 # S3ストレージ設計：Obsidian Vault（DB設計ドキュメント）
 
 ## 概要
-本ドキュメントは、**Obsidian VaultのDB設計ドキュメントをS3に保存し、Snowflake経由でCortex Agentが参照できるようにする**ための S3 バケット設計を定義する。
+本ドキュメントは、Obsidian VaultのDB設計ドキュメントをS3に保存し、Snowflake経由でCortex Agentが参照できるようにするための S3 バケット設計を定義する。
 
 Cortex Agent（`APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT`）は、DB設計の文脈を理解するために、Vaultに格納されたテーブル設計書、カラム定義、スキーマ設計などを参照する。
 
 ## 設計目標
-1. **検索性**：Cortex Agentが必要なドキュメントを迅速に検索できる
-2. **鮮度**：Vault更新後、数分以内にSnowflakeから最新版を参照可能
-3. **セキュリティ**：設計ドキュメントへのアクセスを適切に制限
-4. **バージョン管理**：ドキュメント変更履歴を追跡可能
-5. **コスト最適化**：静的ドキュメントのストレージコストを最小化
+1. 検索性：Cortex Agentが必要なドキュメントを迅速に検索できる
+2. 鮮度：Vault更新後、数分以内にSnowflakeから最新版を参照可能
+3. セキュリティ：設計ドキュメントへのアクセスを適切に制限
+4. バージョン管理：ドキュメント変更履歴を追跡可能
+5. コスト最適化：静的ドキュメントのストレージコストを最小化
 
 ## ユースケース
 
@@ -116,13 +116,13 @@ snowflake-chatdemo-vault-prod/
 ### パーティション戦略
 
 #### 設計ドキュメント
-**パーティション不要**：
+パーティション不要：
 - ドキュメントは静的で、時系列ではない
 - ファイルパスによる階層構造で十分に効率的
 - Snowflake External Tableは `metadata$filename` で個別ファイルを特定
 
 #### プロファイル結果
-**日付パーティション（year/month/day）**：
+日付パーティション（year/month/day）：
 - 時系列データとして管理（プロファイル実行日ベース）
 - 古いデータのクエリ性能を最適化
 - ライフサイクルポリシーで古いパーティションを自動削除可能
@@ -144,7 +144,7 @@ aws s3 sync \
   --delete
 ```
 
-**注記**：`profile_results/` はSnowflakeから直接書き込まれるため、ローカル同期から除外。
+注記：`profile_results/` はSnowflakeから直接書き込まれるため、ローカル同期から除外。
 
 #### オプション2：GitHub Actions経由（推奨）
 ```yaml
@@ -188,9 +188,9 @@ jobs:
 Obsidian Pluginで変更検知 → 自動S3 Upload
 
 ### 同期頻度
-- **手動同期**：設計ドキュメント更新時（git push後）
-- **GitHub Actions**：mainブランチへのpush時に自動
-- **目標**：5分以内にSnowflakeから参照可能
+- 手動同期：設計ドキュメント更新時（git push後）
+- GitHub Actions：mainブランチへのpush時に自動
+- 目標：5分以内にSnowflakeから参照可能
 
 ## Snowflake External Stage / Table
 
@@ -204,7 +204,7 @@ CREATE OR REPLACE STAGE DB_DESIGN.VAULT_STAGE
   FILE_FORMAT = (TYPE = 'CSV' FIELD_OPTIONALLY_ENCLOSED_BY = '"' SKIP_HEADER = 0);
 ```
 
-**注記**：Markdownファイルはテキストとして読み込むため、FILE_FORMATはCSVでも可（1カラムとして扱う）。
+注記：Markdownファイルはテキストとして読み込むため、FILE_FORMATはCSVでも可（1カラムとして扱う）。
 
 #### プロファイル結果用Stage
 ```sql
@@ -215,7 +215,7 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
   COMMENT = 'Obsidian Vault用S3ステージ（Markdown/JSON出力先、プロファイル結果含む）';
 ```
 
-**注記**：プロファイル結果はSnowflakeから書き込むため、READWRITEアクセスが必要。
+注記：プロファイル結果はSnowflakeから書き込むため、READWRITEアクセスが必要。
 
 ### External Table定義
 
@@ -235,7 +235,7 @@ AUTO_REFRESH = TRUE
 COMMENT = 'Obsidian Vault DB設計ドキュメント（S3外部テーブル）';
 ```
 
-**重要**：`FILE_DELIMITER = 'NONE'` でファイル全体を1レコードとして読み込む。
+重要：`FILE_DELIMITER = 'NONE'` でファイル全体を1レコードとして読み込む。
 
 #### プロファイル結果（DB_DESIGN.PROFILE_RESULTS_EXTERNAL）
 ```sql
@@ -283,13 +283,6 @@ PARTITION BY (year, month, day)
 AUTO_REFRESH = FALSE
 COMMENT = 'プロファイル実行履歴の外部テーブル';
 ```
-LOCATION = @DB_DESIGN.VAULT_STAGE
-FILE_FORMAT = (TYPE = 'CSV' FIELD_DELIMITER = 'NONE' RECORD_DELIMITER = 'NONE')
-AUTO_REFRESH = TRUE
-COMMENT = 'Obsidian Vault DB設計ドキュメント（S3外部テーブル）';
-```
-
-**重要**：`FILE_DELIMITER = 'NONE'` でファイル全体を1レコードとして読み込む。
 
 ### Snowpipe による自動更新（任意）
 
@@ -303,7 +296,7 @@ AS
   ALTER EXTERNAL TABLE DB_DESIGN.DOCS_OBSIDIAN REFRESH;
 ```
 
-**S3イベント通知設定**：
+S3イベント通知設定：
 ```json
 {
   "LambdaFunctionConfigurations": [
@@ -405,8 +398,8 @@ Response:
 ### 暗号化
 
 #### サーバーサイド暗号化（SSE）
-- **方式**：SSE-S3（AES-256）
-- **理由**：設計ドキュメントには機密情報（テーブル構造、業務ロジック）が含まれる
+- 方式：SSE-S3（AES-256）
+- 理由：設計ドキュメントには機密情報（テーブル構造、業務ロジック）が含まれる
 
 ```json
 {
@@ -501,7 +494,7 @@ REVOKE SELECT ON DB_DESIGN.DOCS_OBSIDIAN FROM ROLE PUBLIC;
 ## バージョン管理
 
 ### S3バージョニング
-**有効化**：設計ドキュメントの変更履歴を追跡
+有効化：設計ドキュメントの変更履歴を追跡
 
 ```json
 {
@@ -530,9 +523,9 @@ REVOKE SELECT ON DB_DESIGN.DOCS_OBSIDIAN FROM ROLE PUBLIC;
 ```
 
 ### Git連携
-- **正の根拠（Source of Truth）**：GitHubリポジトリ（`docs/snowflake/chatdemo/`）
-- **S3**：Snowflakeからの参照用コピー
-- **同期フロー**：Git push → GitHub Actions → S3 sync → Snowflake REFRESH
+- 正の根拠（Source of Truth）：GitHubリポジトリ（`docs/snowflake/chatdemo/`）
+- S3：Snowflakeからの参照用コピー
+- 同期フロー：Git push → GitHub Actions → S3 sync → Snowflake REFRESH
 
 ## コスト見積もり
 
@@ -548,23 +541,23 @@ REVOKE SELECT ON DB_DESIGN.DOCS_OBSIDIAN FROM ROLE PUBLIC;
 | 最新版 | 50MB | S3 Standard | $0.023/GB | $0.0012 |
 | 過去バージョン | 150MB（3ヶ月分） | S3 Standard | $0.023/GB | $0.0035 |
 
-**月次合計**：約$0.005（1円未満）
+月次合計：約$0.005（1円未満）
 
 ### API リクエストコスト
-- **LIST操作**：10回/日（Snowflake REFRESH） × 30日 = 300回 → $0.0015
-- **GET操作**：1,000回/日（Cortex Agent照会） × 30日 = 30,000回 → $0.012
-- **PUT操作**：50回/月（更新） → $0.00025
+- LIST操作：10回/日（Snowflake REFRESH） × 30日 = 300回 → $0.0015
+- GET操作：1,000回/日（Cortex Agent照会） × 30日 = 30,000回 → $0.012
+- PUT操作：50回/月（更新） → $0.00025
 
-**API合計**：約$0.014/月
+API合計：約$0.014/月
 
 ### データ転送コスト
-- **S3 → Snowflake**：同一リージョン（us-east-1）なら無料
-- **GitHub Actions → S3**：無料（AWS内）
+- S3 → Snowflake：同一リージョン（us-east-1）なら無料
+- GitHub Actions → S3：無料（AWS内）
 
 ### 総コスト見積もり
 - ストレージ：$0.005/月
 - API：$0.014/月
-- **合計：約$0.02/月（2円程度）**
+- 合計：約$0.02/月（2円程度）
 
 ## 運用設計
 
@@ -621,9 +614,9 @@ WHERE file_path LIKE '%design.NEW_TABLE.md';
 ### モニタリング
 
 #### CloudWatch メトリクス
-- **BucketSize**：Vaultサイズの推移（異常な増加を検知）
-- **NumberOfObjects**：ファイル数の推移
-- **GetRequests**：Cortex Agentのアクセス頻度
+- BucketSize：Vaultサイズの推移（異常な増加を検知）
+- NumberOfObjects：ファイル数の推移
+- GetRequests：Cortex Agentのアクセス頻度
 
 #### Snowflake側モニタリング
 ```sql

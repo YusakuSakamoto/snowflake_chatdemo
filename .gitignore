@@ -43,6 +43,8 @@ logs/
 # Obsidian
 docs/.obsidian/workspace
 docs/.obsidian/workspace.json
+docs/snowflake/chatdemo/templater_scripts/
+docs/snowflake/chatdemo/.obsidian/plugins/
 
 # Terraform
 *.tfstate

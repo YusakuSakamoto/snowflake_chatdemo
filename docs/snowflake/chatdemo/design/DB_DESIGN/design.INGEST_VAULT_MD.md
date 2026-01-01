@@ -12,7 +12,7 @@
 - 主な利用シーン  
   - Obsidian Vault更新後、GitHub Actions経由でS3に同期された後、手動またはタスクで実行
   - Cortex Agentが最新の設計ドキュメントを参照できるようにする
-  - 注記：プロファイル結果は外部テーブル（[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]]）で直接参照するため、本プロシージャの対象外
+  - 注記：プロファイル結果は外部テーブル（[[DB_DESIGN.EXT_PROFILE_RESULTS]]）で直接参照するため、本プロシージャの対象外
 
 ## 設計上の位置づけ
 
@@ -303,14 +303,14 @@ WHERE file_path NOT IN (
 ## プロファイル結果の参照方法
 
 ### 外部テーブルで直接参照（推奨設計）
-プロファイル結果は、外部テーブル（[[design.PROFILE_RESULTS_EXTERNAL]] / [[design.PROFILE_RUNS_EXTERNAL]]）で直接S3を参照する設計を採用：
+プロファイル結果は、外部テーブル（[[design.EXT_PROFILE_RESULTS]] / [[design.EXT_PROFILE_RUNS]]）で直接S3を参照する設計を採用：
 
 ```
 PROFILE_ALL_TABLES (プロファイル実行)
   ↓ JSON直接書き込み
 S3 (s3://snowflake-chatdemo-vault-prod/profile_results/year=YYYY/month=MM/day=DD/)
   ↓ 外部テーブル参照
-DB_DESIGN.PROFILE_RESULTS_EXTERNAL (外部テーブル)
+DB_DESIGN.EXT_PROFILE_RESULTS (外部テーブル)
   ↓ クエリ
 Cortex Agent / BI Tool
 ```
@@ -341,7 +341,7 @@ SELECT
   target_column,
   metrics:null_rate::FLOAT AS null_rate,
   metrics:distinct_count::NUMBER AS distinct_count
-FROM DB_DESIGN.PROFILE_RESULTS_EXTERNAL
+FROM DB_DESIGN.EXT_PROFILE_RESULTS
 WHERE target_db = 'GBPS253YS_DB'
   AND target_schema = 'APP_PRODUCTION'
   AND year = 2026

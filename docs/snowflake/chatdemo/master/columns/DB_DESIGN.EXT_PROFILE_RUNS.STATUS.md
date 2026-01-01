@@ -8,7 +8,7 @@ pk: false
 is_nullable: false
 default: null
 comment: 'プロファイル実行の状態。許可値は以下の通り：RUNNING : 実行中SUCCEEDED : 正常終了FAILED : 異常終了状態遷移は原則として
-  RUNNING → SUCCEEDED | FAILED のみとする。 (外部テーブル版)'
+  RUNNING → SUCCEEDED | FAILED のみとする。 (外部テーブル版: EXT_PROFILE_RUNS)'
 ---
 
 # STATUS

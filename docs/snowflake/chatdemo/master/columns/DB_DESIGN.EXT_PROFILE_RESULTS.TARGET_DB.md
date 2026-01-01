@@ -7,7 +7,7 @@ domain: VARCHAR
 pk: false
 is_nullable: false
 default: null
-comment: 計測対象となったデータベース名。 (外部テーブル版)
+comment: 計測対象となったデータベース名。 (外部テーブル版: EXT_PROFILE_RESULTS)
 ---
 
 # TARGET_DB

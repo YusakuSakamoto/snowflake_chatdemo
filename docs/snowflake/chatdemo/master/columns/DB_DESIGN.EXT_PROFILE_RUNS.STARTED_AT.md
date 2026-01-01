@@ -7,7 +7,7 @@ domain: TIMESTAMP_LTZ
 pk: false
 is_nullable: false
 default: null
-comment: プロファイル実行開始時刻。STATUS='RUNNING' となった時点で設定される。 (外部テーブル版)
+comment: プロファイル実行開始時刻。STATUS='RUNNING' となった時点で設定される。 (外部テーブル版: EXT_PROFILE_RUNS)
 ---
 
 # STARTED_AT

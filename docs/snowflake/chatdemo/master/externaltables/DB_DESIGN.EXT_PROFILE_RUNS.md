@@ -2,7 +2,7 @@
 type: externaltable
 table_id: TBL_20260102230002
 schema_id: SCH_20251226180633
-physical: PROFILE_RUNS_EXTERNAL
+physical: EXT_PROFILE_RUNS
 stage_name: OBSIDIAN_VAULT_STAGE
 file_format: FF_JSON_LINES
 auto_refresh: false

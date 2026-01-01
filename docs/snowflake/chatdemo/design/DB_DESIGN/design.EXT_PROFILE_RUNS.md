@@ -1,7 +1,7 @@
-# 外部テーブル設計：[[design.PROFILE_RUNS_EXTERNAL]]
+# 外部テーブル設計：[[design.EXT_PROFILE_RUNS]]
 
 ## 概要
-[[DB_DESIGN.PROFILE_RUNS_EXTERNAL]] は、データベーステーブルに対して実行したプロファイル処理（例：行数、列統計、欠損率などの算出）の実行履歴をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
+[[DB_DESIGN.EXT_PROFILE_RUNS]] は、データベーステーブルに対して実行したプロファイル処理（例：行数、列統計、欠損率などの算出）の実行履歴をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
 1行が1回のプロファイル実行（= run）を表し、対象テーブル・実行条件・実行時間・実行状態を記録することで、監視・再実行・トラブルシュート・結果テーブルとの紐付けに利用する。
 
 本テーブルは、プロファイル実行履歴を外部ストレージに永続化し、長期的なトレーサビリティ確保とストレージコスト最適化を実現する。内部テーブル版（[[design.PROFILE_RUNS]]）と同一の論理構造を持ちながら、S3直接参照による長期保存とコスト削減を両立する。
@@ -11,7 +11,7 @@
   - 「プロファイル実行ジョブ（run）」の外部永続化台帳（ジョブ管理・履歴管理）。
   - runは「いつ」「どの対象（DB / Schema / Table）に」「どんな条件（サンプル率、Warehouse、Role、コードバージョン）」で実行されたか、
     および「結果が成功／失敗／実行中のどれか」を表す。
-  - 各runは RUN_ID により識別され、結果テーブル（[[design.PROFILE_RESULTS_EXTERNAL]]）と論理的に関連付けられる。
+  - 各runは RUN_ID により識別され、結果テーブル（[[design.EXT_PROFILE_RESULTS]]）と論理的に関連付けられる。
   
 - 主な利用シーン  
   - 長期的なプロファイル実行履歴の監査・トレーサビリティ確保
@@ -39,19 +39,19 @@
   - 頻繁なクエリ実行（直近数週間〜数ヶ月の履歴参照）
   - 低レイテンシが要求される運用監視ダッシュボード
 
-- 外部テーブル（[[design.PROFILE_RUNS_EXTERNAL]]）を使うべきケース  
+- 外部テーブル（[[design.EXT_PROFILE_RUNS]]）を使うべきケース  
   - 長期保存が主目的（過去1年以上の実行履歴）
   - 監査・コンプライアンス対応における証跡データとしての参照
   - 参照頻度が低い履歴データの保管
   - ストレージコストの削減が優先される状況
 
 ### 結果テーブルとの関係
-[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]] は本テーブルに紐づく結果詳細を保持する。
+[[DB_DESIGN.EXT_PROFILE_RESULTS]] は本テーブルに紐づく結果詳細を保持する。
 
 - 関係性  
-  [[design.PROFILE_RUNS_EXTERNAL]]（1） → [[design.PROFILE_RESULTS_EXTERNAL]]（N）
+  [[design.EXT_PROFILE_RUNS]]（1） → [[design.EXT_PROFILE_RESULTS]]（N）
 - 関連キー  
-  PROFILE_RESULTS_EXTERNAL.RUN_ID → PROFILE_RUNS_EXTERNAL.RUN_ID
+  EXT_PROFILE_RESULTS.RUN_ID → EXT_PROFILE_RUNS.RUN_ID
 
 外部テーブル間でのJOINも可能だが、性能面では内部テーブル版のJOINに劣る可能性がある。
 
@@ -109,7 +109,7 @@
 - 外部テーブル：低速〜中速  
   - S3からのファイル読み取りはネットワーク経由となり、レイテンシが発生する。
   - パーティションプルーニングが効果的に働く場合、性能劣化は限定的である。
-  - [[design.PROFILE_RESULTS_EXTERNAL]] との JOIN は、両方とも外部テーブルの場合、性能が劣化する可能性がある。
+  - [[design.EXT_PROFILE_RESULTS]] との JOIN は、両方とも外部テーブルの場合、性能が劣化する可能性がある。
 
 - 内部テーブル：高速  
   - Snowflake管理ストレージは最適化されており、低レイテンシでのアクセスが可能。
@@ -117,7 +117,7 @@
   - [[design.PROFILE_RESULTS]] との JOIN も高速に実行される。
 
 ### 運用の考え方
-- 初期段階では内部テーブル（[[design.PROFILE_RUNS]]）にデータを蓄積し、定期的に外部テーブル（[[design.PROFILE_RUNS_EXTERNAL]]）へアーカイブする運用を推奨する。
+- 初期段階では内部テーブル（[[design.PROFILE_RUNS]]）にデータを蓄積し、定期的に外部テーブル（[[design.EXT_PROFILE_RUNS]]）へアーカイブする運用を推奨する。
 - 直近数ヶ月の実行履歴は内部テーブルで高速参照を実現し、過去データは外部テーブルでコスト効率的に保存する。
 - 必要に応じて、内部テーブルと外部テーブルを統合するビュー（UNION ALL）を定義し、アプリケーションからは統一的にアクセスできるようにする。
 
@@ -133,7 +133,7 @@
 ### メタデータリフレッシュ
 - 新規ファイルがS3に追加された場合、外部テーブルのメタデータをリフレッシュする必要がある。
   ```sql
-  ALTER EXTERNAL TABLE DB_DESIGN.PROFILE_RUNS_EXTERNAL REFRESH;
+  ALTER EXTERNAL TABLE DB_DESIGN.EXT_PROFILE_RUNS REFRESH;
   ```
 - リフレッシュは定期的なスケジュール実行（Task）または手動実行により行う。
 
@@ -163,6 +163,6 @@
 ## 関連
 
 - 内部テーブル版：[[DB_DESIGN.PROFILE_RUNS]]
-- 関連外部テーブル：[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]]
+- 関連外部テーブル：[[DB_DESIGN.EXT_PROFILE_RESULTS]]
 - 関連プロシージャ：[[DB_DESIGN.PROFILE_TABLE]], [[DB_DESIGN.PROFILE_ALL_TABLES]]
-- マスター定義：[[DB_DESIGN.PROFILE_RUNS_EXTERNAL]]（master/externaltables/）
+- マスター定義：[[DB_DESIGN.EXT_PROFILE_RUNS]]（master/externaltables/）

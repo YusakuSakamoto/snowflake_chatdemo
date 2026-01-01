@@ -1,7 +1,7 @@
-# 外部テーブル設計：[[design.PROFILE_RESULTS_EXTERNAL]]
+# 外部テーブル設計：[[design.EXT_PROFILE_RESULTS]]
 
 ## 概要
-[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
+[[DB_DESIGN.EXT_PROFILE_RESULTS]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
 1行が「1回のプロファイル実行（run）」における「1カラム分の計測結果」を表し、  
 [[DB_DESIGN.PROFILE_RUNS.RUN_ID]] を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
 
@@ -40,7 +40,7 @@
   - 複雑な JOIN や集計が必要な分析処理
   - 低レイテンシが要求される運用監視
   
-- 外部テーブル（[[design.PROFILE_RESULTS_EXTERNAL]]）を使うべきケース  
+- 外部テーブル（[[design.EXT_PROFILE_RESULTS]]）を使うべきケース  
   - 長期保存が主目的（過去1年以上のデータ）
   - 参照頻度が低い履歴データの保管
   - ストレージコストの削減が優先される状況
@@ -107,7 +107,7 @@
   - マイクロパーティション・クラスタリングにより、高速な検索・集計が実現される。
 
 ### 運用の考え方
-- 初期段階では内部テーブル（[[design.PROFILE_RESULTS]]）にデータを蓄積し、定期的に外部テーブル（[[design.PROFILE_RESULTS_EXTERNAL]]）へアーカイブする運用を推奨する。
+- 初期段階では内部テーブル（[[design.PROFILE_RESULTS]]）にデータを蓄積し、定期的に外部テーブル（[[design.EXT_PROFILE_RESULTS]]）へアーカイブする運用を推奨する。
 - 直近数ヶ月のデータは内部テーブルで高速参照を実現し、過去データは外部テーブルでコスト効率的に保存する。
 - 必要に応じて、内部テーブルと外部テーブルを統合するビュー（UNION ALL）を定義し、アプリケーションからは統一的にアクセスできるようにする。
 
@@ -123,7 +123,7 @@
 ### メタデータリフレッシュ
 - 新規ファイルがS3に追加された場合、外部テーブルのメタデータをリフレッシュする必要がある。
   ```sql
-  ALTER EXTERNAL TABLE DB_DESIGN.PROFILE_RESULTS_EXTERNAL REFRESH;
+  ALTER EXTERNAL TABLE DB_DESIGN.EXT_PROFILE_RESULTS REFRESH;
   ```
 - リフレッシュは定期的なスケジュール実行（Task）または手動実行により行う。
 
@@ -146,6 +146,6 @@
 ## 関連
 
 - 内部テーブル版：[[DB_DESIGN.PROFILE_RESULTS]]
-- 関連外部テーブル：[[DB_DESIGN.PROFILE_RUNS_EXTERNAL]]
+- 関連外部テーブル：[[DB_DESIGN.EXT_PROFILE_RUNS]]
 - 関連プロシージャ：[[DB_DESIGN.PROFILE_TABLE]], [[DB_DESIGN.PROFILE_ALL_TABLES]]
-- マスター定義：[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]]（master/externaltables/）
+- マスター定義：[[DB_DESIGN.EXT_PROFILE_RESULTS]]（master/externaltables/）

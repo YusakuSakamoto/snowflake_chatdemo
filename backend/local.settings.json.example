@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "SNOWFLAKE_ACCOUNT": "your-account.region",
+    "SNOWFLAKE_USER": "your-user",
+    "SNOWFLAKE_PASSWORD": "your-password",
+    "SNOWFLAKE_WAREHOUSE": "your-warehouse",
+    "SNOWFLAKE_DATABASE": "your-database",
+    "SNOWFLAKE_SCHEMA": "public"
+  }
+}

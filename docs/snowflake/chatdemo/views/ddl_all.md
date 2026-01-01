@@ -759,3 +759,341 @@ CALL DB_DESIGN.INGEST_VAULT_MD(
 DROP DATABASE GBPS253YS_DB;
 DROP WAREHOUSE GBPS253YS_WH;
 ```
+
+---
+
+## External Tables DDL Generator
+
+```dataviewjs
+(async () => {
+  // ==============================
+  // Snowflake EXTERNAL TABLE DDL Generator
+  // ==============================
+
+  const SCHEMAS_PATH = "master/schemas";
+  const EXTERNAL_TABLES_PATH = "master/externaltables";
+  const COLUMNS_PATH = "master/columns";
+
+  const QUOTE_IDENT = false;
+  const EMIT_COMMENTS = true;
+  const OUTPUT_FOLDER = "generated/ddl";
+  const OUTPUT_PREFIX = "snowflake_external_ddl";
+  const WRITE_SQL_FILE = true;
+
+  // ==============================
+  // UI
+  // ==============================
+  dv.header(3, "External Tables DDL Generator");
+  const statusEl = dv.el("div", "準備完了（Generate を押してください）");
+
+  const btnRow = dv.el("div", "");
+  btnRow.style.display = "flex";
+  btnRow.style.gap = "8px";
+  btnRow.style.flexWrap = "wrap";
+
+  const btnGenerate = document.createElement("button");
+  btnGenerate.textContent = "Generate External Tables";
+  btnRow.appendChild(btnGenerate);
+
+  const btnCopy = document.createElement("button");
+  btnCopy.textContent = "Copy to Clipboard";
+  btnCopy.disabled = true;
+  btnRow.appendChild(btnCopy);
+
+  const btnOpenFile = document.createElement("button");
+  btnOpenFile.textContent = "Open Output File";
+  btnOpenFile.disabled = true;
+  btnRow.appendChild(btnOpenFile);
+
+  const details = dv.el("details", "");
+  const summary = document.createElement("summary");
+  summary.textContent = "Preview（textarea）";
+  details.appendChild(summary);
+
+  const ta = document.createElement("textarea");
+  ta.readOnly = true;
+  ta.style.width = "100%";
+  ta.style.height = "360px";
+  ta.style.fontFamily = "monospace";
+  ta.placeholder = "Generate 後にここに DDL を表示します";
+  details.appendChild(ta);
+
+  let lastDDL = "";
+  let lastFilePath = "";
+
+  // ==============================
+  // helpers
+  // ==============================
+  function q(name) {
+    if (!QUOTE_IDENT) return name;
+    return `"${String(name).replaceAll('"', '""')}"`;
+  }
+  function clean(v) {
+    return (v === null || v === undefined) ? "" : String(v);
+  }
+  function bool(v, def=false) {
+    if (v === true || v === false) return v;
+    if (typeof v === "string") return v.toLowerCase() === "true";
+    return def;
+  }
+  function sqlStringLiteral(s) {
+    return "'" + String(s).replaceAll("'", "''") + "'";
+  }
+  function key2(schemaPhysical, tablePhysical) {
+    return `${clean(schemaPhysical).toUpperCase()}|${clean(tablePhysical).toUpperCase()}`;
+  }
+
+  function ts() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+
+  async function ensureFolder(folderPath) {
+    const parts = folderPath.split("/").filter(Boolean);
+    let cur = "";
+    for (const p of parts) {
+      cur = cur ? `${cur}/${p}` : p;
+      if (!app.vault.getAbstractFileByPath(cur)) {
+        try { await app.vault.createFolder(cur); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+
+  async function writeFile(path, content) {
+    const af = app.vault.getAbstractFileByPath(path);
+    if (af && af.children) throw new Error(`出力先がフォルダです: ${path}`);
+    if (af) {
+      await app.vault.modify(af, content);
+    } else {
+      await app.vault.create(path, content);
+    }
+    return app.vault.getAbstractFileByPath(path);
+  }
+
+  async function openFileByPath(path) {
+    const af = app.vault.getAbstractFileByPath(path);
+    if (!af) throw new Error(`ファイルが見つかりません: ${path}`);
+    if (af.children) throw new Error(`フォルダは開けません: ${path}`);
+    await app.workspace.getLeaf(true).openFile(af);
+  }
+
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      try {
+        ta.value = text;
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.setSelectionRange(0, 0);
+        return !!ok;
+      } catch (e2) {
+        return false;
+      }
+    }
+  }
+
+  // ==============================
+  // main generator
+  // ==============================
+  async function generateExternalTableDDL() {
+    const warns = [];
+    const out = [];
+
+    // ---- load schemas ----
+    const schemas = dv.pages(`"${SCHEMAS_PATH}"`)
+      .where(p => p.schema_id && p.physical)
+      .array()
+      .sort((a,b)=>clean(a.physical).localeCompare(clean(b.physical)));
+
+    const schemaIdToPhysical = new Map(schemas.map(s => [String(s.schema_id), s.physical]));
+
+    // ---- load external tables ----
+    const extTables = dv.pages(`"${EXTERNAL_TABLES_PATH}"`)
+      .where(p => p.table_id && p.schema_id && p.physical)
+      .array();
+
+    const tableIdToInfo = new Map();
+    for (const t of extTables) {
+      const sch = schemaIdToPhysical.get(String(t.schema_id));
+      if (!sch) {
+        warns.push(`external_table_id=${t.table_id} unknown schema_id=${t.schema_id}`);
+        continue;
+      }
+      tableIdToInfo.set(String(t.table_id), { 
+        schemaPhysical: sch, 
+        tablePhysical: t.physical, 
+        table: t 
+      });
+    }
+
+    // ---- load columns ----
+    const cols = dv.pages(`"${COLUMNS_PATH}"`)
+      .where(p => p.column_id && p.table_id && p.physical)
+      .array();
+
+    const colsByFqn = new Map();
+    for (const c of cols) {
+      const info = tableIdToInfo.get(String(c.table_id));
+      if (!info) continue;
+      const k = key2(info.schemaPhysical, info.tablePhysical);
+      if (!colsByFqn.has(k)) colsByFqn.set(k, []);
+      colsByFqn.get(k).push(c);
+    }
+
+    for (const arr of colsByFqn.values()) {
+      arr.sort((a,b)=> clean(a.physical).localeCompare(clean(b.physical)));
+    }
+
+    // ==============================
+    // build EXTERNAL TABLE DDL
+    // ==============================
+    out.push(`-- ==============================\n`);
+    out.push(`-- EXTERNAL TABLES\n`);
+    out.push(`-- ==============================\n\n`);
+
+    for (const t of extTables) {
+      const sch = schemaIdToPhysical.get(String(t.schema_id));
+      if (!sch) continue;
+
+      const fqtn = `${q(sch)}.${q(t.physical)}`;
+      const colsArr = colsByFqn.get(key2(sch, t.physical)) ?? [];
+      
+      if (colsArr.length === 0) {
+        out.push(`-- SKIP: ${fqtn} (no columns)\n\n`);
+        continue;
+      }
+
+      // External table specific metadata
+      const stageName = clean(t.stage_name) || `${t.physical}_STAGE`;
+      const fileFormat = clean(t.file_format) || "JSON";
+      const autoRefresh = bool(t.auto_refresh, true);
+      const partitionBy = Array.isArray(t.partition_by) ? t.partition_by : [];
+
+      // Build column definitions with metadata$ extraction
+      const lines = [];
+      const partitionLines = [];
+
+      for (const c of colsArr) {
+        const colName = q(c.physical);
+        const domain = clean(c.domain) || "VARCHAR";
+        
+        // Check if this is a partition column
+        if (partitionBy.includes(c.physical.toLowerCase()) || 
+            partitionBy.includes(c.physical)) {
+          // Partition columns are extracted from metadata$filename
+          const idx = partitionBy.indexOf(c.physical.toLowerCase()) >= 0 
+            ? partitionBy.indexOf(c.physical.toLowerCase()) 
+            : partitionBy.indexOf(c.physical);
+          partitionLines.push(
+            `  ${colName} ${domain} AS CAST(SPLIT_PART(SPLIT_PART(metadata$filename, '/', ${idx+1}), '=', 2) AS ${domain})`
+          );
+        } else {
+          // Regular columns from JSON value
+          lines.push(`  ${colName} ${domain} AS (value:${c.physical.toLowerCase()}::${domain})`);
+        }
+      }
+
+      // Combine regular and partition columns
+      const allLines = [...lines, ...partitionLines];
+
+      out.push(`CREATE OR REPLACE EXTERNAL TABLE ${fqtn}(\n`);
+      out.push(allLines.join(",\n") + "\n");
+      out.push(`)`);
+      
+      // Partition specification
+      if (partitionBy.length > 0) {
+        out.push(`PARTITION BY (${partitionBy.map(p => p.toUpperCase()).join(", ")})\n`);
+      }
+      
+      // Location and file format
+      out.push(`LOCATION=@${q(sch)}.${q(stageName)}\n`);
+      out.push(`FILE_FORMAT=(TYPE=${fileFormat})\n`);
+      out.push(`AUTO_REFRESH=${autoRefresh ? "TRUE" : "FALSE"}\n`);
+      out.push(`REFRESH_ON_CREATE=TRUE;\n`);
+
+      // Comments
+      if (EMIT_COMMENTS && clean(t.comment)) {
+        out.push(`\nCOMMENT ON TABLE ${fqtn} IS ${sqlStringLiteral(t.comment)};\n`);
+      }
+      if (EMIT_COMMENTS) {
+        for (const c of colsArr) {
+          if (!clean(c.comment)) continue;
+          out.push(`COMMENT ON COLUMN ${fqtn}.${q(c.physical)} IS ${sqlStringLiteral(c.comment)};\n`);
+        }
+      }
+      out.push("\n");
+    }
+
+    // ---- WARNINGS ----
+    if (warns.length) {
+      out.push(`-- ==============================\n-- WARNINGS\n-- ==============================\n`);
+      for (const w of warns) out.push(`-- ${w}\n`);
+      out.push("\n");
+    }
+
+    const ddl = out.join("").trimEnd() + "\n";
+    return { ddl, warns };
+  }
+
+  // ==============================
+  // actions
+  // ==============================
+  btnGenerate.addEventListener("click", async () => {
+    btnGenerate.disabled = true;
+    btnCopy.disabled = true;
+    btnOpenFile.disabled = true;
+    statusEl.textContent = "生成中…";
+    ta.value = "";
+
+    try {
+      const t0 = performance.now();
+      const { ddl, warns } = await generateExternalTableDDL();
+      const t1 = performance.now();
+
+      lastDDL = ddl;
+
+      if (WRITE_SQL_FILE) {
+        await ensureFolder(OUTPUT_FOLDER);
+        lastFilePath = `${OUTPUT_FOLDER}/${OUTPUT_PREFIX}_${ts()}.sql`;
+        await writeFile(lastFilePath, ddl);
+        btnOpenFile.disabled = false;
+      }
+
+      ta.value = ddl;
+      btnCopy.disabled = false;
+      
+      statusEl.textContent =
+        `完了: ${Math.round(t1 - t0)} ms / ${ddl.length.toLocaleString()} chars` +
+        (WRITE_SQL_FILE ? ` / 出力: ${lastFilePath}` : "") +
+        (warns.length ? ` / WARNINGS: ${warns.length}` : "");
+    } catch (e) {
+      console.error(e);
+      statusEl.textContent = `失敗: ${e?.message ?? e}`;
+    } finally {
+      btnGenerate.disabled = false;
+    }
+  });
+
+  btnCopy.addEventListener("click", async () => {
+    if (!lastDDL) return;
+    statusEl.textContent = "クリップボードへコピー中…";
+    const ok = await copyToClipboard(lastDDL);
+    statusEl.textContent = ok
+      ? "コピーしました"
+      : "コピーに失敗しました";
+  });
+
+  btnOpenFile.addEventListener("click", async () => {
+    if (!lastFilePath) return;
+    try {
+      await openFileByPath(lastFilePath);
+    } catch (e) {
+      statusEl.textContent = `ファイルを開けません: ${e?.message ?? e}`;
+    }
+  });
+})();
+```

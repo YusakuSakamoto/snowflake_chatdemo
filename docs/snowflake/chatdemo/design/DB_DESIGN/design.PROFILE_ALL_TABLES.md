@@ -86,7 +86,7 @@ END FOR;
 実装:
 - テーブルごとにTRY-CATCHで個別ハンドリング
 - 失敗したテーブルは `status: 'FAILED'` として結果配列に記録
-- 最終結果に `tables_processed`, `results` を含めることで、成功/失敗の内訳を可視化
+- 最終結果に tables_processed, results を含めることで、成功/失敗の内訳を可視化
 
 ### 3. 動的SQL設計
 方針: 可変DB/スキーマに対応するため、動的SQLでテーブル一覧を取得  
@@ -159,12 +159,12 @@ V_QSC := '''' || REPLACE(P_TARGET_SCHEMA,'''','''''') || '''';
 
 ### フィールド定義
 - target_db / target_schema: 処理対象の識別子
-- `tables_processed`: 処理を試行したテーブル数
-- `results`: 各テーブルの実行結果配列
-  - `table`: テーブル名
-  - `run_id`: 成功時のPROFILE_RUNSのID
-  - status: `SUCCEEDED` または `FAILED`
-  - `error`: 失敗時のエラーメッセージ（`SQLERRM`）
+- tables_processed: 処理を試行したテーブル数
+- results: 各テーブルの実行結果配列
+  - table: テーブル名
+  - run_id: 成功時のPROFILE_RUNSのID
+  - status: SUCCEEDED または FAILED
+  - error: 失敗時のエラーメッセージ（SQLERRM）
 
 ---
 
@@ -189,8 +189,8 @@ ORDER BY TABLE_NAME
 V_TBL_RS := (EXECUTE IMMEDIATE :V_SQL_LIST);
 ```
 - INFORMATION_SCHEMA.TABLES: Snowflake標準ビューでテーブルメタデータ取得
-- フィルタ: ``TABLE_TYPE` = 'BASE TABLE'` でビュー/マテリアライズドビューを除外
-- ソート: `ORDER BY `TABLE_NAME`` で処理順序を安定化
+- フィルタ: `TABLE_TYPE = 'BASE TABLE'` でビュー/マテリアライズドビューを除外
+- ソート: `ORDER BY TABLE_NAME` で処理順序を安定化
 
 ### ステップ3: ループ実行（個別テーブルプロファイル）
 ```sql
@@ -301,8 +301,8 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 ```
 
 ### モニタリング指標
-- 実行時間: ``ARRAY_SIZE`(results)` で処理テーブル数を確認、予想実行時間を推定
-- 失敗率: `results` 配列内の `status='FAILED'` 件数を集計
+- 実行時間: `ARRAY_SIZE(results)` で処理テーブル数を確認、予想実行時間を推定
+- 失敗率: results 配列内の `status='FAILED'` 件数を集計
 - アラート条件: 失敗率が20%を超える場合は権限問題を疑う
 
 ---
@@ -315,7 +315,7 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 - 推奨: 大規模スキーマは深夜バッチで実行
 
 ### コスト最適化
-- サンプリング活用: ``P_SAMPLE_PCT` = 0.1` で90%のコスト削減が可能
+- サンプリング活用: `P_SAMPLE_PCT = 0.1` で90%のコスト削減が可能
 - Warehouse選択: `EXECUTE AS OWNER` のため、プロシージャ実行者のデフォルトWHを使用。専用WHの設定を推奨
 - AUTO_SUSPEND: プロファイル完了後、WHが自動停止するよう設定
 
@@ -334,7 +334,7 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 |---|---|---|
 | `Insufficient privileges` | テーブルへのSELECT権限不足 | GRANTで権限付与、または該当テーブルをスキップ |
 | `Object does not exist` | 実行中にテーブルがDROP | 一時的なエラーとして記録、次回実行で解消 |
-| `Statement execution time limit exceeded` | 巨大テーブル（数十億行）のスキャン | `P_SAMPLE_PCT` を設定してサンプリング |
+| `Statement execution time limit exceeded` | 巨大テーブル（数十億行）のスキャン | P_SAMPLE_PCT を設定してサンプリング |
 | `Warehouse suspended` | 実行中にWH停止 | WHのAUTO_RESUME設定を確認 |
 
 ### リトライ戦略
@@ -349,12 +349,12 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 ### 実行権限
 - EXECUTE AS OWNER: プロシージャ所有者の権限で実行
 - 必要な権限:
-  - SELECT on ``INFORMATION_SCHEMA`.TABLES`
+  - SELECT on `INFORMATION_SCHEMA.TABLES`
   - USAGE on target database and schema
   - SELECT on all tables in target schema
-  - `USAGE` on [[design.DB_DESIGN]] schema
-  - `EXECUTE` on [[DB_DESIGN.PROFILE_TABLE]]
-  - `INSERT` on [[DB_DESIGN.PROFILE_RUNS]], [[DB_DESIGN.PROFILE_RESULTS]]
+  - USAGE on [[design.DB_DESIGN]] schema
+  - EXECUTE on [[DB_DESIGN.PROFILE_TABLE]]
+  - INSERT on [[DB_DESIGN.PROFILE_RUNS]], [[DB_DESIGN.PROFILE_RESULTS]]
 
 ### 権限設計の推奨事項
 ```sql
@@ -377,11 +377,11 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 ## データ品質とバリデーション
 
 ### 入力バリデーション
-- `P_TARGET_DB` / `P_TARGET_SCHEMA`: 存在しない場合、INFORMATION_SCHEMA.TABLESで0件となり、空の結果を返す
+- P_TARGET_DB / P_TARGET_SCHEMA: 存在しない場合、INFORMATION_SCHEMA.TABLESで0件となり、空の結果を返す
 - P_SAMPLE_PCT: 範囲外の値（負数、1超）は [[design.PROFILE_TABLE]] 側でバリデーション
 
 ### 結果の妥当性チェック
-- 想定テーブル数との照合: 事前に `SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.TABLES` で期待値を確認
+- 想定テーブル数との照合: 事前に `SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES` で期待値を確認
 - 失敗テーブルの調査: `status='FAILED'` のテーブルはエラーメッセージを確認し、権限/データ品質問題を特定
 
 ---
@@ -390,11 +390,11 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 
 ### フェーズ2: 並列実行対応
 - SnowflakeのTask DAGで複数スキーマを並列プロファイル
-- `P_MAX_PARALLEL` パラメータで並列度を制御
+- P_MAX_PARALLEL パラメータで並列度を制御
 
 ### フェーズ3: インクリメンタルプロファイル
 - 前回実行時からデータ変更がないテーブルはスキップ
-- `LAST_ALTERED` タイムスタンプを比較してスキップ判定
+- LAST_ALTERED タイムスタンプを比較してスキップ判定
 
 ### フェーズ4: プロファイル結果の差分分析
 - 前回実行との比較（null_rate増加、distinct_count減少など）を自動検出
@@ -420,7 +420,7 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 
 ### 運用ドキュメント
 - [[S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Markdownエクスポート先）
-- `SNOWFLAKE_PROFILING_OPERATIONS` - プロファイル運用手順（未作成）
+- SNOWFLAKE_PROFILING_OPERATIONS - プロファイル運用手順（未作成）
 
 ---
 

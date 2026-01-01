@@ -51,7 +51,7 @@ APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT (DB設計レビューエージェント)
 ### 他コンポーネントとの連携
 - 上流: [[DB_DESIGN.PROFILE_ALL_TABLES]] → [[DB_DESIGN.PROFILE_RESULTS]] (プロファイル結果のソース)
 - 下流: [[DB_DESIGN.INGEST_VAULT_MD]] (エクスポートしたMarkdownを再取り込み)
-- 外部システム: S3バケット `snowflake-chatdemo-vault-prod`（`S3_DESIGN_VAULT_DB_DOCS`参照）
+- 外部システム: S3バケット `snowflake-chatdemo-vault-prod`（S3_DESIGN_VAULT_DB_DOCS参照）
 - 最終消費者: [[APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT]] (Cortex Agent)
 
 ---
@@ -96,9 +96,9 @@ generated_on: 2026-01-02
 ## Columns (summary)
 | column | null_rate | distinct_count |
 |---|---:|---:|
-| `CUSTOMER_ID` | 0.0% | 1500000 |
-| `EMAIL` | 0.02% | 1499700 |
-| `PHONE` | 5.3% | 1420000 |
+| CUSTOMER_ID | 0.0% | 1500000 |
+| EMAIL | 0.02% | 1499700 |
+| PHONE | 5.3% | 1420000 |
 ```
 
 ### 3. S3パーティショニング戦略
@@ -144,7 +144,7 @@ END;
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| P_SOURCE_DB | VARCHAR | ✅ | - | プロファイル結果が格納されているDB（例: `GBPS253YS_DB`） |
+| P_SOURCE_DB | VARCHAR | ✅ | - | プロファイル結果が格納されているDB（例: GBPS253YS_DB） |
 | P_SOURCE_SCHEMA | VARCHAR | ✅ | - | プロファイル結果が格納されているスキーマ（例: [[design.DB_DESIGN]]） |
 | P_SOURCE_VIEW | VARCHAR | ✅ | - | プロファイル結果のビュー名（例: [[design.V_PROFILE_RESULTS_LATEST]]） |
 | P_TARGET_DB | VARCHAR | ✅ | - | プロファイル対象のDB（フィルタ条件） |
@@ -179,7 +179,7 @@ END;
 - status: 常に `"OK"`（プロシージャ自体が正常完了）
 - exported_ok: 正常にエクスポートされたテーブル数
 - exported_failed: エクスポート失敗したテーブル数
-- raw_file_suffix: JSON出力時のサフィックス（Snowflakeの内部仕様で`_0_0_0`が付与）
+- raw_file_suffix: JSON出力時のサフィックス（Snowflakeの内部仕様で_0_0_0が付与）
 - target_db / run_date / vault_prefix: 入力パラメータのエコーバック
 
 ---
@@ -401,9 +401,9 @@ generated_on: 2026-01-02
 ## Columns (summary)
 | column | null_rate | distinct_count |
 |---|---:|---:|
-| `CUSTOMER_ID` | 0.0% | 1500000 |
-| `EMAIL` | 0.02% | 1499700 |
-| `PHONE` | 5.3% | 1420000 |
+| CUSTOMER_ID | 0.0% | 1500000 |
+| EMAIL | 0.02% | 1499700 |
+| PHONE | 5.3% | 1420000 |
 ```
 - Raw metrics: JSONファイルへのパス（Obsidian内リンクとして機能）
 - Columns (summary): 人間が一目で品質を判断できるテーブル形式
@@ -556,8 +556,8 @@ ALTER TASK DB_DESIGN.TASK_PROFILE_AND_EXPORT RESUME;
 - 必要な権限:
   - USAGE on source database/schema
   - SELECT on source view
-  - `USAGE` on [[design.DB_DESIGN]] schema
-  - `WRITE` on [[DB_DESIGN.OBSIDIAN_VAULT_STAGE]]
+  - USAGE on [[design.DB_DESIGN]] schema
+  - WRITE on [[DB_DESIGN.OBSIDIAN_VAULT_STAGE]]
 
 ### S3バケットのIAM権限
 ```json

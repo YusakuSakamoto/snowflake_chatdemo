@@ -22,7 +22,7 @@
 [[design.V_DOCS_OBSIDIAN]] は [[design.DOCS_OBSIDIAN]] の内容を変更せず、参照用途のための投影・整形のみを行う。  
 Evidence の根拠単位は常に [[DB_DESIGN.DOCS_OBSIDIAN.PATH]] によって示される実在する .md ファイルであり、ビュー側でその意味を変えない。
 
-### [[design.V_DOCS_OBSIDIAN]] から `OBSIDIAN_VAULT_SEARCH` への連携
+### [[design.V_DOCS_OBSIDIAN]] から OBSIDIAN_VAULT_SEARCH への連携
 DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、[[DB_DESIGN.V_DOCS_OBSIDIAN]] を検索インデックスの入力として利用する Cortex Search サービスである。
 
 - [[DB_DESIGN.V_DOCS_OBSIDIAN]] で提供されたテキストおよびメタ情報をインデックス化する

@@ -170,12 +170,12 @@ TOP_VALUES AS (
 - null_count: NULL値の件数
 - null_rate: NULL率（null_count / row_count）
 - distinct_count: ユニークな値の数
-- `distinct_rate_non_null`: 非NULL値におけるユニーク率（distinct_count / (row_count - null_count)）
+- distinct_rate_non_null: 非NULL値におけるユニーク率（distinct_count / (row_count - null_count)）
 - min_varchar: 最小値（文字列変換後）
 - max_varchar: 最大値（文字列変換後）
-- `min_len`: 最小文字列長
-- `max_len`: 最大文字列長
-- `top_values`: 頻出値TOP20（配列形式、NULL除外）
+- min_len: 最小文字列長
+- max_len: 最大文字列長
+- top_values: 頻出値TOP20（配列形式、NULL除外）
 
 ---
 

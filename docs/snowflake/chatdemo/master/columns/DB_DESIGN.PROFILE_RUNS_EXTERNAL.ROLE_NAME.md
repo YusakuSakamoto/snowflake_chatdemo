@@ -1,6 +1,6 @@
 ---
 type: column
-column_id: COL_EXT_20251226182021
+column_id: EXT_20251226182021
 table_id: TBL_20260102230002
 physical: ROLE_NAME
 domain: VARCHAR

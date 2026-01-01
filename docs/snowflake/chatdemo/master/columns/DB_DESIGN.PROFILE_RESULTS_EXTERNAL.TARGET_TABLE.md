@@ -1,6 +1,6 @@
 ---
 type: column
-column_id: COL_EXT_20251226183623
+column_id: EXT_20251226183623
 table_id: TBL_20260102230001
 physical: TARGET_TABLE
 domain: VARCHAR

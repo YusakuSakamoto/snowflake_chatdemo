@@ -1,6 +1,6 @@
 ---
 type: column
-column_id: COL_EXT_20251226182047
+column_id: EXT_20251226182047
 table_id: TBL_20260102230002
 physical: NOTE
 domain: VARCHAR

@@ -29,7 +29,7 @@ def generate_columns_for_external_table(internal_table_id: str, external_table_i
         physical = fm["physical"]
         
         # 新しいcolumn_idを生成（EXTプレフィックス付き）
-        new_column_id = fm["column_id"].replace("COL_", "COL_EXT_")
+        new_column_id = fm["column_id"].replace("COL_", "EXT_")
         
         # 外部テーブル用のファイル名
         external_file = master_columns / f"{prefix}_EXTERNAL.{physical}.md"

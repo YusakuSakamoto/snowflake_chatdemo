@@ -1,6 +1,6 @@
 ---
 type: column
-column_id: COL_EXT_20251226183651
+column_id: EXT_20251226183651
 table_id: TBL_20260102230001
 physical: AS_OF_AT
 domain: TIMESTAMP_LTZ

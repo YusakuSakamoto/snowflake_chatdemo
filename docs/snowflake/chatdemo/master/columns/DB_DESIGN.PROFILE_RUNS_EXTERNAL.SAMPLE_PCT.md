@@ -1,6 +1,6 @@
 ---
 type: column
-column_id: COL_EXT_20251226181327
+column_id: EXT_20251226181327
 table_id: TBL_20260102230002
 physical: SAMPLE_PCT
 domain: FLOAT

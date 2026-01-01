@@ -84,10 +84,10 @@ SORT schema_id, physical
 
 ## 3. 各ログテーブルの設計判断
 
-### 3.1 LOG.[[design.CORTEX_CONVERSATIONS]]
+### 3.1 LOG.CORTEX_CONVERSATIONS
 
 #### 目的
-- Cortex Agent（APP_PRODUCTION.[[design.SNOWFLAKE_DEMO_AGENT]]）の会話履歴を保管
+- Cortex Agent（APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT）の会話履歴を保管
 - ユーザーとAIの対話品質を分析
 - 問題のあるクエリやエラーの追跡
 - 機械学習モデルの改善材料
@@ -118,7 +118,7 @@ GROUP BY 1;
 
 ---
 
-### 3.2 LOG.[[design.AZFUNCTIONS_LOGS]]
+### 3.2 LOG.AZFUNCTIONS_LOGS
 
 #### 目的
 - Azure Functions のアプリケーションログを集約
@@ -154,7 +154,7 @@ LIMIT 10;
 
 ---
 
-### 3.3 LOG.[[design.AZSWA_LOGS]]
+### 3.3 LOG.AZSWA_LOGS
 
 #### 目的
 - Azure Static Web Apps（フロントエンド）のアクセスログを集約
@@ -191,7 +191,7 @@ ORDER BY 1;
 
 ---
 
-### 3.4 LOG.[[design.SNOWFLAKE_METRICS]]
+### 3.4 LOG.SNOWFLAKE_METRICS
 
 #### 目的
 - Snowflake 自体のクエリ実行メトリクスを蓄積

@@ -1,9 +1,9 @@
 # 外部テーブル設計：[[design.PROFILE_RESULTS_EXTERNAL]]
 
 ## 概要
-DB_DESIGN.[[design.PROFILE_RESULTS_EXTERNAL]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
+DB_DESIGN.PROFILE_RESULTS_EXTERNAL は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
 1行が「1回のプロファイル実行（run）」における「1カラム分の計測結果」を表し、  
-DB_DESIGN.[[design.PROFILE_RUNS]].`RUN_ID` を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
+DB_DESIGN.PROFILE_RUNS.`RUN_ID` を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
 
 本テーブルは、プロファイル処理の結果を外部ストレージに永続化し、品質確認・比較・監査・設計レビューの根拠として利用される。内部テーブル版（[[design.PROFILE_RESULTS]]）と同一の論理構造を持ちながら、S3直接参照によるストレージコスト最適化と長期保存を実現する。
 
@@ -23,7 +23,7 @@ DB_DESIGN.[[design.PROFILE_RUNS]].`RUN_ID` を起点として、対象テーブ�
 ## 設計上の位置づけ
 
 ### 内部テーブル版との関係
-本外部テーブルは DB_DESIGN.[[design.PROFILE_RESULTS]] と論理的に同一構造を持つ。
+本外部テーブルは DB_DESIGN.PROFILE_RESULTS と論理的に同一構造を持つ。
 
 - 論理設計の共通性  
   - カラム構成、データ型、主キーの考え方は内部テーブル版と同一とする。
@@ -145,7 +145,7 @@ DB_DESIGN.[[design.PROFILE_RUNS]].`RUN_ID` を起点として、対象テーブ�
 
 ## 関連
 
-- 内部テーブル版：DB_DESIGN.[[design.PROFILE_RESULTS]]
-- 関連外部テーブル：DB_DESIGN.[[design.PROFILE_RUNS_EXTERNAL]]
-- 関連プロシージャ：DB_DESIGN.[[design.PROFILE_TABLE]], DB_DESIGN.[[design.PROFILE_ALL_TABLES]]
-- マスター定義：DB_DESIGN.[[design.PROFILE_RESULTS_EXTERNAL]]（master/externaltables/）
+- 内部テーブル版：DB_DESIGN.PROFILE_RESULTS
+- 関連外部テーブル：DB_DESIGN.PROFILE_RUNS_EXTERNAL
+- 関連プロシージャ：DB_DESIGN.PROFILE_TABLE, DB_DESIGN.PROFILE_ALL_TABLES
+- マスター定義：DB_DESIGN.PROFILE_RESULTS_EXTERNAL（master/externaltables/）

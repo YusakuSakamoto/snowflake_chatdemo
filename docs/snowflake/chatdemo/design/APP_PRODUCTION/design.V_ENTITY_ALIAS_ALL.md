@@ -1,24 +1,24 @@
 # VIEW設計：[[design.V_ENTITY_ALIAS_ALL]]（別名辞書の統合・winner決定）
 
 ## 概要
-APP_PRODUCTION.[[design.V_ENTITY_ALIAS_ALL]] は、名称解決で利用する別名辞書を 統合し、重複を排除して winner を決定する参照用VIEWである。  
-手動辞書（NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS_MANUAL]]）と自動生成辞書（APP_PRODUCTION.[[design.V_ENTITY_ALIAS_AUTO]]）を UNION し、  
+APP_PRODUCTION.V_ENTITY_ALIAS_ALL は、名称解決で利用する別名辞書を 統合し、重複を排除して winner を決定する参照用VIEWである。  
+手動辞書（NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL）と自動生成辞書（APP_PRODUCTION.V_ENTITY_ALIAS_AUTO）を UNION し、  
 同一の (alias_normalized, entity_type) に対して priority / confidence に基づき1件に確定する。
 
-本VIEWの出力は、物理検索用テーブル（NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS]]）へ refresh により materialize され、  
+本VIEWの出力は、物理検索用テーブル（NAME_RESOLUTION.DIM_ENTITY_ALIAS）へ refresh により materialize され、  
 Agent / Procedure は原則として物理テーブル側を参照する（[[design.V_ENTITY_ALIAS_ALL]] は「定義」と「確認」に使う）。
 
 ## 入力ソース
 
 ### 手動辞書（MANUAL）
-- NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS_MANUAL]]
+- NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL
 - 特性：
   - 人が登録・承認する別名（略称、社内用語、例外、ルビ等）
   - is_active=true のみを対象
   - AUTO より優先される設計（priority を小さくする運用）
 
 ### 自動生成辞書（AUTO）
-- APP_PRODUCTION.[[design.V_ENTITY_ALIAS_AUTO]]
+- APP_PRODUCTION.V_ENTITY_ALIAS_AUTO
 - 特性：
   - マスタ/VIEWから機械生成できる名称を展開
   - is_active=true のみを対象
@@ -59,7 +59,7 @@ Agent / Procedure は原則として物理テーブル側を参照する（[[des
 
 ### [[design.V_ENTITY_ALIAS_ALL]] は正本ではない
 - 「正本」は MANUAL + AUTO の生成規則であり、本VIEWはそれを統合した参照結果
-- 検索性能や安定運用のため、実運用では NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS]] を参照する
+- 検索性能や安定運用のため、実運用では NAME_RESOLUTION.DIM_ENTITY_ALIAS を参照する
 
 ### is_active の扱い
 - MANUAL / AUTO それぞれで is_active=true のみ対象とする
@@ -73,8 +73,8 @@ Agent / Procedure は原則として物理テーブル側を参照する（[[des
 - 「衝突がありうる」こと自体は問題ではなく、winner を人が制御できることが重要
 
 ## 関連
-- 手動辞書：NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS_MANUAL]]
-- 自動生成：APP_PRODUCTION.[[design.V_ENTITY_ALIAS_AUTO]]
-- 物理検索用：NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS]]（refreshで生成）
-- 解決プロシージャ：APP_PRODUCTION.[[design.RESOLVE_ENTITY_ALIAS]] / *_TOOL
+- 手動辞書：NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL
+- 自動生成：APP_PRODUCTION.V_ENTITY_ALIAS_AUTO
+- 物理検索用：NAME_RESOLUTION.DIM_ENTITY_ALIAS（refreshで生成）
+- 解決プロシージャ：APP_PRODUCTION.RESOLVE_ENTITY_ALIAS / *_TOOL
 

@@ -1,7 +1,7 @@
 # 外部テーブル設計：[[design.AZSWA_LOGS]]
 
 ## 概要
-LOG.[[design.AZSWA_LOGS]] は、Azure Static Web Apps（フロントエンド）のアクセスログを集約・分析するための外部テーブルである。
+LOG.AZSWA_LOGS は、Azure Static Web Apps（フロントエンド）のアクセスログを集約・分析するための外部テーブルである。
 
 本テーブルは、Next.js製のフロントエンドが処理したHTTPリクエストのログを、S3経由でSnowflakeから直接クエリ可能にする。  
 ユーザー行動、ページ閲覧数、エラー率などを長期的に追跡できる。
@@ -18,7 +18,7 @@ LOG.[[design.AZSWA_LOGS]] は、Azure Static Web Apps（フロントエンド）
   - セキュリティ分析（不審なアクセスパターン）
 
 ## 設計上の位置づけ
-LOG.[[design.AZSWA_LOGS]] は、以下のフロー全体の最上流に位置する：
+LOG.AZSWA_LOGS は、以下のフロー全体の最上流に位置する：
 
 1. ユーザー → Azure SWA / Next.js ← 本テーブル
 2. Azure SWA → Azure Functions（API呼び出し）
@@ -30,7 +30,7 @@ LOG.[[design.AZSWA_LOGS]] は、以下のフロー全体の最上流に位置す
 ## 設計方針
 
 ### 外部テーブルを採用する理由
-LOG.[[design.CORTEX_CONVERSATIONS]] および LOG.[[design.AZFUNCTIONS_LOGS]] と同様の理由。
+LOG.CORTEX_CONVERSATIONS および LOG.AZFUNCTIONS_LOGS と同様の理由。
 
 ### パーティション設計
 S3パス構造：
@@ -181,7 +181,7 @@ LIMIT 10;
 - 利用例：流入元分析、A/Bテストの効果測定
 
 #### パーティションカラム（`year`, `month`, `day`, `hour`）
-- LOG.[[design.CORTEX_CONVERSATIONS]] と同様
+- LOG.CORTEX_CONVERSATIONS と同様
 
 ## クエリパターン例
 

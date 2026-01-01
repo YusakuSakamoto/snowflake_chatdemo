@@ -1,7 +1,7 @@
 # 外部テーブル設計：[[design.CORTEX_CONVERSATIONS]]
 
 ## 概要
-LOG.[[design.CORTEX_CONVERSATIONS]] は、Snowflake Cortex Agent との会話履歴を長期保管・分析するための外部テーブルである。
+LOG.CORTEX_CONVERSATIONS は、Snowflake Cortex Agent との会話履歴を長期保管・分析するための外部テーブルである。
 
 本テーブルは、S3に保存されたJSON Lines形式のログファイルを、Snowflakeから直接クエリ可能にする。  
 `APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT` を含む、全Cortex Agentの会話ログを統合的に管理する。
@@ -18,7 +18,7 @@ LOG.[[design.CORTEX_CONVERSATIONS]] は、Snowflake Cortex Agent との会話履
   - 機械学習モデルの Fine-tuning 用データセット作成
 
 ## 設計上の位置づけ
-LOG.[[design.CORTEX_CONVERSATIONS]] は、以下の観測性（Observability）スタックの一部として機能する：
+LOG.CORTEX_CONVERSATIONS は、以下の観測性（Observability）スタックの一部として機能する：
 
 - アプリケーションログ（Azure Functions / SWA）
 - Cortex Agent会話ログ ← 本テーブル

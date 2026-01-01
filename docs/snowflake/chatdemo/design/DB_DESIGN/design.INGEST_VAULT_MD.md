@@ -1,7 +1,7 @@
 # プロシージャ設計：[[design.INGEST_VAULT_MD]]
 
 ## 概要
-DB_DESIGN.[[design.INGEST_VAULT_MD]] は、S3ステージに同期されたObsidian VaultのMarkdownファイルを読み込み、DB_DESIGN.[[design.DOCS_OBSIDIAN]] テーブルに取り込むための専用プロシージャである。
+DB_DESIGN.INGEST_VAULT_MD は、S3ステージに同期されたObsidian VaultのMarkdownファイルを読み込み、DB_DESIGN.DOCS_OBSIDIAN テーブルに取り込むための専用プロシージャである。
 
 本プロシージャは、GitHub → S3 → Snowflake の同期フローにおいて、Snowflake側のデータ取り込みを担当する唯一の書き込み経路である。
 
@@ -12,7 +12,7 @@ DB_DESIGN.[[design.INGEST_VAULT_MD]] は、S3ステージに同期されたObsid
 - 主な利用シーン  
   - Obsidian Vault更新後、GitHub Actions経由でS3に同期された後、手動またはタスクで実行
   - Cortex Agentが最新の設計ドキュメントを参照できるようにする
-  - 注記：プロファイル結果は外部テーブル（DB_DESIGN.[[design.PROFILE_RESULTS_EXTERNAL]]）で直接参照するため、本プロシージャの対象外
+  - 注記：プロファイル結果は外部テーブル（DB_DESIGN.PROFILE_RESULTS_EXTERNAL）で直接参照するため、本プロシージャの対象外
 
 ## 設計上の位置づけ
 
@@ -34,12 +34,12 @@ Cortex Agent (SNOWFLAKE_DEMO_AGENT)
 本プロシージャは、S3からSnowflakeへの橋渡しを担当する。
 
 ### DOCS_OBSIDIANテーブルとの関係
-- DB_DESIGN.[[design.DOCS_OBSIDIAN]] への INSERT / UPDATE / DELETE は、本プロシージャのみが行う
+- DB_DESIGN.DOCS_OBSIDIAN への INSERT / UPDATE / DELETE は、本プロシージャのみが行う
 - 直接のDML（手動INSERT/UPDATEなど）は禁止
 - データ整合性と一元管理のため、取り込みロジックを本プロシージャに集約
 
 ### External Tableとの違い
-External Tableとして DB_DESIGN.[[design.DOCS_OBSIDIAN]] を定義する案もあるが、本設計では内部テーブル + [[design.INGEST_VAULT_MD]] を採用：
+External Tableとして DB_DESIGN.DOCS_OBSIDIAN を定義する案もあるが、本設計では内部テーブル + [[design.INGEST_VAULT_MD]] を採用：
 
 #### 内部テーブル + プロシージャの利点
 - クエリ高速化：Cortex Agentが頻繁にアクセスするため、内部テーブルの方が高速
@@ -64,7 +64,7 @@ External Tableとして DB_DESIGN.[[design.DOCS_OBSIDIAN]] を定義する案も
 
 #### 1. STAGE_NAME (VARCHAR)
 - 意味：読み込み対象のSnowflake External Stage名
-- 値例：`@DB_DESIGN.[[design.OBSIDIAN_VAULT_STAGE]]`
+- 値例：`@DB_DESIGN.OBSIDIAN_VAULT_STAGE`
 - 用途：S3バケット（`s3://snowflake-chatdemo-vault-prod/`）をマウントしたステージ
 
 #### 2. PATTERN (VARCHAR)
@@ -446,7 +446,7 @@ with ThreadPoolExecutor(max_workers=10) as executor:
 - [ ] パフォーマンスが許容範囲内か（大量ファイルの場合）
 
 ## 参考リンク
-- DB_DESIGN.[[design.DOCS_OBSIDIAN]] - 取り込み先テーブルの設計
-- DB_DESIGN.[[design.OBSIDIAN_VAULT_STAGE]] - S3ステージの定義
+- DB_DESIGN.DOCS_OBSIDIAN - 取り込み先テーブルの設計
+- DB_DESIGN.OBSIDIAN_VAULT_STAGE - S3ステージの定義
 - Snowflake SnowparkFile: https://docs.snowflake.com/en/developer-guide/snowpark/python/working-with-files
 - S3 External Stage: https://docs.snowflake.com/en/user-guide/data-load-s3

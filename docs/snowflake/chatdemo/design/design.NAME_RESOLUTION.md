@@ -30,28 +30,28 @@
 ### 1. 手動辞書と自動生成辞書の統合
 [[design.NAME_RESOLUTION]] スキーマは、以下の2種類の辞書を統合する：
 
-#### 手動辞書（NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS_MANUAL]]）
+#### 手動辞書（NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL）
 - 目的：人が追加・承認する別名（略称、社内用語、例外的な表記）
 - 特徴：
   - 正の根拠（source of truth）であり、削除ではなく無効化で管理
   - 自動生成辞書より常に優先（priority が小）
   - メンテナンス性を重視し、変更履歴を追跡
 
-#### 自動生成辞書（APP_PRODUCTION.[[design.V_ENTITY_ALIAS_AUTO]] など）
+#### 自動生成辞書（APP_PRODUCTION.V_ENTITY_ALIAS_AUTO など）
 - 目的：マスタテーブルから機械的に生成できる別名
 - 特徴：
   - 部署マスタ、顧客マスタなどから自動展開
   - 手動辞書に存在しない場合のフォールバック
   - VIEW として定義し、マスタ更新時に自動反映
 
-#### 統合規則（APP_PRODUCTION.[[design.V_ENTITY_ALIAS_ALL]]）
+#### 統合規則（APP_PRODUCTION.V_ENTITY_ALIAS_ALL）
 - 目的：手動辞書と自動生成辞書を統合し、重複排除のルールを明示
 - winner 決定ルール：
   1. priority が小さいものを優先
   2. priority が同じ場合は confidence が高いものを優先
   3. それでも同じ場合は手動辞書を優先（is_manual=true）
 
-### 2. 物理検索用の確定辞書（NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS]]）
+### 2. 物理検索用の確定辞書（NAME_RESOLUTION.DIM_ENTITY_ALIAS）
 - 目的：統合規則（[[design.V_ENTITY_ALIAS_ALL]]）を物理化し、高速検索を実現
 - 特徴：
   - refresh により全量再生成される（INSERT OVERWRITE）
@@ -431,8 +431,8 @@ GRANT ALL ON TABLE NAME_RESOLUTION.DIM_ENTITY_ALIAS TO ROLE TASK_ROLE;
 - [ ] 手動辞書の変更履歴が追跡可能か（将来的に audit テーブルで実装）
 
 ## 参考リンク
-- NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS_MANUAL]] - 手動辞書の詳細設計
-- NAME_RESOLUTION.[[design.DIM_ENTITY_ALIAS]] - 物理検索用テーブルの詳細設計
-- APP_PRODUCTION.[[design.V_ENTITY_ALIAS_AUTO]] - 自動生成辞書の実装
-- APP_PRODUCTION.[[design.V_ENTITY_ALIAS_ALL]] - 統合規則の実装
-- APP_PRODUCTION.[[design.RESOLVE_ENTITY_ALIAS]] - 名称解決 Procedure
+- NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL - 手動辞書の詳細設計
+- NAME_RESOLUTION.DIM_ENTITY_ALIAS - 物理検索用テーブルの詳細設計
+- APP_PRODUCTION.V_ENTITY_ALIAS_AUTO - 自動生成辞書の実装
+- APP_PRODUCTION.V_ENTITY_ALIAS_ALL - 統合規則の実装
+- APP_PRODUCTION.RESOLVE_ENTITY_ALIAS - 名称解決 Procedure

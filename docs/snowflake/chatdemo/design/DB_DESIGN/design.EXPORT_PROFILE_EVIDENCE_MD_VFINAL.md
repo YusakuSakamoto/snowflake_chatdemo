@@ -49,10 +49,10 @@ APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT (DB設計レビューエージェント)
 ```
 
 ### 他コンポーネントとの連携
-- 上流: DB_DESIGN.[[design.PROFILE_ALL_TABLES]] → DB_DESIGN.[[design.PROFILE_RESULTS]] (プロファイル結果のソース)
-- 下流: DB_DESIGN.[[design.INGEST_VAULT_MD]] (エクスポートしたMarkdownを再取り込み)
+- 上流: DB_DESIGN.PROFILE_ALL_TABLES → DB_DESIGN.PROFILE_RESULTS (プロファイル結果のソース)
+- 下流: DB_DESIGN.INGEST_VAULT_MD (エクスポートしたMarkdownを再取り込み)
 - 外部システム: S3バケット `snowflake-chatdemo-vault-prod`（`S3_DESIGN_VAULT_DB_DOCS`参照）
-- 最終消費者: APP_PRODUCTION.[[design.SNOWFLAKE_DEMO_AGENT]] (Cortex Agent)
+- 最終消費者: APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT (Cortex Agent)
 
 ---
 
@@ -557,7 +557,7 @@ ALTER TASK DB_DESIGN.TASK_PROFILE_AND_EXPORT RESUME;
   - `USAGE` on source database/schema
   - `SELECT` on source view
   - `USAGE` on [[design.DB_DESIGN]] schema
-  - `WRITE` on DB_DESIGN.[[design.OBSIDIAN_VAULT_STAGE]]
+  - `WRITE` on DB_DESIGN.OBSIDIAN_VAULT_STAGE
 
 ### S3バケットのIAM権限
 ```json

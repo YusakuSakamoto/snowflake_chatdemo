@@ -242,6 +242,7 @@
 .messageContent {
   word-wrap: break-word;
   line-height: 1.4;
+  white-space: pre-wrap;
 }
 
 .inputForm {
@@ -260,6 +261,10 @@
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 48px;
+  max-height: 200px;
 }
 
 .messageInput:focus {

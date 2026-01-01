@@ -34,6 +34,14 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enterキーのみで送信、Shift+Enterで改行
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage(e as any)
+    }
+  }
+
   const fetchMessages = async () => {
     try {
       const response = await axios.get(`${API_URL}/messages?limit=50`)
@@ -152,13 +160,14 @@ export default function Home() {
         </div>
 
         <form onSubmit={sendMessage} className={styles.inputForm}>
-          <input
-            type="text"
+          <textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="メッセージを入力..."
+            onKeyDown={handleKeyDown}
+            placeholder="メッセージを入力... (Shift+Enterで改行)"
             disabled={loading}
             className={styles.messageInput}
+            rows={3}
           />
           <button type="submit" disabled={loading} className={styles.sendButton}>
             {loading ? '送信中...' : '送信'}

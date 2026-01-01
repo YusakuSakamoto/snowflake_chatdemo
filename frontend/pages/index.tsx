@@ -25,21 +25,20 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
       // 既存のチャートをクリア
       containerRef.current.innerHTML = ''
       
-      // Y軸のラベルを折り返す処理
-      const wrapLabel = (text: string, maxLength: number = 30) => {
-        if (text.length <= maxLength) return text
-        const parts = []
-        for (let i = 0; i < text.length; i += maxLength) {
-          parts.push(text.substring(i, i + maxLength))
-        }
-        return parts.join('\n')
-      }
+      // データポイント数を取得して動的にサイズを計算
+      const dataLength = spec.data?.values?.length || 5
+      
+      // Y軸の項目数に応じて高さを動的に設定（1項目あたり70px、最低400px）
+      const dynamicHeight = Math.max(400, dataLength * 70)
+      
+      // データ量に応じて幅を調整（最低600px、最大900px）
+      const dynamicWidth = Math.min(900, Math.max(600, dataLength * 40))
       
       // チャートのサイズを拡大し、Y軸ラベルの設定を調整
       const enlargedSpec = {
         ...spec,
-        width: 600,
-        height: 600,
+        width: dynamicWidth,
+        height: dynamicHeight,
         encoding: {
           ...spec.encoding,
           y: {

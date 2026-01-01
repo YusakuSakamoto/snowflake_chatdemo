@@ -316,8 +316,8 @@ Cortex Agent / BI Tool
 ```
 
 ### 本プロシージャの対象外
-- プロファイル結果（JSON形式）は `INGEST_VAULT_MD` の対象外
-- 設計ドキュメント（Markdown形式）のみを `DOCS_OBSIDIAN` に取り込む
+- プロファイル結果（JSON形式）は INGEST_VAULT_MD の対象外
+- 設計ドキュメント（Markdown形式）のみを DOCS_OBSIDIAN に取り込む
 - 理由：
   - プロファイル結果は頻繁に更新されない（週次・月次）
   - リアルタイム性が不要

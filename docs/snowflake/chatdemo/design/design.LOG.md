@@ -93,11 +93,11 @@ SORT schema_id, physical
 - 機械学習モデルの改善材料
 
 #### 主要カラム設計判断
-- `conversation_id` : 1つの会話スレッドを一意識別（複数ターンをグループ化）
-- `session_id` : ユーザーのセッション単位（複数会話をまたぐ可能性）
-- `message_role` : `user` / `assistant` で発話者を区別
-- `message_content` : VARIANT型でメッセージ本体+メタデータを格納
-- `metadata` : 実行時コンテキスト（使用モデル、トークン数、レイテンシなど）
+- conversation_id : 1つの会話スレッドを一意識別（複数ターンをグループ化）
+- session_id : ユーザーのセッション単位（複数会話をまたぐ可能性）
+- message_role : `user` / `assistant` で発話者を区別
+- message_content : VARIANT型でメッセージ本体+メタデータを格納
+- metadata : 実行時コンテキスト（使用モデル、トークン数、レイテンシなど）
 
 #### クエリパターン想定
 ```sql
@@ -126,11 +126,11 @@ GROUP BY 1;
 - リクエスト/レスポンスの追跡（トレーサビリティ）
 
 #### 主要カラム設計判断
-- `function_name` : どの関数が実行されたか
-- `invocation_id` : Azure Functions の実行単位ID（分散トレーシング用）
-- `level` : INFO / WARNING / ERROR でログレベルを分類
-- `duration_ms` : 実行時間（パフォーマンス分析用）
-- `exception` : VARIANT型で例外のスタックトレースを保持
+- function_name : どの関数が実行されたか
+- invocation_id : Azure Functions の実行単位ID（分散トレーシング用）
+- level : INFO / WARNING / ERROR でログレベルを分類
+- duration_ms : 実行時間（パフォーマンス分析用）
+- exception : VARIANT型で例外のスタックトレースを保持
 
 #### クエリパターン想定
 ```sql
@@ -162,11 +162,11 @@ LIMIT 10;
 - レスポンスタイム・エラー率の監視
 
 #### 主要カラム設計判断
-- `request_id` : 1つのHTTPリクエストを一意識別
-- `session_id` : ユーザーセッション（複数リクエストをグループ化）
-- `url` / `method` : アクセス先とHTTPメソッド
-- `status_code` : HTTPステータスコード（エラー検知用）
-- `client_ip` / `user_agent` : ユーザー属性
+- request_id : 1つのHTTPリクエストを一意識別
+- session_id : ユーザーセッション（複数リクエストをグループ化）
+- url / method : アクセス先とHTTPメソッド
+- status_code : HTTPステータスコード（エラー検知用）
+- client_ip / user_agent : ユーザー属性
 
 #### クエリパターン想定
 ```sql
@@ -314,7 +314,7 @@ GROUP BY 1;
 
 ### 6.1 個人情報の取り扱い
 
-- `user_id`, `session_id` は仮名化ID（ハッシュ値）を使用
+- user_id, session_id は仮名化ID（ハッシュ値）を使用
 - 実名や連絡先などのPIIは格納しない
 - GDPR削除要求に対応するため、user_id でのログ削除プロシージャを用意
 

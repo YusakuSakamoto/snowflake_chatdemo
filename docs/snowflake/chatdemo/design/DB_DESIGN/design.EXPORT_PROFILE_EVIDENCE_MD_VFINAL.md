@@ -176,11 +176,11 @@ END;
 ```
 
 ### フィールド定義
-- `status`: 常に `"OK"`（プロシージャ自体が正常完了）
-- `exported_ok`: 正常にエクスポートされたテーブル数
-- `exported_failed`: エクスポート失敗したテーブル数
-- `raw_file_suffix`: JSON出力時のサフィックス（Snowflakeの内部仕様で`_0_0_0`が付与）
-- `target_db` / `run_date` / `vault_prefix`: 入力パラメータのエコーバック
+- status: 常に `"OK"`（プロシージャ自体が正常完了）
+- exported_ok: 正常にエクスポートされたテーブル数
+- exported_failed: エクスポート失敗したテーブル数
+- raw_file_suffix: JSON出力時のサフィックス（Snowflakeの内部仕様で`_0_0_0`が付与）
+- target_db / run_date / vault_prefix: 入力パラメータのエコーバック
 
 ---
 
@@ -214,7 +214,7 @@ WHERE TARGET_DB = '{P_TARGET_DB}'
 SELECT COUNT(*) INTO v_total FROM TMP_TARGETS;
 ```
 - 一時テーブル作成: ループ前に対象テーブルを確定
-- フィルタリング: `TARGET_DB` と `TARGET_SCHEMA` で絞り込み
+- フィルタリング: TARGET_DB と TARGET_SCHEMA で絞り込み
 
 ### ステップ3: テーブルごとのMarkdown/JSON生成（ループ処理）
 ```sql
@@ -439,7 +439,7 @@ generated_on: 2026-01-02
 }
 ```
 - metrics配列: 全カラムの詳細メトリクスを含む
-- VARIANT型保存: `METRICS` カラムはVARIANT型で、カラムごとに異なるメトリクスセットを格納可能
+- VARIANT型保存: METRICS カラムはVARIANT型で、カラムごとに異なるメトリクスセットを格納可能
 
 ---
 
@@ -554,8 +554,8 @@ ALTER TASK DB_DESIGN.TASK_PROFILE_AND_EXPORT RESUME;
 ### 実行権限
 - EXECUTE AS CALLER: 呼び出し元ユーザーの権限で実行
 - 必要な権限:
-  - `USAGE` on source database/schema
-  - `SELECT` on source view
+  - USAGE on source database/schema
+  - SELECT on source view
   - `USAGE` on [[design.DB_DESIGN]] schema
   - `WRITE` on [[DB_DESIGN.OBSIDIAN_VAULT_STAGE]]
 
@@ -607,7 +607,7 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 ### 出力の妥当性チェック
 - ファイル存在確認: `LIST @STAGE/path/` で出力ファイルが生成されているか検証
 - Markdown構文チェック: Obsidianで開いてレンダリングが正常か目視確認
-- JSON構文チェック: ``PARSE_JSON`()` で読み取り可能か検証
+- JSON構文チェック: `PARSE_JSON()` で読み取り可能か検証
 
 ---
 
@@ -644,7 +644,7 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 
 ### 外部システム設計
 - [[S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Vault用）
-- `OBSIDIAN_VAULT_STRUCTURE` - ObsidianのVault構造定義（未作成）
+- OBSIDIAN_VAULT_STRUCTURE - ObsidianのVault構造定義（未作成）
 
 ---
 

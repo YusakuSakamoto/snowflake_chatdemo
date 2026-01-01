@@ -15,7 +15,7 @@
 ## 業務上の意味
 
 ### 目的
-個別カラムのデータ品質メトリクス（行数、NULL率、ユニーク値数、最小/最大値、最小/最大長、頻出値TOP20など）を算出し、VARIANT型のJSON形式で返却します。このプロシージャは`PROFILE_TABLE`から呼び出され、カラムごとの詳細な統計情報を提供することで、データ品質分析の基礎データを構築します。
+個別カラムのデータ品質メトリクス（行数、NULL率、ユニーク値数、最小/最大値、最小/最大長、頻出値TOP20など）を算出し、VARIANT型のJSON形式で返却します。このプロシージャはPROFILE_TABLEから呼び出され、カラムごとの詳細な統計情報を提供することで、データ品質分析の基礎データを構築します。
 
 ### 利用シーン
 - PROFILE_TABLEからの自動呼び出し: テーブルプロファイル実行時のカラムメトリクス算出
@@ -166,13 +166,13 @@ TOP_VALUES AS (
 ```
 
 ### メトリクス項目の説明
-- `row_count`: カラムの行数（サンプリング適用後）
-- `null_count`: NULL値の件数
-- `null_rate`: NULL率（null_count / row_count）
-- `distinct_count`: ユニークな値の数
+- row_count: カラムの行数（サンプリング適用後）
+- null_count: NULL値の件数
+- null_rate: NULL率（null_count / row_count）
+- distinct_count: ユニークな値の数
 - `distinct_rate_non_null`: 非NULL値におけるユニーク率（distinct_count / (row_count - null_count)）
-- `min_varchar`: 最小値（文字列変換後）
-- `max_varchar`: 最大値（文字列変換後）
+- min_varchar: 最小値（文字列変換後）
+- max_varchar: 最大値（文字列変換後）
 - `min_len`: 最小文字列長
 - `max_len`: 最大文字列長
 - `top_values`: 頻出値TOP20（配列形式、NULL除外）

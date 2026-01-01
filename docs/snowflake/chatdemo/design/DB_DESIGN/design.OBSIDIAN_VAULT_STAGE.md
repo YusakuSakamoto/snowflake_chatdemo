@@ -24,7 +24,7 @@ DB_DESIGNスキーマの外部ステージとして位置づけられ、S3に保
 ## パラメータ
 
 - URL: S3バケットのパス（s3://135365622922-snowflake-dbdesign/）
-- `STORAGE_INTEGRATION`: 認証に使用するストレージ統合名（S3_OBSIDIAN_INT）
+- STORAGE_INTEGRATION: 認証に使用するストレージ統合名（S3_OBSIDIAN_INT）
 
 ## 利用シーン
 

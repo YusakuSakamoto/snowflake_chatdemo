@@ -52,7 +52,7 @@
 - ステージ名：[[design.OBSIDIAN_VAULT_STAGE]]  
   S3バケット `s3://snowflake-chatdemo-vault-prod/` への外部ステージを前提とする。
 
-- ファイルフォーマット：`FF_JSON_LINES`  
+- ファイルフォーマット：FF_JSON_LINES  
   1行1JSONのJSON Lines形式（NDJSON）を採用し、ストリーミング書き込みと部分読み取りの効率化を図る。
 
 - S3パス構造：  

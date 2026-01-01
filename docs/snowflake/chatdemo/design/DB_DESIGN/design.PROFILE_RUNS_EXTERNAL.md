@@ -26,7 +26,7 @@
 
 - 論理設計の共通性  
   - カラム構成、データ型、主キーの考え方は内部テーブル版と同一とする。
-  - `RUN_ID` により1回の実行を一意に識別する。
+  - RUN_ID により1回の実行を一意に識別する。
   - STATUS（RUNNING / SUCCEEDED / FAILED）による状態管理を前提とする。
 
 - 物理配置の違い  
@@ -61,7 +61,7 @@
 - ステージ名：[[design.OBSIDIAN_VAULT_STAGE]]  
   S3バケット `s3://snowflake-chatdemo-vault-prod/` への外部ステージを前提とする。
 
-- ファイルフォーマット：`FF_JSON_LINES`  
+- ファイルフォーマット：FF_JSON_LINES  
   1行1JSONのJSON Lines形式（NDJSON）を採用し、ストリーミング書き込みと部分読み取りの効率化を図る。
 
 - S3パス構造：  
@@ -158,7 +158,7 @@
 - 内部テーブルとの自動同期機構（Task + Stream による定期アーカイブ）
 - 外部テーブル用マテリアライズドビューの検討（頻繁な集計クエリの高速化）
 - S3ライフサイクルポリシーとの連携（古いパーティションのGlacier移行）
-- 実行失敗時のエラー情報詳細化（`ERROR_CODE`、`ERROR_MESSAGE` の構造化）
+- 実行失敗時のエラー情報詳細化（`ERROR_CODE`、ERROR_MESSAGE の構造化）
 
 ## 関連
 

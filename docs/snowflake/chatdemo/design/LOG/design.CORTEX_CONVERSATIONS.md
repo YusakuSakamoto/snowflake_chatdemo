@@ -61,7 +61,7 @@ s3://snowflake-chatdemo-vault-prod/logs/cortex_conversations/
           {uuid}.json
 ```
 
-パーティションカラム（`year`, `month`, `day`, `hour`）は `metadata$filename` から抽出される。
+パーティションカラム（year, month, day, hour）は `metadata$filename` から抽出される。
 
 #### パーティションプルーニングの例：
 ```sql
@@ -74,7 +74,7 @@ SELECT * FROM LOG.CORTEX_CONVERSATIONS
 WHERE timestamp > CURRENT_TIMESTAMP() - INTERVAL '1 day';
 ```
 
-重要：時系列クエリでは必ず `year`, `month`, `day` を WHERE句に含めること。
+重要：時系列クエリでは必ず year, month, day を WHERE句に含めること。
 
 ### JSON Lines フォーマットの選択理由
 
@@ -83,19 +83,19 @@ WHERE timestamp > CURRENT_TIMESTAMP() - INTERVAL '1 day';
 #### 利点：
 - 追記専用（Append-Only）に最適：会話ログは追記のみなので、行単位追記が効率的
 - スキーマレス：VARIANT型で柔軟にメタデータを格納可能
-- Snowflake の JSON サポート：半構造化データに対する豊富な関数群（`FLATTEN`, `GET` など）
+- Snowflake の JSON サポート：半構造化データに対する豊富な関数群（FLATTEN, `GET` など）
 
 ## カラム設計の判断
 
 ### 主キーの概念
 外部テーブルには主キー制約を設定できないが、論理的には以下が一意性を持つ：
-- `conversation_id` + `timestamp` + `message_role`
+- conversation_id + timestamp + message_role
 
 実際には、同じ会話内で複数メッセージが同時刻に記録されることはまずない。
 
 ### 各カラムの設計意図
 
-#### `conversation_id` (VARCHAR)
+#### conversation_id (VARCHAR)
 - 意味：1つの会話スレッドを一意識別するID
 - 生成方法：フロントエンドで UUID 生成し、すべてのメッセージに付与
 - 利用例：特定の会話の全履歴を取得
@@ -106,22 +106,22 @@ WHERE conversation_id = 'abc-123-def-456'
 ORDER BY timestamp;
 ```
 
-#### `session_id` (VARCHAR)
+#### session_id (VARCHAR)
 - 意味：ユーザーセッションを識別するID
 - conversation_id との違い：1セッション内で複数の会話が行われる可能性
 - 利用例：ユーザーの行動パターン分析（セッション時間、会話数）
 
-#### `user_id` (VARCHAR, nullable)
+#### user_id (VARCHAR, nullable)
 - 意味：ユーザーを識別するID（匿名ユーザーの場合は NULL）
 - プライバシー配慮：実名ではなく、ハッシュ化されたIDまたは仮名IDを使用
-- GDPR対応：ユーザーから削除要求があった場合、`user_id` で絞り込んでログ削除
+- GDPR対応：ユーザーから削除要求があった場合、user_id で絞り込んでログ削除
 
-#### `agent_name` (VARCHAR)
+#### agent_name (VARCHAR)
 - 意味：どのCortex Agentが回答したか
 - 値例：[[design.SNOWFLAKE_DEMO_AGENT]], `CUSTOMER_SUPPORT_AGENT` など
 - 利用例：Agent別の回答品質比較
 
-#### `message_role` (VARCHAR)
+#### message_role (VARCHAR)
 - 意味：発話者の識別
 - 値：`user` または `assistant`
 - 利用例：ユーザーの質問だけを抽出、Agentの回答だけを抽出
@@ -138,7 +138,7 @@ ORDER BY 2 DESC
 LIMIT 10;
 ```
 
-#### `message_content` (VARIANT)
+#### message_content (VARIANT)
 - 意味：メッセージ本体と関連メタデータを含むJSON
 - 構造例：
 ```json
@@ -161,12 +161,12 @@ FROM LOG.CORTEX_CONVERSATIONS
 WHERE message_content:error IS NOT NULL;
 ```
 
-#### `timestamp` (TIMESTAMP_NTZ)
+#### timestamp (TIMESTAMP_NTZ)
 - 意味：メッセージが生成された日時（タイムゾーンなし）
 - なぜNTZ？：ログは UTC で統一し、表示時にアプリケーション側で変換
 - 利用例：時系列分析、レスポンスタイム計算
 
-#### `metadata` (VARIANT)
+#### metadata (VARIANT)
 - 意味：実行時コンテキスト（使用モデル、トークン数、課金情報など）
 - 柔軟性：将来的に追加したい情報を自由に格納できる
 - 利用例：コスト分析、パフォーマンス分析
@@ -181,7 +181,7 @@ WHERE message_role = 'assistant'
 GROUP BY 1;
 ```
 
-#### パーティションカラム（`year`, `month`, `day`, `hour`）
+#### パーティションカラム（year, month, day, hour）
 - 意味：S3パスから抽出されるパーティション情報
 - データ型：NUMBER（0埋めなしの整数）
 - 利用：必ず WHERE句で指定してパーティションプルーニングを有効化
@@ -263,13 +263,13 @@ ALTER EXTERNAL TABLE LOG.CORTEX_CONVERSATIONS REFRESH;
 ## セキュリティ・プライバシー
 
 ### 個人情報の取り扱い
-- `user_id` は仮名化ID（SHA256ハッシュなど）を使用
+- user_id は仮名化ID（SHA256ハッシュなど）を使用
 - 実名、メールアドレス、電話番号などのPIIは格納しない
-- `message_content` 内にPIIが含まれないよう、フロントエンド側でマスキング
+- message_content 内にPIIが含まれないよう、フロントエンド側でマスキング
 
 ### GDPR削除要求への対応
 ユーザーから削除要求があった場合：
-1. S3から該当 `user_id` のログファイルを特定
+1. S3から該当 user_id のログファイルを特定
 2. ファイルを削除または該当行をマスキング
 3. 外部テーブルを REFRESH
 

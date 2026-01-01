@@ -8,7 +8,7 @@
 - オブジェクトタイプ: PROCEDURE
 - 言語: SQL
 - 実行モード: EXECUTE AS OWNER
-- 戻り値: STRING (`RUN_ID`)
+- 戻り値: STRING (RUN_ID)
 
 ---
 
@@ -155,7 +155,7 @@ SELECT OBJECT_CONSTRUCT(
 
 ## 戻り値設計
 
-### 戻り値: `RUN_ID`（STRING）
+### 戻り値: RUN_ID（STRING）
 成功時には実行ID（例: `RUN-01HX...`）を返却します。このIDを使用して、PROFILE_RUNSおよびPROFILE_RESULTSから詳細なプロファイル結果を取得できます。
 
 ### 利用例

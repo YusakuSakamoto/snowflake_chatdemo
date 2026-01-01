@@ -47,11 +47,11 @@ s3://snowflake-chatdemo-vault-prod/logs/azswa/
 
 ### 各カラムの設計意図
 
-#### `log_id` (VARCHAR)
+#### log_id (VARCHAR)
 - 意味：1つのHTTPリクエストを一意識別するID
 - 生成方法：リクエスト処理時に UUID 生成
 
-#### `request_id` (VARCHAR)
+#### request_id (VARCHAR)
 - 意味：Azure SWA が自動付与するリクエストID
 - 利用例：フロントエンド（SWA）とバックエンド（Functions）のログを紐付け
 
@@ -68,7 +68,7 @@ JOIN LOG.AZFUNCTIONS_LOGS f
 WHERE s.year = 2026 AND s.month = 1 AND s.day = 2;
 ```
 
-#### `session_id` (VARCHAR, nullable)
+#### session_id (VARCHAR, nullable)
 - 意味：ユーザーセッションID（Cookieやローカルストレージから取得）
 - 利用例：セッション単位の行動分析（訪問ページ数、滞在時間）
 
@@ -86,7 +86,7 @@ GROUP BY 1
 ORDER BY page_views DESC;
 ```
 
-#### `user_agent` (VARCHAR, nullable)
+#### user_agent (VARCHAR, nullable)
 - 意味：ユーザーのブラウザ・デバイス情報
 - 利用例：デバイス別の利用統計、ブラウザ互換性分析
 
@@ -105,7 +105,7 @@ WHERE year = 2026 AND month = 1
 GROUP BY 1;
 ```
 
-#### `url` (VARCHAR)
+#### url (VARCHAR)
 - 意味：リクエストされたURL（パスとクエリパラメータ）
 - 利用例：人気ページTOP10、離脱率の高いページ
 
@@ -121,11 +121,11 @@ ORDER BY 2 DESC
 LIMIT 10;
 ```
 
-#### `method` (VARCHAR)
+#### method (VARCHAR)
 - 意味：HTTPメソッド（GET, POST, PUT, DELETE）
 - 利用例：APIエンドポイントごとのリクエスト分布
 
-#### `status_code` (NUMBER)
+#### status_code (NUMBER)
 - 意味：HTTPステータスコード（200, 404, 500など）
 - 利用例：エラー率の監視
 
@@ -140,7 +140,7 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
-#### `timestamp` (TIMESTAMP_NTZ)
+#### timestamp (TIMESTAMP_NTZ)
 - 意味：リクエストを受信した日時（UTC）
 - 利用例：時間帯別のアクセス傾向分析
 
@@ -154,7 +154,7 @@ GROUP BY 1
 ORDER BY 1;
 ```
 
-#### `response_time_ms` (NUMBER, nullable)
+#### response_time_ms (NUMBER, nullable)
 - 意味：レスポンスタイム（ミリ秒）
 - NULL の場合：測定できなかった、またはエラーで途中終了
 - 利用例：ページ読み込み速度の分析
@@ -171,16 +171,16 @@ ORDER BY 2 DESC
 LIMIT 10;
 ```
 
-#### `client_ip` (VARCHAR, nullable)
+#### client_ip (VARCHAR, nullable)
 - 意味：クライアントのIPアドレス
 - プライバシー配慮：最後のオクテットをマスク（例：`192.168.1.xxx`）
 - 利用例：地域別アクセス分析、異常アクセスの検知
 
-#### `metadata` (VARIANT)
+#### metadata (VARIANT)
 - 意味：追加のコンテキスト情報（リファラー、A/Bテストフラグなど）
 - 利用例：流入元分析、A/Bテストの効果測定
 
-#### パーティションカラム（`year`, `month`, `day`, `hour`）
+#### パーティションカラム（year, month, day, hour）
 - [[LOG.CORTEX_CONVERSATIONS]] と同様
 
 ## クエリパターン例

@@ -158,12 +158,12 @@ V_QSC := '''' || REPLACE(P_TARGET_SCHEMA,'''','''''') || '''';
 ```
 
 ### フィールド定義
-- `target_db` / `target_schema`: 処理対象の識別子
+- target_db / target_schema: 処理対象の識別子
 - `tables_processed`: 処理を試行したテーブル数
 - `results`: 各テーブルの実行結果配列
   - `table`: テーブル名
   - `run_id`: 成功時のPROFILE_RUNSのID
-  - `status`: `SUCCEEDED` または `FAILED`
+  - status: `SUCCEEDED` または `FAILED`
   - `error`: 失敗時のエラーメッセージ（`SQLERRM`）
 
 ---
@@ -226,7 +226,7 @@ END FOR;
 ```
 
 重要な実装ポイント:
-- RESULT_SCAN(LAST_QUERY_ID()): PROFILE_TABLEの戻り値（`RUN_ID`）を取得
+- RESULT_SCAN(LAST_QUERY_ID()): PROFILE_TABLEの戻り値（RUN_ID）を取得
 - 列名依存回避: `$1::STRING` で最初の列を取得（列名に依存しない）
 - TRY-CATCH: 個別テーブルの失敗が全体に波及しない
 
@@ -349,9 +349,9 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 ### 実行権限
 - EXECUTE AS OWNER: プロシージャ所有者の権限で実行
 - 必要な権限:
-  - `SELECT` on ``INFORMATION_SCHEMA`.TABLES`
-  - `USAGE` on target database and schema
-  - `SELECT` on all tables in target schema
+  - SELECT on ``INFORMATION_SCHEMA`.TABLES`
+  - USAGE on target database and schema
+  - SELECT on all tables in target schema
   - `USAGE` on [[design.DB_DESIGN]] schema
   - `EXECUTE` on [[DB_DESIGN.PROFILE_TABLE]]
   - `INSERT` on [[DB_DESIGN.PROFILE_RUNS]], [[DB_DESIGN.PROFILE_RESULTS]]

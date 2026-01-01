@@ -46,18 +46,18 @@ s3://snowflake-chatdemo-vault-prod/logs/azfunctions/
           {uuid}.json
 ```
 
-時系列クエリでは必ず `year`, `month`, `day` を指定してパーティションプルーニングを有効化すること。
+時系列クエリでは必ず year, month, day を指定してパーティションプルーニングを有効化すること。
 
 ## カラム設計の判断
 
 ### 各カラムの設計意図
 
-#### `log_id` (VARCHAR)
+#### log_id (VARCHAR)
 - 意味：1つのログエントリを一意識別するID
 - 生成方法：ログ出力時に UUID 生成
 - 利用例：特定のエラーログを追跡
 
-#### `function_name` (VARCHAR)
+#### function_name (VARCHAR)
 - 意味：どのAzure Functionが実行されたか
 - 値例：`HttpTrigger1`, `stream_endpoint`, `snowflake_cortex`
 - 利用例：関数ごとのエラー率・実行時間分析
@@ -73,11 +73,11 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
-#### `invocation_id` (VARCHAR)
+#### invocation_id (VARCHAR)
 - 意味：Azure Functions の実行単位ID（Azureが自動付与）
 - 利用例：分散トレーシング（1リクエストに対する複数ログの関連付け）
 
-#### `level` (VARCHAR)
+#### level (VARCHAR)
 - 意味：ログレベル
 - 値：`INFO` / `WARNING` / `ERROR`
 - 利用例：エラーログのみを抽出
@@ -93,7 +93,7 @@ ORDER BY 2 DESC
 LIMIT 5;
 ```
 
-#### `message` (VARCHAR)
+#### message (VARCHAR)
 - 意味：ログメッセージ本文
 - 利用例：特定のエラーメッセージを検索
 
@@ -106,11 +106,11 @@ WHERE level = 'ERROR'
   AND year = 2026 AND month = 1;
 ```
 
-#### `timestamp` (TIMESTAMP_NTZ)
+#### timestamp (TIMESTAMP_NTZ)
 - 意味：ログが出力された日時（UTC）
 - 利用例：時系列分析、エラー発生時刻の特定
 
-#### `duration_ms` (NUMBER, nullable)
+#### duration_ms (NUMBER, nullable)
 - 意味：関数の実行時間（ミリ秒）
 - NULL の場合：エラーで途中終了、またはログ開始時点のエントリ
 - 利用例：パフォーマンス分析、SLA監視
@@ -124,7 +124,7 @@ WHERE duration_ms > 3000
 ORDER BY duration_ms DESC;
 ```
 
-#### `status_code` (NUMBER, nullable)
+#### status_code (NUMBER, nullable)
 - 意味：HTTPステータスコード（200, 400, 500など）
 - NULL の場合：HTTP関連ではないログエントリ
 - 利用例：エラーレスポンスの統計
@@ -140,7 +140,7 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
-#### `exception` (VARIANT)
+#### exception (VARIANT)
 - 意味：例外が発生した場合のスタックトレースとエラー詳細
 - 構造例：
 ```json
@@ -167,11 +167,11 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
-#### `metadata` (VARIANT)
+#### metadata (VARIANT)
 - 意味：追加のコンテキスト情報（リクエストヘッダ、環境変数など）
 - 利用例：特定の環境やユーザーに関連するログを抽出
 
-#### パーティションカラム（`year`, `month`, `day`, `hour`）
+#### パーティションカラム（year, month, day, hour）
 - [[LOG.CORTEX_CONVERSATIONS]] と同様
 
 ## クエリパターン例
@@ -242,7 +242,7 @@ ORDER BY 2 DESC;
 
 ### 機密情報のマスキング
 - ログに認証トークンやAPIキーが含まれないよう、アプリケーション側でフィルタリング
-- `metadata` 内にPII（個人情報）が含まれる場合はマスキングポリシーを適用
+- metadata 内にPII（個人情報）が含まれる場合はマスキングポリシーを適用
 
 ### アクセス制御
 ```sql

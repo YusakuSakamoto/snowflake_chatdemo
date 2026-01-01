@@ -24,15 +24,15 @@ LIST_SCHEMA_RELATED_DOC_PATHS_AGENTは、指定されたスキーマに関連す
 
 2. 上位設計ドキュメントの追加
    - 固定的にdesign/[[design.DB_DESIGN]].mdを含める（全スキーマ共通の設計方針）
-   - design/design.<`TARGET_SCHEMA`>.mdを含める（対象スキーマの設計方針）
+   - design/design.<TARGET_SCHEMA>.mdを含める（対象スキーマの設計方針）
 
 3. テーブルマスタの列挙
    - DOCS_OBSIDIAN_VからPATH LIKE 'master/tables/%'で絞り込み
-   - `TARGET_SCHEMA` = :v_schemaでスキーマを絞り込み
+   - TARGET_SCHEMA = :v_schemaでスキーマを絞り込み
    - ROW_NUMBERでMAX_TABLES件までに制限
 
 4. 重複排除とソート
-   - 上位設計とテーブルマスタを結合（`ARRAY_CAT`）
+   - 上位設計とテーブルマスタを結合（ARRAY_CAT）
    - DISTINCTで重複を排除（同じPATHが複数回含まれる場合を想定）
    - PATH順にソートしてJSON配列として返却
 
@@ -44,12 +44,12 @@ LIST_SCHEMA_RELATED_DOC_PATHS_AGENTは、指定されたスキーマに関連す
 
 ## パラメータ
 
-`TARGET_SCHEMA`（必須）:
+TARGET_SCHEMA（必須）:
 - 型: STRING
 - 説明: 対象スキーマ名（例: "[[design.APP_PRODUCTION]]"、"[[design.DB_DESIGN]]"）
 - 制約: NULLまたは空文字列は不可
 
-`MAX_TABLES`（任意）:
+MAX_TABLES（任意）:
 - 型: STRING
 - 説明: テーブル数上限を指定する文字列（例: "2000"）
 - 制約: 数値に変換可能な文字列、省略時はデフォルト2000

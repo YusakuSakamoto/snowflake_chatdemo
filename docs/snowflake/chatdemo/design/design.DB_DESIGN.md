@@ -87,9 +87,9 @@ SORT schema_id, physical
 
 そのため本基盤では、
 
-- `schema_id`
-- `table_id`
-- `column_id`
+- schema_id
+- table_id
+- column_id
 
 を論理的な不変IDとして採用する。
 

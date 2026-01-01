@@ -4,7 +4,7 @@
 ## 概要
 [[DB_DESIGN.PROFILE_RESULTS]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上に保持し、Snowflakeから外部テーブルとして参照するテーブルである。  
 1行が「1回のプロファイル実行（run）」における「1カラム分の計測結果」を表し、  
-DB_DESIGN.PROFILE_RUNS.`RUN_ID` を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
+[[DB_DESIGN.PROFILE_RUNS.RUN_ID]] を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
 
 本テーブルは、プロファイル処理の結果を外部テーブルとして永続化し、品質確認・比較・監査・設計レビューの根拠として利用される。
 
@@ -39,7 +39,7 @@ DB_DESIGN.PROFILE_RUNS.`RUN_ID` を起点として、対象テーブル・対象
 [[DB_DESIGN.PROFILE_TABLE]] は、単一テーブルを対象としてプロファイル処理を実行するためのストアドプロシージャである。
 
 - [[design.PROFILE_TABLE]] は指定された  
-  `TARGET_DB` / `TARGET_SCHEMA` / `TARGET_TABLE`  
+  TARGET_DB / TARGET_SCHEMA / TARGET_TABLE  
   に含まれる全カラムを対象にプロファイル計測を行う。
 - 実行時には新たな run を生成し（[[design.PROFILE_RUNS]] に記録）、  
   各カラムごとの計測結果を [[design.PROFILE_RESULTS]] に書き込む。

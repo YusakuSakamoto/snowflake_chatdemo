@@ -48,11 +48,11 @@ s3://snowflake-chatdemo-vault-prod/logs/snowflake_metrics/
 
 ### 各カラムの設計意図
 
-#### `metric_id` (VARCHAR)
+#### metric_id (VARCHAR)
 - 意味：1つのメトリクス測定値を一意識別するID
 - 生成方法：メトリクス収集時に UUID 生成
 
-#### `metric_name` (VARCHAR)
+#### metric_name (VARCHAR)
 - 意味：メトリクスの種別
 - 値例：
   - `query_execution_time` : クエリ実行時間（秒）
@@ -62,7 +62,7 @@ s3://snowflake-chatdemo-vault-prod/logs/snowflake_metrics/
   - `compilation_time` : クエリコンパイル時間
   - `storage_bytes` : ストレージ使用量
 
-#### `metric_value` (NUMBER)
+#### metric_value (NUMBER)
 - 意味：メトリクスの測定値（数値）
 - 利用例：時系列での推移グラフ、統計計算
 
@@ -77,7 +77,7 @@ GROUP BY 1
 ORDER BY 1;
 ```
 
-#### `warehouse_name` (VARCHAR, nullable)
+#### warehouse_name (VARCHAR, nullable)
 - 意味：どのウェアハウスでクエリが実行されたか
 - NULL の場合：ウェアハウスに依存しないメトリクス（例：ストレージ使用量）
 - 利用例：ウェアハウスごとのコスト・パフォーマンス分析
@@ -93,7 +93,7 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
-#### `query_id` (VARCHAR, nullable)
+#### query_id (VARCHAR, nullable)
 - 意味：Snowflakeのクエリ実行ID
 - 利用例：特定のクエリの詳細分析、`QUERY_HISTORY` との紐付け
 
@@ -109,7 +109,7 @@ ORDER BY 2 DESC
 LIMIT 10;
 ```
 
-#### `user_name` (VARCHAR, nullable)
+#### user_name (VARCHAR, nullable)
 - 意味：クエリを実行したユーザー名
 - 利用例：ユーザーごとのクエリ実行頻度、コスト配分
 
@@ -124,11 +124,11 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
-#### `timestamp` (TIMESTAMP_NTZ)
+#### timestamp (TIMESTAMP_NTZ)
 - 意味：メトリクスが測定された日時（UTC）
 - 利用例：時系列分析、ピーク時間帯の特定
 
-#### `metadata` (VARIANT)
+#### metadata (VARIANT)
 - 意味：追加のコンテキスト情報
 - 構造例：
 ```json
@@ -153,7 +153,7 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
-#### パーティションカラム（`year`, `month`, `day`, `hour`）
+#### パーティションカラム（year, month, day, hour）
 - [[LOG.CORTEX_CONVERSATIONS]] と同様
 
 ## データソースと収集方法

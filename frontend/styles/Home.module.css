@@ -2,53 +2,47 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f5f7fa;
+  background: #f7f7f8;
 }
 
 .header {
   background: white;
-  padding: 1.5rem 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border-bottom: 3px solid #4a90e2;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .header h1 {
-  font-size: 1.8rem;
-  color: #2c3e50;
-  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #202123;
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
 }
 
 .subtitle {
-  color: #7f8c8d;
-  margin: 0;
-  font-size: 0.95rem;
+  display: none;
 }
 
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 900px;
   width: 100%;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  overflow: hidden;
 }
 
 .messagesContainer {
   flex: 1;
   overflow-y: auto;
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #f7f7f8;
+  padding: 1rem 0;
 }
 
 .message {
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  max-width: 70%;
+  padding: 1.5rem 1rem;
   animation: slideIn 0.3s ease-out;
 }
 
@@ -64,130 +58,137 @@
 }
 
 .myMessage {
-  background: #4a90e2;
-  color: white;
-  margin-left: auto;
-  border-bottom-right-radius: 4px;
+  background: #f7f7f8;
+}
+
+.myMessage .messageContent {
+  max-width: 48rem;
+  margin: 0 auto;
+  color: #202123;
 }
 
 .otherMessage {
-  background: #f1f3f4;
-  color: #333;
-  border-bottom-left-radius: 4px;
+  background: #f7f7f8;
 }
 
 .aiMessage {
   background: #ffffff;
-  color: #2c3e50;
-  border: 1px solid #e1e4e8;
-  border-left: 4px solid #4a90e2;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  max-width: 85%;
+  border-top: 1px solid #e5e5e5;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.aiMessage .messageContent {
+  max-width: 48rem;
+  margin: 0 auto;
+  color: #202123;
 }
 
 .systemMessage {
   background: #fff9e6;
   color: #856404;
   border: 1px solid #ffeaa7;
-  border-radius: 8px;
-  margin: 0 auto;
   text-align: center;
 }
 
 .toolLogs {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #e1e4e8;
-  opacity: 0.8;
-  font-size: 0.85rem;
+  border-top: 1px solid #e5e5e5;
+  color: #6e6e80;
+  font-size: 0.875rem;
 }
 
 .markdown {
-  line-height: 1.6;
+  line-height: 1.75;
+  color: #202123;
 }
 
 .markdown h1,
 .markdown h2,
 .markdown h3 {
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-  color: #2c3e50;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #202123;
+  font-weight: 600;
 }
 
 .markdown h1 {
   font-size: 1.5rem;
-  border-bottom: 2px solid #e1e4e8;
-  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 0.5rem;
 }
 
 .markdown h2 {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
 }
 
 .markdown h3 {
-  font-size: 1.1rem;
+  font-size: 1.125rem;
 }
 
 .markdown p {
-  margin: 0.5rem 0;
+  margin: 1rem 0;
 }
 
 .markdown ul,
 .markdown ol {
-  margin: 0.5rem 0;
-  padding-left: 1.5rem;
+  margin: 1rem 0;
+  padding-left: 2rem;
 }
 
 .markdown li {
-  margin: 0.25rem 0;
+  margin: 0.5rem 0;
 }
 
 .markdown code {
-  background: #f6f8fa;
+  background: #f7f7f8;
   padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 0.9em;
-  color: #e83e8c;
+  border-radius: 0.25rem;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875em;
+  color: #d73a49;
 }
 
 .markdown pre {
-  background: #f6f8fa;
+  background: #282c34;
   padding: 1rem;
-  border-radius: 6px;
+  border-radius: 0.5rem;
   overflow-x: auto;
-  border: 1px solid #e1e4e8;
+  margin: 1rem 0;
 }
 
 .markdown pre code {
   background: none;
   padding: 0;
-  color: #24292e;
+  color: #abb2bf;
 }
 
 .markdown table {
   border-collapse: collapse;
   width: 100%;
-  margin: 1rem 0;
+  margin: 1.5rem 0;
+  border: 1px solid #e5e5e5;
 }
 
 .markdown th,
 .markdown td {
-  border: 1px solid #e1e4e8;
-  padding: 0.5rem;
+  border: 1px solid #e5e5e5;
+  padding: 0.75rem;
   text-align: left;
 }
 
 .markdown th {
-  background: #f6f8fa;
+  background: #f7f7f8;
   font-weight: 600;
+  color: #202123;
 }
 
 .markdown blockquote {
-  border-left: 4px solid #e1e4e8;
+  border-left: 4px solid #e5e5e5;
   padding-left: 1rem;
-  margin: 0.5rem 0;
-  color: #6a737d;
+  margin: 1rem 0;
+  color: #6e6e80;
+  font-style: italic;
 }
 
 .markdown svg {
@@ -197,11 +198,11 @@
 }
 
 .markdown .mermaid {
-  background: #f6f8fa;
+  background: #f7f7f8;
   padding: 1rem;
-  border-radius: 6px;
+  border-radius: 0.5rem;
   overflow-x: auto;
-  border: 1px solid #e1e4e8;
+  border: 1px solid #e5e5e5;
 }
 
 .chartContainer {
@@ -210,10 +211,13 @@
   background: #ffffff;
   border-radius: 8px;
   border: 1px solid #e1e4e8;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .chart {
   margin: 1rem 0;
+  min-width: 600px;
 }
 
 .vegaChart {
@@ -225,99 +229,107 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .userName {
   font-weight: 600;
+  color: #202123;
 }
 
 .myMessage .userName {
-  color: rgba(255, 255, 255, 0.9);
+  color: #202123;
 }
 
 .otherMessage .userName {
-  color: #4a90e2;
+  color: #202123;
 }
 
 .aiMessage .userName {
-  color: #4a90e2;
-  font-weight: 700;
+  color: #202123;
+  font-weight: 600;
 }
 
 .systemMessage .userName {
   color: #856404;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .timestamp {
-  opacity: 0.7;
+  color: #6e6e80;
   font-size: 0.75rem;
 }
 
 .messageContent {
   word-wrap: break-word;
-  line-height: 1.4;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
 .inputForm {
+  background: white;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #e5e5e5;
   display: flex;
   gap: 0.5rem;
-  background: white;
-  padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 48rem;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .messageInput {
   flex: 1;
   padding: 0.75rem 1rem;
-  border: 2px solid #ddd;
-  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
   font-family: inherit;
-  resize: vertical;
-  min-height: 48px;
+  resize: none;
+  min-height: 52px;
   max-height: 200px;
+  background: white;
 }
 
 .messageInput:focus {
   outline: none;
-  border-color: #4a90e2;
+  border-color: #10a37f;
+  box-shadow: 0 0 0 1px #10a37f;
 }
 
 .messageInput:disabled {
-  background: #f5f5f5;
+  background: #f7f7f8;
   cursor: not-allowed;
 }
 
 .sendButton {
-  padding: 0.75rem 2rem;
-  background: #4a90e2;
+  padding: 0.75rem 1rem;
+  background: #10a37f;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  align-self: flex-end;
+  min-width: 60px;
 }
 
 .sendButton:hover:not(:disabled) {
-  background: #357abd;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
+  background: #0d8b68;
 }
 
 .sendButton:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .sendButton:disabled {
-  background: #ccc;
+  background: #d1d5db;
   cursor: not-allowed;
 }
 

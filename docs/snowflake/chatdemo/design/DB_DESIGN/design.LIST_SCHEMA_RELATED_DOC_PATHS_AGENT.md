@@ -2,7 +2,7 @@
 
 ## 概要
 
-LIST_SCHEMA_RELATED_DOC_PATHS_AGENTは、指定されたスキーマに関連するObsidian VaultのドキュメントPATHを列挙するストアドプロシージャである。上位設計ドキュメント（design/design.[[design.DB_DESIGN]].md、design/design.<SCHEMA>.md）と、当該スキーマに属するmaster/tablesのPATHを収集し、重複排除してJSON配列として返却する。
+LIST_SCHEMA_RELATED_DOC_PATHS_AGENTは、指定されたスキーマに関連するObsidian VaultのドキュメントPATHを列挙するストアドプロシージャである。上位設計ドキュメント（design/[[design.DB_DESIGN]].md、design/design.<SCHEMA>.md）と、当該スキーマに属するmaster/tablesのPATHを収集し、重複排除してJSON配列として返却する。
 
 ## 業務上の意味
 
@@ -23,7 +23,7 @@ LIST_SCHEMA_RELATED_DOC_PATHS_AGENTは、指定されたスキーマに関連す
    - MAX_TABLESは省略可能（デフォルト2000）、数値変換可能な文字列として受け取る
 
 2. 上位設計ドキュメントの追加
-   - 固定的にdesign/design.[[design.DB_DESIGN]].mdを含める（全スキーマ共通の設計方針）
+   - 固定的にdesign/[[design.DB_DESIGN]].mdを含める（全スキーマ共通の設計方針）
    - design/design.<`TARGET_SCHEMA`>.mdを含める（対象スキーマの設計方針）
 
 3. テーブルマスタの列挙

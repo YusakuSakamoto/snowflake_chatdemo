@@ -1,4 +1,4 @@
-# design.[[design.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]]
+# [[design.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]]
 
 ## 概要
 
@@ -638,9 +638,9 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 - [[design.INGEST_VAULT_MD]] - エクスポートしたMarkdownを再取り込み
 
 ### 詳細設計
-- [[master/other/DB_DESIGN.[[design.PROFILE_TABLE]] - 個別テーブルのプロファイル実行
-- [[master/tables/DB_DESIGN.[[design.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
-- [[master/tables/DB_DESIGN.[[design.DOCS_OBSIDIAN]] - Obsidian Vaultのドキュメント管理テーブル
+- [[design.PROFILE_TABLE]] - 個別テーブルのプロファイル実行
+- [[design.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
+- [[design.DOCS_OBSIDIAN]] - Obsidian Vaultのドキュメント管理テーブル
 
 ### 外部システム設計
 - [[docs/awss3/chatdemo/S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Vault用）
@@ -652,7 +652,7 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 
 | 日付 | 変更者 | 変更内容 |
 |---|---|---|
-| 2026-01-02 | System | 初版作成（design.[[design.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]]） |
+| 2026-01-02 | System | 初版作成（[[design.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]]） |
 
 ---
 

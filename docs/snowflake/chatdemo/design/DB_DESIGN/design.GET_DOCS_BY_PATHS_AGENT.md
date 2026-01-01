@@ -42,7 +42,7 @@ Cortex Agentがレビューやクエリ実行時に複数のドキュメント�
 
 `PATHS_JSON`（必須）:
 - 型: STRING
-- 説明: JSON配列文字列（例: ["design/design.[[design.DB_DESIGN]].md", "master/tables/APP_PRODUCTION.CUSTOMER_MASTER.md"]）
+- 説明: JSON配列文字列（例: ["design/[[design.DB_DESIGN]].md", "master/tables/APP_PRODUCTION.CUSTOMER_MASTER.md"]）
 - 制約: NULLまたは空文字列は不可、配列型でない場合はエラー
 
 `MAX_CHARS`（任意）:

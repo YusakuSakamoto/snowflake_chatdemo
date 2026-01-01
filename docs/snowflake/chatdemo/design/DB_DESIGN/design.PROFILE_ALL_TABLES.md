@@ -1,4 +1,4 @@
-# design.[[design.PROFILE_ALL_TABLES]]
+# [[design.PROFILE_ALL_TABLES]]
 
 ## 概要
 
@@ -414,9 +414,9 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 - [[design.INGEST_VAULT_MD]] - エクスポートしたMarkdownをSnowflakeに再取り込み
 
 ### 詳細設計
-- [[master/other/DB_DESIGN.[[design.PROFILE_TABLE]] - 個別テーブルのプロファイル実行
-- [[master/tables/DB_DESIGN.[[design.PROFILE_RUNS]] - プロファイル実行履歴テーブル
-- [[master/tables/DB_DESIGN.[[design.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
+- [[design.PROFILE_TABLE]] - 個別テーブルのプロファイル実行
+- [[design.PROFILE_RUNS]] - プロファイル実行履歴テーブル
+- [[design.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
 
 ### 運用ドキュメント
 - [[docs/awss3/chatdemo/S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Markdownエクスポート先）
@@ -428,7 +428,7 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 
 | 日付 | 変更者 | 変更内容 |
 |---|---|---|
-| 2026-01-02 | System | 初版作成（design.[[design.PROFILE_ALL_TABLES]]） |
+| 2026-01-02 | System | 初版作成（[[design.PROFILE_ALL_TABLES]]） |
 
 ---
 

@@ -1,4 +1,4 @@
-# design.[[design.PROFILE_COLUMN]]
+# [[design.PROFILE_COLUMN]]
 
 ## 概要
 

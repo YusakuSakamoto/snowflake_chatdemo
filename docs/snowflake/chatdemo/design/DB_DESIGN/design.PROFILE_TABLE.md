@@ -1,4 +1,4 @@
-# design.[[design.PROFILE_TABLE]]
+# [[design.PROFILE_TABLE]]
 
 ## 概要
 

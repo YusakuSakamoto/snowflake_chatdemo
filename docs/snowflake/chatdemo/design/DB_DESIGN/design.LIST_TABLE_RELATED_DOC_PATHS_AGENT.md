@@ -25,7 +25,7 @@ LIST_TABLE_RELATED_DOC_PATHS_AGENTは、指定されたスキーマ・テーブ�
    - MAX_COLUMNSは省略可能（デフォルト5000）、数値変換可能な文字列として受け取る
 
 2. 上位設計ドキュメントの追加
-   - design/design.[[design.DB_DESIGN]].md（全スキーマ共通の設計方針）
+   - design/[[design.DB_DESIGN]].md（全スキーマ共通の設計方針）
    - design/design.<`TARGET_SCHEMA`>.md（対象スキーマの設計方針）
 
 3. テーブル固有ドキュメントの追加

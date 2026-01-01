@@ -1,12 +1,12 @@
 # テーブル設計：[[design.DIM_ENTITY_ALIAS]]（物理検索用・確定辞書）
 
 ## 概要
-NAME_RESOLUTION.DIM_ENTITY_ALIAS は、名称解決（固有名詞解決）で利用する 物理検索用の確定辞書テーブルである。  
-手動辞書（NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL）および自動生成辞書（APP_PRODUCTION.V_ENTITY_ALIAS_AUTO 等）を統合・重複排除した結果を、決定論的に検索できる形で保持する。
+[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]] は、名称解決（固有名詞解決）で利用する 物理検索用の確定辞書テーブルである。  
+手動辞書（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]）および自動生成辞書（[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]] 等）を統合・重複排除した結果を、決定論的に検索できる形で保持する。
 
 このテーブルは「検索のための最終形（materialized index）」であり、Agent / Procedure は原則として本テーブルのみを参照して候補解決を行う。  
 正の根拠（source of truth）は手動辞書と自動生成辞書の統合規則であり、
-NAME_RESOLUTION.DIM_ENTITY_ALIAS 自体は refresh により再生成される。
+[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]] 自体は refresh により再生成される。
 
 ## 役割と位置づけ
 - 目的：高速・安定・決定論の名称解決を提供する
@@ -18,18 +18,18 @@ NAME_RESOLUTION.DIM_ENTITY_ALIAS 自体は refresh により再生成される�
 ## 入力ソースとの関係
 
 ### 手動辞書との関係
-- 手動辞書：NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL
+- 手動辞書：[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]
   - 人が追加・承認する別名（略称、社内用語、例外、ルビ等）
   - is_active=false で無効化し、削除はしない
 - [[design.DIM_ENTITY_ALIAS]] は手動辞書を最優先で取り込む（priority 小が優先）
 
 ### 自動生成辞書との関係
-- 自動生成：APP_PRODUCTION.V_ENTITY_ALIAS_AUTO（および同等のDEV側）
+- 自動生成：[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]]（および同等のDEV側）
   - マスタ/正規化VIEWから機械生成できる名称を展開
 - [[design.DIM_ENTITY_ALIAS]] は自動生成辞書も取り込み、手動辞書と統合して winner を決定する
 
 ### 統合ビューとの関係
-- 統合規則は APP_PRODUCTION.V_ENTITY_ALIAS_ALL（または同等）で表現される
+- 統合規則は [[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]]（または同等）で表現される
 - [[design.DIM_ENTITY_ALIAS]] は [[design.V_ENTITY_ALIAS_ALL]] を materialize したものとして運用する
   - 重複排除（winner 決定）は [[design.V_ENTITY_ALIAS_ALL]] の規則に従う
 
@@ -100,8 +100,8 @@ NAME_RESOLUTION.DIM_ENTITY_ALIAS 自体は refresh により再生成される�
 設計意図を明確にするため定義を推奨する。
 
 ## 関連
-- 手動辞書：NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL
-- 自動生成：APP_PRODUCTION.V_ENTITY_ALIAS_AUTO
-- 統合ビュー：APP_PRODUCTION.V_ENTITY_ALIAS_ALL
-- 解決プロシージャ：APP_PRODUCTION.RESOLVE_ENTITY_ALIAS（および *_TOOL ラッパー）
+- 手動辞書：[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]
+- 自動生成：[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]]
+- 統合ビュー：[[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]]
+- 解決プロシージャ：[[APP_PRODUCTION.RESOLVE_ENTITY_ALIAS]]（および *_TOOL ラッパー）
 

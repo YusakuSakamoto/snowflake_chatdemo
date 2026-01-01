@@ -1,7 +1,7 @@
 # ビュー設計：[[design.V_PROJECT_FACT]]
 
 ## 概要
-APP_PRODUCTION.V_PROJECT_FACT は、取込テーブル（案件明細）の 生データ粒度（明細粒度）を保持したまま、参照・分析で扱いやすい入口として提供するファクト VIEW である。
+[[APP_PRODUCTION.V_PROJECT_FACT]] は、取込テーブル（案件明細）の 生データ粒度（明細粒度）を保持したまま、参照・分析で扱いやすい入口として提供するファクト VIEW である。
 
 本スキーマでは、[[design.V_PROJECT_MASTER]] / [[design.V_ORDER_MASTER]] / [[design.V_CUSTOMER_MASTER]] / [[design.V_INVOICE]] などの「正規化 VIEW 群」が
 粒度を固定して代表値や集約値を提供する一方、[[design.V_PROJECT_FACT]] は 集約しないことを目的とする。

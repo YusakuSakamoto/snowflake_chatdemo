@@ -1,11 +1,11 @@
 # VIEW設計：[[design.V_ENTITY_ALIAS_AUTO]]（自動生成 別名辞書）
 
 ## 概要
-APP_PRODUCTION.V_ENTITY_ALIAS_AUTO は、名称解決で利用する別名（alias）を 業務データから自動生成する参照用VIEWである。  
+[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]] は、名称解決で利用する別名（alias）を 業務データから自動生成する参照用VIEWである。  
 部署・顧客・案件・オーダー等の「人が入力しうる名称」を網羅的に列挙し、正規化済みキー（alias_normalized）を付与して辞書化する。
 
-本VIEWは「自動生成できる範囲」を担い、例外・略称・社内用語・ルビ等の手動補完は NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL に委ねる。  
-最終的な統合は APP_PRODUCTION.V_ENTITY_ALIAS_ALL（winner決定）で行い、実運用では物理テーブル NAME_RESOLUTION.DIM_ENTITY_ALIAS を参照する。
+本VIEWは「自動生成できる範囲」を担い、例外・略称・社内用語・ルビ等の手動補完は [[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]] に委ねる。  
+最終的な統合は [[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]]（winner決定）で行い、実運用では物理テーブル [[NAME_RESOLUTION.DIM_ENTITY_ALIAS]] を参照する。
 
 ## 生成方針（AUTOの責務）
 - 「機械的に生成できる名称」を漏れなく列挙する
@@ -17,7 +17,7 @@ APP_PRODUCTION.V_ENTITY_ALIAS_AUTO は、名称解決で利用する別名（ali
 [[design.V_ENTITY_ALIAS_AUTO]] は、以下のデータから alias を生成する。
 
 ### 部署（department）
-- base: APP_PRODUCTION.DEPARTMENT_MASTER
+- base: [[APP_PRODUCTION.DEPARTMENT_MASTER]]
 - 生成候補（例）：
   - `FULL_NAME`（正式名称）
   - `SHORT_NAME`（略称）
@@ -25,18 +25,18 @@ APP_PRODUCTION.V_ENTITY_ALIAS_AUTO は、名称解決で利用する別名（ali
   - `COMBINED_SHORT_NAME`（複合略称）
 
 ### 顧客（customer）
-- base: APP_PRODUCTION.V_CUSTOMER_MASTER（または同等の正規化ビュー）
+- base: [[APP_PRODUCTION.V_CUSTOMER_MASTER]]（または同等の正規化ビュー）
 - 生成候補（例）：
   - customer_name
 
 ### 案件（project）
-- base: APP_PRODUCTION.V_PROJECT_MASTER（または同等の正規化ビュー）
+- base: [[APP_PRODUCTION.V_PROJECT_MASTER]]（または同等の正規化ビュー）
 - 生成候補（例）：
   - project_name（案件名）
   - subject（件名）
 
 ### オーダー（order）
-- base: APP_PRODUCTION.V_ORDER_MASTER（または同等の正規化ビュー）
+- base: [[APP_PRODUCTION.V_ORDER_MASTER]]（または同等の正規化ビュー）
 - 生成候補（例）：
   - order_name
 
@@ -64,9 +64,9 @@ APP_PRODUCTION.V_ENTITY_ALIAS_AUTO は、名称解決で利用する別名（ali
 
 ## 正規化ルール（alias_normalized）
 - department:
-  - APP_PRODUCTION.NORMALIZE_JA_DEPT（例：末尾の「部/課」等の扱いを含む）
+  - [[APP_PRODUCTION.NORMALIZE_JA_DEPT]]（例：末尾の「部/課」等の扱いを含む）
 - customer / project / order:
-  - APP_PRODUCTION.NORMALIZE_JA（例：NFKC、空白除去、法人格除去 等）
+  - [[APP_PRODUCTION.NORMALIZE_JA]]（例：NFKC、空白除去、法人格除去 等）
 
 重要：
 - 正規化関数は「意味解釈」ではなく「表記揺れ吸収」のみに限定する
@@ -80,15 +80,15 @@ APP_PRODUCTION.V_ENTITY_ALIAS_AUTO は、名称解決で利用する別名（ali
 
 ## 注意点
 - 重複（同じ alias_normalized が複数行）は起こり得る
-  - 本VIEWは列挙が責務であり、重複排除は APP_PRODUCTION.V_ENTITY_ALIAS_ALL で行う
+  - 本VIEWは列挙が責務であり、重複排除は [[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]] で行う
 - NULL 値は生成対象から除外する（where <col> is not null）
 - entity_id / entity_name の定義は「解決に必要な最小限」に留める  
   （物理化・監査・履歴は [[design.DIM_ENTITY_ALIAS]] 側で担う）
 
 ## 関連
-- 手動辞書：NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL
-- 統合VIEW：APP_PRODUCTION.V_ENTITY_ALIAS_ALL
-- 物理検索用：NAME_RESOLUTION.DIM_ENTITY_ALIAS
-- 解決プロシージャ：APP_PRODUCTION.RESOLVE_ENTITY_ALIAS / *_TOOL
-- 正規化関数：APP_PRODUCTION.NORMALIZE_JA, APP_PRODUCTION.NORMALIZE_JA_DEPT
+- 手動辞書：[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]
+- 統合VIEW：[[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]]
+- 物理検索用：[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]]
+- 解決プロシージャ：[[APP_PRODUCTION.RESOLVE_ENTITY_ALIAS]] / *_TOOL
+- 正規化関数：[[APP_PRODUCTION.NORMALIZE_JA]], [[APP_PRODUCTION.NORMALIZE_JA_DEPT]]
 

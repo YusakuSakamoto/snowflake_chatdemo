@@ -1,7 +1,7 @@
 # テーブル設計：[[design.DEPARTMENT_MASTER]]
 
 ## 概要
-APP_PRODUCTION.DEPARTMENT_MASTER は、外部システムや CSV ファイルから提供される  
+[[APP_PRODUCTION.DEPARTMENT_MASTER]] は、外部システムや CSV ファイルから提供される  
 部署マスタ情報を年度単位で取り込むための取込（Raw / Landing）テーブルである。
 
 本テーブルは「部署マスタ」という名称を持つが、  
@@ -20,10 +20,10 @@ APP_PRODUCTION.DEPARTMENT_MASTER は、外部システムや CSV ファイルか
 本テーブルを業務処理や分析処理の参照正本として直接利用することは想定しない。
 
 ## 設計上の位置づけ
-APP_PRODUCTION.DEPARTMENT_MASTER は、以下のレイヤ構成における取込層に属する。
+[[APP_PRODUCTION.DEPARTMENT_MASTER]] は、以下のレイヤ構成における取込層に属する。
 
 - 取込（Raw / Landing）  
-  → APP_PRODUCTION.DEPARTMENT_MASTER
+  → [[APP_PRODUCTION.DEPARTMENT_MASTER]]
 - 整形（年度統合・正規化・型変換・制約付与）
 - 業務・分析用部署マスタ（参照正本）
 
@@ -51,7 +51,7 @@ APP_PRODUCTION.DEPARTMENT_MASTER は、以下のレイヤ構成における取�
 そのため、本テーブルは 業務的な正しさや完全性を保証しない。
 
 ### 制約を設けないという判断
-APP_PRODUCTION.DEPARTMENT_MASTER では、以下を 意図的に行わない。
+[[APP_PRODUCTION.DEPARTMENT_MASTER]] では、以下を 意図的に行わない。
 
 - 主キーによる一意性制約
 - 外部キー制約
@@ -82,7 +82,7 @@ APP_PRODUCTION.DEPARTMENT_MASTER では、以下を 意図的に行わない。
 - 正式な参照先は、必ず後段の整形・正本部署マスタを使用する
 - 年度別に再取込が発生する前提で、冪等な運用を行う
 
-APP_PRODUCTION.DEPARTMENT_MASTER は  
+[[APP_PRODUCTION.DEPARTMENT_MASTER]] は  
 「部署マスタという名前を持つが、まだ正本ではない層」として扱う。
 
 ## 関連

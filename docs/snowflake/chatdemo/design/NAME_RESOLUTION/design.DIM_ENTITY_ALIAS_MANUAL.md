@@ -1,11 +1,11 @@
 # テーブル設計：[[design.DIM_ENTITY_ALIAS_MANUAL]]（手動別名辞書）
 
 ## 概要
-NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL は、名称解決（固有名詞解決）における 手動管理の別名辞書である。  
+[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]] は、名称解決（固有名詞解決）における 手動管理の別名辞書である。  
 自動生成（AUTO）で拾えない略称・社内用語・例外表記・ルビ等を、人が責任を持って追加・維持する。
 
 このテーブルは [[design.NAME_RESOLUTION]] スキーマにのみ存在し、アプリケーション（DEV/PROD）から共通利用される。  
-本テーブルの内容は refresh により NAME_RESOLUTION.DIM_ENTITY_ALIAS（物理検索用）へ反映される。
+本テーブルの内容は refresh により [[NAME_RESOLUTION.DIM_ENTITY_ALIAS]]（物理検索用）へ反映される。
 
 ## 役割と位置づけ
 - 目的：AUTOでは解決できない表記揺れ・略称・社内用語を補完し、決定論的な解決を可能にする
@@ -74,13 +74,13 @@ NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL は、名称解決（固有名詞解決�
 - どうしても一意に決められない場合は、候補提示（disambiguate）に倒すことを許容する
 
 ## 下流への反映
-- 本テーブルは APP_PRODUCTION.V_ENTITY_ALIAS_ALL に取り込まれ、
-  重複排除（winner決定）を経て NAME_RESOLUTION.DIM_ENTITY_ALIAS に materialize される
+- 本テーブルは [[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]] に取り込まれ、
+  重複排除（winner決定）を経て [[NAME_RESOLUTION.DIM_ENTITY_ALIAS]] に materialize される
 - refresh の単位は refresh_run_id で追跡可能とする
 
 ## 関連
-- 物理検索用：NAME_RESOLUTION.DIM_ENTITY_ALIAS
-- 自動生成：APP_PRODUCTION.V_ENTITY_ALIAS_AUTO
-- 統合ビュー：APP_PRODUCTION.V_ENTITY_ALIAS_ALL
-- 解決プロシージャ：APP_PRODUCTION.RESOLVE_ENTITY_ALIAS（および *_TOOL）
+- 物理検索用：[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]]
+- 自動生成：[[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]]
+- 統合ビュー：[[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]]
+- 解決プロシージャ：[[APP_PRODUCTION.RESOLVE_ENTITY_ALIAS]]（および *_TOOL）
 

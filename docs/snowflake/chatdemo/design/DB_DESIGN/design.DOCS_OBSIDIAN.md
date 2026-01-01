@@ -2,38 +2,38 @@
 # テーブル設計：[[design.DOCS_OBSIDIAN]]
 
 ## 概要
-DB_DESIGN.DOCS_OBSIDIAN は、Obsidian Vault 上の Markdown ファイルを 1ファイル = 1レコードとして取り込み、設計レビュー・検索・Agent 処理の一次ソースとして提供する内部テーブルである。  
+[[DB_DESIGN.DOCS_OBSIDIAN]] は、Obsidian Vault 上の Markdown ファイルを 1ファイル = 1レコードとして取り込み、設計レビュー・検索・Agent 処理の一次ソースとして提供する内部テーブルである。  
 DB_DESIGN.DOCS_OBSIDIAN.`PATH`（Vault 内の相対パス）と DB_DESIGN.DOCS_OBSIDIAN.`CONTENT`（本文）を中心に保持し、Vault を正本とする設計思想のもとで、設計定義（master）・設計意図（design）・レビュー結果（reviews）を Snowflake 上で横断的に扱える状態を作る。
 
 ## 関連コンポーネントとの関係
 
 ### [[design.DOCS_OBSIDIAN_V]] との関係
-DB_DESIGN.DOCS_OBSIDIAN_V は [[design.DOCS_OBSIDIAN]] を基底とする参照専用ビューであり、検索・閲覧・Agent 利用に適した形で情報を提供する層である。
+[[DB_DESIGN.DOCS_OBSIDIAN_V]] は [[design.DOCS_OBSIDIAN]] を基底とする参照専用ビューであり、検索・閲覧・Agent 利用に適した形で情報を提供する層である。
 
 - 保管・提供の流れ  
-  DB_DESIGN.DOCS_OBSIDIAN → DB_DESIGN.DOCS_OBSIDIAN_V → DB_DESIGN.OBSIDIAN_VAULT_SEARCH
+  [[DB_DESIGN.DOCS_OBSIDIAN]] → [[DB_DESIGN.DOCS_OBSIDIAN_V]] → DB_DESIGN.OBSIDIAN_VAULT_SEARCH
 
 - 役割分担  
-  - DB_DESIGN.DOCS_OBSIDIAN  
+  - [[DB_DESIGN.DOCS_OBSIDIAN]]  
     Vault から取り込んだ Markdown を 1ファイル単位で保持する保管層。
-  - DB_DESIGN.DOCS_OBSIDIAN_V  
+  - [[DB_DESIGN.DOCS_OBSIDIAN_V]]  
     下流（検索サービス・Agent）向けに整形された提供層。
 
 [[design.DOCS_OBSIDIAN_V]] は [[design.DOCS_OBSIDIAN]] の内容を変更せず、参照用途のための投影・整形のみを行う。  
 Evidence の根拠単位は常に `DB_DESIGN.DOCS_OBSIDIAN.PATH` によって示される実在する .md ファイルであり、ビュー側でその意味を変えない。
 
 ### [[design.DOCS_OBSIDIAN_V]] から `OBSIDIAN_VAULT_SEARCH` への連携
-DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、DB_DESIGN.DOCS_OBSIDIAN_V を検索インデックスの入力として利用する Cortex Search サービスである。
+DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、[[DB_DESIGN.DOCS_OBSIDIAN_V]] を検索インデックスの入力として利用する Cortex Search サービスである。
 
-- DB_DESIGN.DOCS_OBSIDIAN_V で提供されたテキストおよびメタ情報をインデックス化する
+- [[DB_DESIGN.DOCS_OBSIDIAN_V]] で提供されたテキストおよびメタ情報をインデックス化する
 - Agent は検索結果を探索の補助として利用するが、存在有無や正否判断は Vault 上の実在する `DB_DESIGN.DOCS_OBSIDIAN.PATH` を根拠とする
 
 検索結果のスコアやヒット有無のみを根拠に、設計定義やカラムの存在有無を判断しない。
 
 ### [[design.INGEST_VAULT_MD]] プロシージャーとの関係
-DB_DESIGN.INGEST_VAULT_MD は、DB_DESIGN.OBSIDIAN_VAULT_STAGE に同期された Vault の Markdown を読み取り、[[design.DOCS_OBSIDIAN]] に 1ファイル = 1レコードで UPSERT する唯一の書き込み経路である。
+[[DB_DESIGN.INGEST_VAULT_MD]] は、[[DB_DESIGN.OBSIDIAN_VAULT_STAGE]] に同期された Vault の Markdown を読み取り、[[design.DOCS_OBSIDIAN]] に 1ファイル = 1レコードで UPSERT する唯一の書き込み経路である。
 
-- DB_DESIGN.DOCS_OBSIDIAN への INSERT / UPDATE / DELETE は DB_DESIGN.INGEST_VAULT_MD のみが行う
+- [[DB_DESIGN.DOCS_OBSIDIAN]] への INSERT / UPDATE / DELETE は [[DB_DESIGN.INGEST_VAULT_MD]] のみが行う
 - アプリケーション、分析クエリ、運用作業からの直接更新は行わない
 - 再実行時も結果が破綻しないよう、冪等な取り込みを前提とする
 
@@ -44,7 +44,7 @@ DB_DESIGN.INGEST_VAULT_MD は、DB_DESIGN.OBSIDIAN_VAULT_STAGE に同期され�
 - このテーブルが表す概念  
   Vault 内 Markdown 資産の台帳。1行が 1つの .md ファイルを表す。
 - 主な利用シーン  
-  - 設計資産の検索・参照（DB_DESIGN.DOCS_OBSIDIAN_V / DB_DESIGN.OBSIDIAN_VAULT_SEARCH 経由）  
+  - 設計資産の検索・参照（[[DB_DESIGN.DOCS_OBSIDIAN_V]] / DB_DESIGN.OBSIDIAN_VAULT_SEARCH 経由）  
   - 設計レビューの自動化・高度化（Vault 正本を Snowflake 上で扱うための基盤）  
   - 取り込み運用・監査（取り込み鮮度・遅延の把握）
 
@@ -52,7 +52,7 @@ DB_DESIGN.INGEST_VAULT_MD は、DB_DESIGN.OBSIDIAN_VAULT_STAGE に同期され�
 
 ### 主キーと識別
 - [[DB_DESIGN.DOCS_OBSIDIAN.DOC_ID]] は [[design.DOCS_OBSIDIAN]] における論理的な主キーであり、1ファイルを一意に識別する。
-- 実際の一意性担保は DB_DESIGN.INGEST_VAULT_MD の処理ロジックに依存する。
+- 実際の一意性担保は [[DB_DESIGN.INGEST_VAULT_MD]] の処理ロジックに依存する。
 - PRIMARY KEY 制約は、設計意図を明示するための情報的な制約として付与している。
 
 ### カラムの意味づけ
@@ -102,10 +102,10 @@ DB_DESIGN.INGEST_VAULT_MD は、DB_DESIGN.OBSIDIAN_VAULT_STAGE に同期され�
 
 table_id:: TBL_20251227124901
 
-- 関連ビュー：DB_DESIGN.DOCS_OBSIDIAN_V
+- 関連ビュー：[[DB_DESIGN.DOCS_OBSIDIAN_V]]
 - 関連検索サービス：DB_DESIGN.OBSIDIAN_VAULT_SEARCH
-- 関連プロシージャ：DB_DESIGN.INGEST_VAULT_MD
-- 関連 External Stage：DB_DESIGN.OBSIDIAN_VAULT_STAGE
+- 関連プロシージャ：[[DB_DESIGN.INGEST_VAULT_MD]]
+- 関連 External Stage：[[DB_DESIGN.OBSIDIAN_VAULT_STAGE]]
 
 ```dataview
 TABLE physical, domain, comment

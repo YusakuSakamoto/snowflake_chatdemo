@@ -2,7 +2,7 @@
 
 ## 概要
 
-`DB_DESIGN.PROFILE_COLUMN` は、指定された単一カラムの品質プロファイルメトリクスを算出し、VARIANT形式で返却するプロシージャです。
+`[[DB_DESIGN.PROFILE_COLUMN]]` は、指定された単一カラムの品質プロファイルメトリクスを算出し、VARIANT形式で返却するプロシージャです。
 
 - スキーマ: [[design.DB_DESIGN]] (SCH_20251226180633)
 - オブジェクトタイプ: PROCEDURE
@@ -39,9 +39,9 @@ PROFILE_RESULTS (カラム別メトリクス記録)
 ```
 
 ### 他コンポーネントとの連携
-- 上流: DB_DESIGN.PROFILE_TABLE (テーブルプロファイル実行・ループ呼び出し)
-- 出力先: DB_DESIGN.PROFILE_RESULTS (METRICSカラムにVARIANT形式で保存)
-- 連携先: DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL (メトリクス集計・出力)
+- 上流: [[DB_DESIGN.PROFILE_TABLE]] (テーブルプロファイル実行・ループ呼び出し)
+- 出力先: [[DB_DESIGN.PROFILE_RESULTS]] (METRICSカラムにVARIANT形式で保存)
+- 連携先: [[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (メトリクス集計・出力)
 
 ---
 

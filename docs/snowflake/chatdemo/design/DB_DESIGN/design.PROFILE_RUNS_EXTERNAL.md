@@ -1,7 +1,7 @@
 # 外部テーブル設計：[[design.PROFILE_RUNS_EXTERNAL]]
 
 ## 概要
-DB_DESIGN.PROFILE_RUNS_EXTERNAL は、データベーステーブルに対して実行したプロファイル処理（例：行数、列統計、欠損率などの算出）の実行履歴をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
+[[DB_DESIGN.PROFILE_RUNS_EXTERNAL]] は、データベーステーブルに対して実行したプロファイル処理（例：行数、列統計、欠損率などの算出）の実行履歴をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
 1行が1回のプロファイル実行（= run）を表し、対象テーブル・実行条件・実行時間・実行状態を記録することで、監視・再実行・トラブルシュート・結果テーブルとの紐付けに利用する。
 
 本テーブルは、プロファイル実行履歴を外部ストレージに永続化し、長期的なトレーサビリティ確保とストレージコスト最適化を実現する。内部テーブル版（[[design.PROFILE_RUNS]]）と同一の論理構造を持ちながら、S3直接参照による長期保存とコスト削減を両立する。
@@ -22,7 +22,7 @@ DB_DESIGN.PROFILE_RUNS_EXTERNAL は、データベーステーブルに対して
 ## 設計上の位置づけ
 
 ### 内部テーブル版との関係
-本外部テーブルは DB_DESIGN.PROFILE_RUNS と論理的に同一構造を持つ。
+本外部テーブルは [[DB_DESIGN.PROFILE_RUNS]] と論理的に同一構造を持つ。
 
 - 論理設計の共通性  
   - カラム構成、データ型、主キーの考え方は内部テーブル版と同一とする。
@@ -46,7 +46,7 @@ DB_DESIGN.PROFILE_RUNS_EXTERNAL は、データベーステーブルに対して
   - ストレージコストの削減が優先される状況
 
 ### 結果テーブルとの関係
-DB_DESIGN.PROFILE_RESULTS_EXTERNAL は本テーブルに紐づく結果詳細を保持する。
+[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]] は本テーブルに紐づく結果詳細を保持する。
 
 - 関係性  
   [[design.PROFILE_RUNS_EXTERNAL]]（1） → [[design.PROFILE_RESULTS_EXTERNAL]]（N）
@@ -162,7 +162,7 @@ DB_DESIGN.PROFILE_RESULTS_EXTERNAL は本テーブルに紐づく結果詳細を
 
 ## 関連
 
-- 内部テーブル版：DB_DESIGN.PROFILE_RUNS
-- 関連外部テーブル：DB_DESIGN.PROFILE_RESULTS_EXTERNAL
-- 関連プロシージャ：DB_DESIGN.PROFILE_TABLE, DB_DESIGN.PROFILE_ALL_TABLES
-- マスター定義：DB_DESIGN.PROFILE_RUNS_EXTERNAL（master/externaltables/）
+- 内部テーブル版：[[DB_DESIGN.PROFILE_RUNS]]
+- 関連外部テーブル：[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]]
+- 関連プロシージャ：[[DB_DESIGN.PROFILE_TABLE]], [[DB_DESIGN.PROFILE_ALL_TABLES]]
+- マスター定義：[[DB_DESIGN.PROFILE_RUNS_EXTERNAL]]（master/externaltables/）

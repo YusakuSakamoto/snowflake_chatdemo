@@ -2,7 +2,7 @@
 
 ## 概要
 
-`DB_DESIGN.PROFILE_TABLE` は、指定された単一テーブルの全カラムに対して、品質プロファイルメトリクスを算出・記録するプロシージャです。
+`[[DB_DESIGN.PROFILE_TABLE]]` は、指定された単一テーブルの全カラムに対して、品質プロファイルメトリクスを算出・記録するプロシージャです。
 
 - スキーマ: [[design.DB_DESIGN]] (SCH_20251226180633)
 - オブジェクトタイプ: PROCEDURE
@@ -46,11 +46,11 @@ S3 (snowflake-chatdemo-vault-prod/reviews/profiles/)
 ```
 
 ### 他コンポーネントとの連携
-- 上流: DB_DESIGN.PROFILE_ALL_TABLES (全テーブルプロファイル)
+- 上流: [[DB_DESIGN.PROFILE_ALL_TABLES]] (全テーブルプロファイル)
 - 並列処理: INFORMATION_SCHEMA.COLUMNS (カラムメタデータ取得)
-- 下流: DB_DESIGN.PROFILE_RESULTS (カラムメトリクス蓄積)
-- 下流: DB_DESIGN.PROFILE_RUNS (実行履歴記録)
-- 出力: DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL (S3エクスポート)
+- 下流: [[DB_DESIGN.PROFILE_RESULTS]] (カラムメトリクス蓄積)
+- 下流: [[DB_DESIGN.PROFILE_RUNS]] (実行履歴記録)
+- 出力: [[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (S3エクスポート)
 
 ---
 

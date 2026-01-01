@@ -2,7 +2,7 @@
 # 外部テーブル設計：[[design.PROFILE_RESULTS]]
 
 ## 概要
-DB_DESIGN.PROFILE_RESULTS は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上に保持し、Snowflakeから外部テーブルとして参照するテーブルである。  
+[[DB_DESIGN.PROFILE_RESULTS]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上に保持し、Snowflakeから外部テーブルとして参照するテーブルである。  
 1行が「1回のプロファイル実行（run）」における「1カラム分の計測結果」を表し、  
 DB_DESIGN.PROFILE_RUNS.`RUN_ID` を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
 
@@ -24,11 +24,11 @@ DB_DESIGN.PROFILE_RUNS.`RUN_ID` を起点として、対象テーブル・対象
 ## 関連テーブル・プロシージャとの関係
 
 ### [[design.PROFILE_RUNS]] との関係
-DB_DESIGN.PROFILE_RUNS はプロファイル実行単位（run）の管理テーブルであり、  
+[[DB_DESIGN.PROFILE_RUNS]] はプロファイル実行単位（run）の管理テーブルであり、  
 [[design.PROFILE_RESULTS]] はその run に紐づく結果詳細を保持する。
 
 - 関係性  
-  DB_DESIGN.PROFILE_RUNS（1） → DB_DESIGN.PROFILE_RESULTS（N）
+  [[DB_DESIGN.PROFILE_RUNS]]（1） → [[DB_DESIGN.PROFILE_RESULTS]]（N）
 - 関連キー  
   - [[DB_DESIGN.PROFILE_RESULTS.RUN_ID]]  
     → [[DB_DESIGN.PROFILE_RUNS.RUN_ID]]
@@ -36,7 +36,7 @@ DB_DESIGN.PROFILE_RUNS はプロファイル実行単位（run）の管理テー
 [[design.PROFILE_RESULTS]] は、必ず既存の run に紐づく結果としてのみ存在する前提とする。
 
 ### [[design.PROFILE_TABLE]] との関係
-DB_DESIGN.PROFILE_TABLE は、単一テーブルを対象としてプロファイル処理を実行するためのストアドプロシージャである。
+[[DB_DESIGN.PROFILE_TABLE]] は、単一テーブルを対象としてプロファイル処理を実行するためのストアドプロシージャである。
 
 - [[design.PROFILE_TABLE]] は指定された  
   `TARGET_DB` / `TARGET_SCHEMA` / `TARGET_TABLE`  
@@ -46,7 +46,7 @@ DB_DESIGN.PROFILE_TABLE は、単一テーブルを対象としてプロファ�
 - [[design.PROFILE_RESULTS]] は、[[design.PROFILE_TABLE]] による実行結果を永続化する格納先となる。
 
 ### [[design.PROFILE_COLUMN]] との関係
-DB_DESIGN.PROFILE_COLUMN は、単一カラムを対象に即時計測を行うためのプロシージャである。
+[[DB_DESIGN.PROFILE_COLUMN]] は、単一カラムを対象に即時計測を行うためのプロシージャである。
 
 - [[design.PROFILE_COLUMN]] は参照・計算用途を主目的とし、  
   原則として [[design.PROFILE_RESULTS]] への永続書き込みは行わない。
@@ -55,18 +55,18 @@ DB_DESIGN.PROFILE_COLUMN は、単一カラムを対象に即時計測を行う�
 - これにより、単発計測結果と永続結果を同一の解釈軸で扱える。
 
 ### [[design.PROFILE_ALL_TABLES]] との関係
-DB_DESIGN.PROFILE_ALL_TABLES は、複数テーブル（スキーマ単位、DB単位など）を横断してプロファイル処理を実行するオーケストレーション用プロシージャである。
+[[DB_DESIGN.PROFILE_ALL_TABLES]] は、複数テーブル（スキーマ単位、DB単位など）を横断してプロファイル処理を実行するオーケストレーション用プロシージャである。
 
 - [[design.PROFILE_ALL_TABLES]] は内部で  
-  DB_DESIGN.PROFILE_TABLE を複数回呼び出す構成を取る。
+  [[DB_DESIGN.PROFILE_TABLE]] を複数回呼び出す構成を取る。
 - 各テーブルごとに run が生成され、  
   その結果として [[design.PROFILE_RESULTS]] に多数のレコードが蓄積される。
 - [[design.PROFILE_RESULTS]] は、スキーマ横断・全体横断での品質状況把握の基礎データとなる。
 
 ## データ更新ポリシー
 - [[design.PROFILE_RESULTS]] への INSERT / UPDATE / DELETE は、以下のプロシージャ群からのみ行われる。
-  - DB_DESIGN.PROFILE_TABLE
-  - （間接的に）DB_DESIGN.PROFILE_ALL_TABLES
+  - [[DB_DESIGN.PROFILE_TABLE]]
+  - （間接的に）[[DB_DESIGN.PROFILE_ALL_TABLES]]
 - 分析クエリ、アプリケーション、運用作業からの直接更新は行わない。
 - 同一 run・同一カラムに対する再計測時は、UPSERT または再生成を前提とする。
 
@@ -109,6 +109,6 @@ Snowflake の PRIMARY KEY 制約は情報的な制約であり、
 
 ## 関連
 
-- 関連テーブル：DB_DESIGN.PROFILE_RUNS
-- 関連プロシージャ：DB_DESIGN.PROFILE_TABLE, DB_DESIGN.PROFILE_COLUMN, DB_DESIGN.PROFILE_ALL_TABLES
+- 関連テーブル：[[DB_DESIGN.PROFILE_RUNS]]
+- 関連プロシージャ：[[DB_DESIGN.PROFILE_TABLE]], [[DB_DESIGN.PROFILE_COLUMN]], [[DB_DESIGN.PROFILE_ALL_TABLES]]
 

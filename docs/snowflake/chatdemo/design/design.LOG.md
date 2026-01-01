@@ -87,7 +87,7 @@ SORT schema_id, physical
 ### 3.1 LOG.CORTEX_CONVERSATIONS
 
 #### 目的
-- Cortex Agent（APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT）の会話履歴を保管
+- Cortex Agent（[[APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT]]）の会話履歴を保管
 - ユーザーとAIの対話品質を分析
 - 問題のあるクエリやエラーの追跡
 - 機械学習モデルの改善材料

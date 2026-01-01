@@ -2,7 +2,7 @@
 
 ## 概要
 
-`DB_DESIGN.PROFILE_ALL_TABLES` は、指定されたデータベース・スキーマ内のすべてのテーブルに対して、プロファイル処理を一括実行するオーケストレーション用プロシージャです。
+`[[DB_DESIGN.PROFILE_ALL_TABLES]]` は、指定されたデータベース・スキーマ内のすべてのテーブルに対して、プロファイル処理を一括実行するオーケストレーション用プロシージャです。
 
 - スキーマ: [[design.DB_DESIGN]] (SCH_20251226180633)
 - オブジェクトタイプ: PROCEDURE
@@ -49,9 +49,9 @@ DOCS_OBSIDIAN (Cortex Agentが参照)
 
 ### 他コンポーネントとの連携
 - 上流: INFORMATION_SCHEMA (Snowflake標準ビュー)
-- 下流: DB_DESIGN.PROFILE_TABLE (個別テーブルプロファイル実行)
-- 並列処理: DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL (結果をMarkdownでエクスポート)
-- 集約層: DB_DESIGN.PROFILE_RESULTS, DB_DESIGN.PROFILE_RUNS
+- 下流: [[DB_DESIGN.PROFILE_TABLE]] (個別テーブルプロファイル実行)
+- 並列処理: [[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (結果をMarkdownでエクスポート)
+- 集約層: [[DB_DESIGN.PROFILE_RESULTS]], [[DB_DESIGN.PROFILE_RUNS]]
 
 ---
 
@@ -353,8 +353,8 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
   - `USAGE` on target database and schema
   - `SELECT` on all tables in target schema
   - `USAGE` on [[design.DB_DESIGN]] schema
-  - `EXECUTE` on DB_DESIGN.PROFILE_TABLE
-  - `INSERT` on DB_DESIGN.PROFILE_RUNS, DB_DESIGN.PROFILE_RESULTS
+  - `EXECUTE` on [[DB_DESIGN.PROFILE_TABLE]]
+  - `INSERT` on [[DB_DESIGN.PROFILE_RUNS]], [[DB_DESIGN.PROFILE_RESULTS]]
 
 ### 権限設計の推奨事項
 ```sql

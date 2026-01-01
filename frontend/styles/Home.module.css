@@ -424,6 +424,22 @@
   line-height: 1.5;
 }
 
+.progressMarkdown {
+  display: inline;
+}
+
+.progressMarkdown p {
+  display: inline;
+  margin: 0;
+}
+
+.progressMarkdown code {
+  background: #f0f0f0;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+
 .toolItem {
   background: white;
   border: 1px solid #e0e0e0;
@@ -462,6 +478,25 @@
   color: #721c24;
 }
 
+.toolElapsed {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+
+.toolInputSection,
+.toolOutputSection,
+.toolRawSection {
+  margin-top: 0.75rem;
+}
+
+.sectionLabel {
+  font-size: 0.8rem;
+  color: #555;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
 .sqlBlock {
   margin-top: 0.5rem;
 }
@@ -482,6 +517,32 @@
   overflow-x: auto;
   margin: 0;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.4;
+}
+
+.jsonCode {
+  background: #f8f9fa;
+  color: #333;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  margin: 0;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.4;
+  border: 1px solid #e0e0e0;
+}
+
+.dataPreview {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.moreData {
+  margin-top: 0.5rem;
+  font-style: italic;
+  color: #888;
+  font-size: 0.75rem;
 }
 
 .toolInput {

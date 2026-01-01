@@ -58,18 +58,24 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <span>{isExpanded ? '▼' : '▶'}</span>
-        <span>実行詳細 ({progress?.length || 0}ステップ)</span>
+        <span>実行詳細 ({progress?.length || 0}ステップ, {tool_details?.length || 0}ツール)</span>
       </button>
       
       {isExpanded && (
         <div className={styles.toolDetailsContent}>
-          {/* プログレス表示 */}
+          {/* プログレス表示（Markdownでレンダリング） */}
           {progress && progress.length > 0 && (
             <div className={styles.progressSection}>
               <h4>📋 実行ステップ</h4>
               <ol className={styles.progressList}>
                 {progress.map((step, index) => (
-                  <li key={index}>{step}</li>
+                  <li key={index}>
+                    <div className={styles.progressMarkdown}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {step}
+                      </ReactMarkdown>
+                    </div>
+                  </li>
                 ))}
               </ol>
             </div>
@@ -78,28 +84,69 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
           {/* ツール詳細表示 */}
           {tool_details && tool_details.length > 0 && (
             <div className={styles.toolSection}>
-              <h4>🔧 使用ツール</h4>
+              <h4>🔧 使用ツール詳細</h4>
               {tool_details.map((tool, index) => (
                 <div key={index} className={styles.toolItem}>
                   <div className={styles.toolHeader}>
-                    <span className={styles.toolName}>{tool.tool_name}</span>
+                    <span className={styles.toolName}>
+                      {index + 1}. {tool.tool_name}
+                    </span>
                     <span className={`${styles.toolStatus} ${styles[tool.status]}`}>
                       {tool.status === 'success' ? '✓' : '✗'} {tool.status}
                     </span>
                   </div>
                   
-                  {/* SQL表示 */}
-                  {tool.tool_name === 'text_to_sql' && tool.input?.sql && (
-                    <div className={styles.sqlBlock}>
-                      <div className={styles.sqlLabel}>SQL:</div>
-                      <pre className={styles.sqlCode}>{tool.input.sql}</pre>
+                  {tool.elapsed_ms && (
+                    <div className={styles.toolElapsed}>
+                      ⏱️ {tool.elapsed_ms}ms
                     </div>
                   )}
                   
-                  {/* 入力情報 */}
-                  {tool.input && Object.keys(tool.input).length > 0 && tool.tool_name !== 'text_to_sql' && (
-                    <div className={styles.toolInput}>
-                      <strong>入力:</strong> {JSON.stringify(tool.input, null, 2)}
+                  {/* 入力情報を詳細表示 */}
+                  {tool.input && Object.keys(tool.input).length > 0 && (
+                    <div className={styles.toolInputSection}>
+                      <div className={styles.sectionLabel}>📥 入力:</div>
+                      {tool.input.sql ? (
+                        <div className={styles.sqlBlock}>
+                          <pre className={styles.sqlCode}>{tool.input.sql}</pre>
+                        </div>
+                      ) : (
+                        <pre className={styles.jsonCode}>
+                          {JSON.stringify(tool.input, null, 2)}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* 出力情報を詳細表示 */}
+                  {tool.output && Object.keys(tool.output).length > 0 && (
+                    <div className={styles.toolOutputSection}>
+                      <div className={styles.sectionLabel}>📤 出力:</div>
+                      {tool.output.data && Array.isArray(tool.output.data) && tool.output.data.length > 0 ? (
+                        <div className={styles.dataPreview}>
+                          {tool.output.data.length}行のデータ（先頭{Math.min(3, tool.output.data.length)}行を表示）
+                          <pre className={styles.jsonCode}>
+                            {JSON.stringify(tool.output.data.slice(0, 3), null, 2)}
+                          </pre>
+                          {tool.output.data.length > 3 && (
+                            <div className={styles.moreData}>...残り{tool.output.data.length - 3}行</div>
+                          )}
+                        </div>
+                      ) : (
+                        <pre className={styles.jsonCode}>
+                          {JSON.stringify(tool.output, null, 2)}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* raw情報を表示 */}
+                  {tool.raw && (
+                    <div className={styles.toolRawSection}>
+                      <div className={styles.sectionLabel}>🔍 Raw:</div>
+                      <pre className={styles.jsonCode}>
+                        {JSON.stringify(tool.raw, null, 2)}
+                      </pre>
                     </div>
                   )}
                 </div>

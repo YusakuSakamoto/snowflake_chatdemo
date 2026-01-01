@@ -1,6 +1,7 @@
 import os
 import snowflake.connector
 from dotenv import load_dotenv
+from snowflake_auth import SnowflakeAuthClient
 
 load_dotenv()
 
@@ -12,25 +13,42 @@ class SnowflakeConnection:
     
     def __init__(self):
         self.connection = None
-        self.account = os.getenv('SNOWFLAKE_ACCOUNT')
-        self.user = os.getenv('SNOWFLAKE_USER')
-        self.password = os.getenv('SNOWFLAKE_PASSWORD')
-        self.warehouse = os.getenv('SNOWFLAKE_WAREHOUSE')
-        self.database = os.getenv('SNOWFLAKE_DATABASE')
-        self.schema = os.getenv('SNOWFLAKE_SCHEMA')
+        self.auth_client = SnowflakeAuthClient()
         
     def __enter__(self):
         """
         コンテキストマネージャーの開始時にSnowflake接続を確立
         """
-        self.connection = snowflake.connector.connect(
-            account=self.account,
-            user=self.user,
-            password=self.password,
-            warehouse=self.warehouse,
-            database=self.database,
-            schema=self.schema
-        )
+        # Bearer Token認証を優先
+        if self.auth_client.bearer_token:
+            # Personal Access Token (PAT) の場合
+            self.connection = snowflake.connector.connect(
+                account=self.auth_client.account,
+                user=self.auth_client.user,
+                authenticator='oauth',
+                token=self.auth_client.bearer_token,
+                warehouse=self.auth_client.warehouse,
+                database=self.auth_client.database,
+                schema=self.auth_client.schema
+            )
+        elif self.auth_client.auth_method == "private_key":
+            # JWT Token認証
+            jwt_token = self.auth_client.get_jwt_token()
+            if jwt_token:
+                self.connection = snowflake.connector.connect(
+                    account=self.auth_client.account,
+                    user=self.auth_client.user,
+                    authenticator='oauth',
+                    token=jwt_token,
+                    warehouse=self.auth_client.warehouse,
+                    database=self.auth_client.database,
+                    schema=self.auth_client.schema
+                )
+            else:
+                raise ValueError("Failed to generate JWT token from private key")
+        else:
+            raise ValueError("SNOWFLAKE_BEARER_TOKEN or SNOWFLAKE_PRIVATE_KEY_PATH must be set")
+        
         return self.connection
     
     def __exit__(self, exc_type, exc_val, exc_tb):

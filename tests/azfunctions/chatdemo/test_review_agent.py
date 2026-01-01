@@ -15,15 +15,27 @@ import requests
 from datetime import datetime
 
 # プロジェクトルートをパスに追加
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../app/azfunctions/chatdemo'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+azfunc_path = os.path.join(project_root, 'app/azfunctions/chatdemo')
+sys.path.insert(0, azfunc_path)
 
-from db_review_agent import DBReviewAgent
+try:
+    from db_review_agent import DBReviewAgent
+except ModuleNotFoundError:
+    # ローカル環境ではHTTPエンドポイントのみ使用可能
+    DBReviewAgent = None
 
 
 def test_direct_call(target_schema: str, max_tables: int = None):
     """
     直接モジュールを呼び出してテスト
     """
+    if DBReviewAgent is None:
+        print("ERROR: DBReviewAgentモジュールが見つかりません")
+        print("直接呼び出しテストをスキップして、HTTPエンドポイント経由でテストしてください")
+        print("使用方法: python test_review_agent.py --local")
+        return False
+    
     print(f"=== DB設計レビュー 直接呼び出しテスト ===")
     print(f"対象スキーマ: {target_schema}")
     if max_tables:

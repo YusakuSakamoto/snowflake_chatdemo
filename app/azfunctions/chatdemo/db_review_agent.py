@@ -51,6 +51,7 @@ class DBReviewAgent:
                 ) AS review_result
                 """
                 
+                logging.info(f"Executing Agent query: {query[:200]}...")
                 cursor.execute(query)
                 result = cursor.fetchone()
                 
@@ -59,6 +60,7 @@ class DBReviewAgent:
                 
                 # 結果をパース（JSON形式の可能性がある）
                 agent_output = result[0]
+                logging.info(f"Agent output length: {len(agent_output) if agent_output else 0}")
                 
                 # Markdown部分を抽出
                 markdown = self._extract_markdown(agent_output)
@@ -73,6 +75,7 @@ class DBReviewAgent:
         except Exception as e:
             error_msg = f"DB設計レビュー実行エラー: {str(e)}"
             logging.error(error_msg)
+            logging.exception("Full traceback:")
             return False, error_msg, None
     
     def _build_review_prompt(

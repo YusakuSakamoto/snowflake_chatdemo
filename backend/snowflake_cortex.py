@@ -12,7 +12,7 @@ class SnowflakeCortexClient:
         self.account = os.getenv('SNOWFLAKE_ACCOUNT')
         self.host = os.getenv('SNOWFLAKE_HOST', f"{self.account}.snowflakecomputing.com")
         self.user = os.getenv('SNOWFLAKE_USER')
-        self.pat = os.getenv('SNOWFLAKE_PAT')  # Personal Access Token
+        self.bearer_token = os.getenv('SNOWFLAKE_BEARER_TOKEN')  # Personal Access Token
         self.warehouse = os.getenv('SNOWFLAKE_WAREHOUSE')
         self.database = os.getenv('SNOWFLAKE_DATABASE')
         self.schema = os.getenv('SNOWFLAKE_SCHEMA', 'PUBLIC')
@@ -27,9 +27,9 @@ class SnowflakeCortexClient:
         Snowflake REST APIで認証を行う（PAT使用）
         """
         try:
-            # PATが設定されているか確認
-            if not self.pat:
-                print("Personal Access Token (PAT)が設定されていません")
+            # Bearer Tokenが設定されているか確認
+            if not self.bearer_token:
+                print("Bearer Token (PAT)が設定されていません")
                 return False
             
             # 接続テスト
@@ -53,7 +53,7 @@ class SnowflakeCortexClient:
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': f'Bearer {self.pat}',
+            'Authorization': f'Bearer {self.bearer_token}',
             'X-Snowflake-Authorization-Token-Type': 'KEYPAIR_JWT'
         }
         

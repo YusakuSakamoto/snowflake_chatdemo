@@ -7,7 +7,7 @@
     "SNOWFLAKE_ACCOUNT": "your-account",
     "SNOWFLAKE_HOST": "your-account.snowflakecomputing.com",
     "SNOWFLAKE_USER": "your-user",
-    "SNOWFLAKE_PAT": "your-personal-access-token",
+    "SNOWFLAKE_BEARER_TOKEN": "your-personal-access-token",
     "SNOWFLAKE_WAREHOUSE": "your-warehouse",
     "SNOWFLAKE_DATABASE": "your-database",
     "SNOWFLAKE_SCHEMA": "public",

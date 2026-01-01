@@ -190,6 +190,20 @@
   color: #6a737d;
 }
 
+.markdown svg {
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+}
+
+.markdown .mermaid {
+  background: #f6f8fa;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  border: 1px solid #e1e4e8;
+}
+
 .messageHeader {
   display: flex;
   justify-content: space-between;

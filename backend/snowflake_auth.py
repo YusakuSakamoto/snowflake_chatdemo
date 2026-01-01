@@ -66,13 +66,13 @@ class SnowflakeAuthClient:
             
             # JWTペイロードを作成
             account_identifier = f"{self.account}".upper()
-            qualified_username = f"{account_identifier}.{self.user}".upper()
+            qualified_username = f"{self.user}".upper()
             
             now = int(time.time())
             lifetime = 3600  # 1時間
             
             payload = {
-                "iss": f"{qualified_username}.{public_key_fp}",
+                "iss": f"{account_identifier}.{qualified_username}.{public_key_fp}",
                 "sub": qualified_username,
                 "iat": now,
                 "exp": now + lifetime

@@ -54,8 +54,7 @@ class SnowflakeCortexClient:
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': f'Bearer {self.bearer_token}',
-            'X-Snowflake-Authorization-Token-Type': 'KEYPAIR_JWT'
+            'Authorization': f'Bearer {self.bearer_token}'
         }
         
         payload = {

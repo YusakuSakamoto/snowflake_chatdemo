@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeMermaid from 'rehype-mermaid'
 import styles from '@/styles/Home.module.css'
 
 interface Message {
@@ -66,6 +67,8 @@ export default function Home() {
         message: currentMessage
       })
       
+      console.log('Snowflake Response:', response.data)
+      
       if (response.data.ok && response.data.answer) {
         // AIの回答を追加
         const aiMessage: Message = {
@@ -126,9 +129,14 @@ export default function Home() {
               </div>
               <div className={styles.messageContent}>
                 {msg.user_id === 'Snowflake AI' || msg.user_id === 'System' ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} className={styles.markdown}>
-                    {msg.message}
-                  </ReactMarkdown>
+                  <div className={styles.markdown}>
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeMermaid]}
+                    >
+                      {msg.message}
+                    </ReactMarkdown>
+                  </div>
                 ) : (
                   <div>{msg.message}</div>
                 )}

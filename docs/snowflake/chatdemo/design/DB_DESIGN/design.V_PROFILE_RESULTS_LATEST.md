@@ -1,4 +1,4 @@
-# V_PROFILE_RESULTS_LATEST 設計書
+# [[V_PROFILE_RESULTS_LATEST]] 設計書
 
 ## 概要
 
@@ -14,15 +14,15 @@ V_PROFILE_RESULTS_LATESTは、PROFILE_RUNSテーブルから最新の成功実�
 
 本ビューはDB_DESIGNスキーマ内に配置され、以下の2テーブルを参照する：
 
-- PROFILE_RUNS: プロファイル実行の履歴（実行ID、対象テーブル、ステータス、開始時刻等）
-- PROFILE_RESULTS: 各実行で得られたカラムごとのプロファイル結果（メトリクスをVARIANT型で格納）
+- [[PROFILE_RUNS]]: プロファイル実行の履歴（実行ID、対象テーブル、ステータス、開始時刻等）
+- [[PROFILE_RESULTS]]: 各実行で得られたカラムごとのプロファイル結果（メトリクスをVARIANT型で格納）
 
 EXPORT_PROFILE_EVIDENCE_MD_VFINALプロシージャでは、本ビューを利用してObsidian Vaultに出力するプロファイルエビデンスを最新のものに限定している。
 
 ## クエリロジック
 
-1. LATEST CTE: PROFILE_RUNSからSTATUS='SUCCEEDED'の実行を対象に、TARGET_DB、TARGET_SCHEMA、TARGET_TABLEごとにSTARTED_ATの最大値を取得
-2. LATEST_RUN CTE: LATEST CTEの結果とPROFILE_RUNSを結合し、最新実行レコードのみを抽出
+1. LATEST CTE: PROFILE_RUNSからSTATUS='SUCCEEDED'の実行を対象に、[[TARGET_DB]]、[[TARGET_SCHEMA]]、TARGET_TABLEごとにSTARTED_ATの最大値を取得
+2. [[LATEST_RUN]] CTE: LATEST CTEの結果とPROFILE_RUNSを結合し、最新実行レコードのみを抽出
 3. メインSELECT: PROFILE_RESULTSとLATEST_RUNをRUN_IDで結合し、最新実行に紐づく全カラムのプロファイル結果を返却
 
 これにより、各テーブル・カラムごとに最新のSUCCEEDED実行のメトリクスのみが返される。
@@ -39,5 +39,5 @@ EXPORT_PROFILE_EVIDENCE_MD_VFINALプロシージャでは、本ビューを利�
 - 本ビューは参照専用であり、INSERT/UPDATE/DELETE操作は不可
 - PROFILE_RUNSおよびPROFILE_RESULTSが更新されると、自動的に最新結果を反映
 - プロファイリングバッチが定期実行される限り、本ビューは常に最新状態を返す
-- 実行履歴が増加してもパフォーマンス劣化を防ぐため、PROFILE_RUNS.STARTED_ATにインデックス推奨
+- 実行履歴が増加してもパフォーマンス劣化を防ぐため、[[PROFILE_RUNS]].STARTED_ATにインデックス推奨
 - 古いプロファイル履歴の削除運用を行う場合、最新以外のレコードを対象とすることで本ビューへの影響を回避可能

@@ -1,8 +1,8 @@
-# RESOLVE_ENTITY_ALIAS 設計書
+# [[RESOLVE_ENTITY_ALIAS]] 設計書
 
 ## 概要
 
-RESOLVE_ENTITY_ALIASは、ユーザーが入力した固有名詞（顧客名、部署名、案件名、オーダー名等）をエンティティIDに決定論的に解決するストアドプロシージャである。曖昧なLIKE検索やLLM推測に頼らず、正規化テーブル（DIM_ENTITY_ALIAS）を用いた段階的検索により、確定的または候補提示のいずれかを返却する。
+RESOLVE_ENTITY_ALIASは、ユーザーが入力した固有名詞（顧客名、部署名、案件名、オーダー名等）をエンティティIDに決定論的に解決するストアドプロシージャである。曖昧なLIKE検索やLLM推測に頼らず、正規化テーブル（[[DIM_ENTITY_ALIAS]]）を用いた段階的検索により、確定的または候補提示のいずれかを返却する。
 
 ## 業務上の意味
 
@@ -12,11 +12,11 @@ RESOLVE_ENTITY_ALIASは、ユーザーが入力した固有名詞（顧客名、
 
 RESOLVE_ENTITY_ALIASはAPP_PRODUCTIONスキーマに配置され、以下のオブジェクトと連携する。
 
-- NORMALIZE_JA: 入力文字列の汎用正規化
-- NORMALIZE_JA_DEPT: 部署名の特化正規化
-- DIM_ENTITY_ALIAS: エイリアステーブル（NAME_RESOLUTIONスキーマ）
-- RESOLVE_ENTITY_ALIAS_TOOL: Cortex Agent向けのラッパーツール
-- SNOWFLAKE_DEMO_AGENT: 名称解決の結果をもとに集計やスコープ展開を実行
+- [[NORMALIZE_JA]]: 入力文字列の汎用正規化
+- [[NORMALIZE_JA_DEPT]]: 部署名の特化正規化
+- [[DIM_ENTITY_ALIAS]]: エイリアステーブル（NAME_RESOLUTIONスキーマ）
+- [[RESOLVE_ENTITY_ALIAS_TOOL]]: Cortex Agent向けのラッパーツール
+- [[SNOWFLAKE_DEMO_AGENT]]: 名称解決の結果をもとに集計やスコープ展開を実行
 
 本プロシージャは3段階の検索戦略（生の一致→正規化一致→正規化部分一致）を実施し、各段階で候補が1件のみの場合は自動確定、複数候補が残る場合はユーザーに選択を促す。
 
@@ -54,7 +54,7 @@ RESOLVE_ENTITY_ALIASはAPP_PRODUCTIONスキーマに配置され、以下のオ�
 
 ## 利用シーン
 
-- 自然言語データ分析での固有名詞解決: ユーザーが「デジタルイノベーション部」と入力した場合に、DEPARTMENT_ID='D123'に確定
+- 自然言語データ分析での固有名詞解決: ユーザーが「デジタルイノベーション部」と入力した場合に、[[DEPARTMENT_ID]]='D123'に確定
 - 顧客名の名寄せ: 「ＡＢＣ株式会社」「ABC(株)」「エービーシー」といった表記揺れを同一顧客に解決
 - 案件名・オーダー名の特定: 部分的な名称や略称から正しいプロジェクトやオーダーを特定
 - 候補絞り込み: タイプヒントを指定することで、部署のみ・顧客のみといった限定検索を実現

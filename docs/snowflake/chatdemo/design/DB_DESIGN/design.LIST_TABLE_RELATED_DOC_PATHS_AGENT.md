@@ -1,4 +1,4 @@
-# LIST_TABLE_RELATED_DOC_PATHS_AGENT 設計書
+# [[LIST_TABLE_RELATED_DOC_PATHS_AGENT]] 設計書
 
 ## 概要
 
@@ -12,7 +12,7 @@ LIST_TABLE_RELATED_DOC_PATHS_AGENTは、指定されたスキーマ・テーブ�
 
 ## 設計上の位置づけ
 
-本プロシージャはDB_DESIGNスキーマに配置され、DOCS_OBSIDIAN_Vビューを参照する。DOCS_OBSIDIAN_Vは、Obsidian Vault内のMarkdownファイルをPATH、TARGET_SCHEMA、TARGET_TABLE、TARGET_COLUMN等のメタ情報とともに保持している。
+本プロシージャはDB_DESIGNスキーマに配置され、DOCS_OBSIDIAN_Vビューを参照する。DOCS_OBSIDIAN_Vは、Obsidian Vault内のMarkdownファイルをPATH、[[TARGET_SCHEMA]]、[[TARGET_TABLE]]、TARGET_COLUMN等のメタ情報とともに保持している。
 
 本プロシージャは、OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENTからgeneric toolとして呼び出され、特定テーブルの詳細レビュー時（カラム情報が必要な場合）に使用される。列挙されたPATHリストは、get_docs_by_pathsに渡されて本文が取得される。
 
@@ -25,8 +25,8 @@ LIST_TABLE_RELATED_DOC_PATHS_AGENTは、指定されたスキーマ・テーブ�
    - MAX_COLUMNSは省略可能（デフォルト5000）、数値変換可能な文字列として受け取る
 
 2. 上位設計ドキュメントの追加
-   - design/design.DB_DESIGN.md（全スキーマ共通の設計方針）
-   - design/design.<TARGET_SCHEMA>.md（対象スキーマの設計方針）
+   - design/design.[[DB_DESIGN]].md（全スキーマ共通の設計方針）
+   - design/design.<[[TARGET_SCHEMA]]>.md（対象スキーマの設計方針）
 
 3. テーブル固有ドキュメントの追加
    - master/tables/<SCHEMA>.<TABLE>.md（テーブルマスタ）
@@ -34,11 +34,11 @@ LIST_TABLE_RELATED_DOC_PATHS_AGENTは、指定されたスキーマ・テーブ�
 
 4. カラムマスタの列挙（INCLUDE_COLUMNSがtrueの場合のみ）
    - DOCS_OBSIDIAN_VからPATH LIKE 'master/columns/%'で絞り込み
-   - TARGET_SCHEMA = :v_schema AND TARGET_TABLE = :v_tableでスキーマ・テーブルを絞り込み
+   - [[TARGET_SCHEMA]] = :v_schema AND [[TARGET_TABLE]] = :v_tableでスキーマ・テーブルを絞り込み
    - ROW_NUMBERでMAX_COLUMNS件までに制限
 
 5. 重複排除とソート
-   - 上位設計、テーブル固有、カラムマスタを結合（ARRAY_CAT）
+   - 上位設計、テーブル固有、カラムマスタを結合（[[ARRAY_CAT]]）
    - DISTINCTで重複を排除
    - PATH順にソートしてJSON配列として返却
 
@@ -52,22 +52,22 @@ LIST_TABLE_RELATED_DOC_PATHS_AGENTは、指定されたスキーマ・テーブ�
 
 ## パラメータ
 
-TARGET_SCHEMA（必須）:
+[[TARGET_SCHEMA]]（必須）:
 - 型: STRING
-- 説明: 対象スキーマ名（例: "APP_PRODUCTION"、"DB_DESIGN"）
+- 説明: 対象スキーマ名（例: "[[APP_PRODUCTION]]"、"[[DB_DESIGN]]"）
 - 制約: NULLまたは空文字列は不可
 
-TARGET_TABLE（必須）:
+[[TARGET_TABLE]]（必須）:
 - 型: STRING
-- 説明: 対象テーブル名（例: "CUSTOMER_MASTER"、"DOCS_OBSIDIAN_V"）
+- 説明: 対象テーブル名（例: "[[CUSTOMER_MASTER]]"、"[[DOCS_OBSIDIAN_V]]"）
 - 制約: NULLまたは空文字列は不可
 
-INCLUDE_COLUMNS（必須）:
+[[INCLUDE_COLUMNS]]（必須）:
 - 型: STRING
 - 説明: カラムマスタを含めるかどうか（"true"/"false"）
 - 制約: "true"/"false"/"1"/"0"/"yes"/"y"を受け付け、BOOLEANに変換
 
-MAX_COLUMNS（任意）:
+[[MAX_COLUMNS]]（任意）:
 - 型: STRING
 - 説明: カラム数上限を指定する文字列（例: "5000"）
 - 制約: 数値に変換可能な文字列、省略時はデフォルト5000

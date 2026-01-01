@@ -1,7 +1,7 @@
-# スキーマ設計：NAME_RESOLUTION
+# スキーマ設計：[[NAME_RESOLUTION]]
 
 ## 概要
-NAME_RESOLUTION は、エンティティの名称解決（別名解決）を提供する専用スキーマである。
+[[NAME_RESOLUTION]] は、エンティティの名称解決（別名解決）を提供する専用スキーマである。
 
 「部署A」「営業部」「Sales」といった異なる表記を、正規化した上で「DEPT_001（営業部）」という正式なエンティティに紐付けることで、自然言語クエリの精度を高める。
 
@@ -15,12 +15,12 @@ NAME_RESOLUTION は、エンティティの名称解決（別名解決）を提�
   - UIのオートコンプリート機能で、ユーザー入力から候補を絞り込み
 
 ## 設計上の位置づけ
-NAME_RESOLUTION スキーマは、以下のデータフロー全体の「名前解決レイヤー」として機能する：
+[[NAME_RESOLUTION]] スキーマは、以下のデータフロー全体の「名前解決レイヤー」として機能する：
 
 1. ユーザー入力：あいまいな名称（略称、口語表現、表記ゆれ）
-2. 名称解決（NAME_RESOLUTION） ← 本スキーマ
+2. 名称解決（[[NAME_RESOLUTION]]） ← 本スキーマ
 3. 正式なエンティティID取得
-4. データアクセス（APP_PRODUCTION / APP_DEVELOPMENT）
+4. データアクセス（[[APP_PRODUCTION]] / [[APP_DEVELOPMENT]]）
 5. 結果返却
 
 本スキーマは、Cortex Agent や Procedure から常に参照される共通基盤である。
@@ -28,7 +28,7 @@ NAME_RESOLUTION スキーマは、以下のデータフロー全体の「名前�
 ## スキーマ設計の基本方針
 
 ### 1. 手動辞書と自動生成辞書の統合
-NAME_RESOLUTION スキーマは、以下の2種類の辞書を統合する：
+[[NAME_RESOLUTION]] スキーマは、以下の2種類の辞書を統合する：
 
 #### 手動辞書（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]）
 - 目的：人が追加・承認する別名（略称、社内用語、例外的な表記）
@@ -52,7 +52,7 @@ NAME_RESOLUTION スキーマは、以下の2種類の辞書を統合する：
   3. それでも同じ場合は手動辞書を優先（is_manual=true）
 
 ### 2. 物理検索用の確定辞書（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]]）
-- 目的：統合規則（V_ENTITY_ALIAS_ALL）を物理化し、高速検索を実現
+- 目的：統合規則（[[V_ENTITY_ALIAS_ALL]]）を物理化し、高速検索を実現
 - 特徴：
   - refresh により全量再生成される（INSERT OVERWRITE）
   - alias_normalized + entity_type で一意な候補（winner）を保持
@@ -60,8 +60,8 @@ NAME_RESOLUTION スキーマは、以下の2種類の辞書を統合する：
 
 ### 3. 正規化関数の適用
 名称解決では、以下の正規化関数を使用する：
-- NORMALIZE_JA：全角→半角、小文字化、記号除去
-- NORMALIZE_JA_DEPT：部署名専用（「部」「課」「グループ」などの接尾辞を除去）
+- [[NORMALIZE_JA]]：全角→半角、小文字化、記号除去
+- [[NORMALIZE_JA_DEPT]]：部署名専用（「部」「課」「グループ」などの接尾辞を除去）
 
 正規化により、表記ゆれを吸収：
 - 「営業部」「営業」「sales」→ すべて `eigyo` に正規化
@@ -69,7 +69,7 @@ NAME_RESOLUTION スキーマは、以下の2種類の辞書を統合する：
 
 ## テーブル構成
 
-### 1. DIM_ENTITY_ALIAS_MANUAL（手動辞書）
+### 1. [[DIM_ENTITY_ALIAS_MANUAL]]（手動辞書）
 - 役割：人が追加・承認する別名の管理
 - 主要カラム：
   - `alias_raw`: 元の表記（「営業部」「Sales」など）
@@ -86,12 +86,12 @@ NAME_RESOLUTION スキーマは、以下の2種類の辞書を統合する：
   - 削除はせず、is_active=false で無効化
   - 変更履歴は audit テーブルで追跡（将来拡張）
 
-### 2. V_ENTITY_ALIAS_AUTO（自動生成辞書・VIEW）
+### 2. [[V_ENTITY_ALIAS_AUTO]]（自動生成辞書・VIEW）
 - 役割：マスタテーブルから自動生成できる別名
 - 生成元例：
-  - 部署マスタ（DEPARTMENT_MASTER）
-  - 顧客マスタ（CUSTOMER_MASTER）
-  - プロジェクトマスタ（PROJECT_MASTER）
+  - 部署マスタ（[[DEPARTMENT_MASTER]]）
+  - 顧客マスタ（[[CUSTOMER_MASTER]]）
+  - プロジェクトマスタ（[[PROJECT_MASTER]]）
 
 - 生成ロジック例：
 ```sql
@@ -109,7 +109,7 @@ FROM APP_PRODUCTION.DEPARTMENT_MASTER
 WHERE is_active = TRUE;
 ```
 
-### 3. V_ENTITY_ALIAS_ALL（統合規則・VIEW）
+### 3. [[V_ENTITY_ALIAS_ALL]]（統合規則・VIEW）
 - 役割：手動辞書と自動生成辞書を統合し、winner を決定
 - winner 決定ロジック：
 ```sql
@@ -132,8 +132,8 @@ FROM (
 WHERE rank = 1;
 ```
 
-### 4. DIM_ENTITY_ALIAS（物理検索用・確定辞書）
-- 役割：V_ENTITY_ALIAS_ALL を物理化し、高速検索を実現
+### 4. [[DIM_ENTITY_ALIAS]]（物理検索用・確定辞書）
+- 役割：[[V_ENTITY_ALIAS_ALL]] を物理化し、高速検索を実現
 - 主要カラム：
   - `alias_normalized`: 正規化後の文字列（PRIMARY KEY の一部）
   - `entity_type`: エンティティ種別（PRIMARY KEY の一部）
@@ -217,10 +217,10 @@ ORDER BY confidence DESC;
 ## 運用フロー
 
 ### 1. 初期セットアップ
-1. 手動辞書テーブル（DIM_ENTITY_ALIAS_MANUAL）を作成
-2. 自動生成辞書 VIEW（V_ENTITY_ALIAS_AUTO）を作成
-3. 統合規則 VIEW（V_ENTITY_ALIAS_ALL）を作成
-4. 物理検索用テーブル（DIM_ENTITY_ALIAS）を作成
+1. 手動辞書テーブル（[[DIM_ENTITY_ALIAS_MANUAL]]）を作成
+2. 自動生成辞書 VIEW（[[V_ENTITY_ALIAS_AUTO]]）を作成
+3. 統合規則 VIEW（[[V_ENTITY_ALIAS_ALL]]）を作成
+4. 物理検索用テーブル（[[DIM_ENTITY_ALIAS]]）を作成
 5. 初回 refresh 実行
 
 ### 2. 日常運用
@@ -424,7 +424,7 @@ GRANT ALL ON TABLE NAME_RESOLUTION.DIM_ENTITY_ALIAS TO ROLE TASK_ROLE;
 ## 設計レビュー時のチェックポイント
 - [ ] 手動辞書と自動生成辞書の統合ルールが明確か
 - [ ] priority / confidence による winner 決定ロジックが妥当か
-- [ ] 正規化関数（NORMALIZE_JA / NORMALIZE_JA_DEPT）が適切に適用されているか
+- [ ] 正規化関数（[[NORMALIZE_JA]] / [[NORMALIZE_JA_DEPT]]）が適切に適用されているか
 - [ ] refresh が定期的に実行され、物理検索用テーブルが最新に保たれているか
 - [ ] 重複チェック・カバレッジチェックが自動化されているか
 - [ ] 名称解決の成功率（resolution_rate）が目標値（>90%）を達成しているか

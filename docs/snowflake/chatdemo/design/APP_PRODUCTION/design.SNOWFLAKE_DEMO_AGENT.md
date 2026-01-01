@@ -1,4 +1,4 @@
-# SNOWFLAKE_DEMO_AGENT 設計書
+# [[SNOWFLAKE_DEMO_AGENT]] 設計書
 
 ## 概要
 
@@ -18,7 +18,7 @@ SNOWFLAKE_DEMO_AGENTは、Snowflakeデモ用のCortex Agentであり、部署・
 - expand_department_scope: 部署の配下組織IDを展開（部レベルの売上を課/グループレベルで集計する際に必須）
 - text_to_sql: 確定した条件をもとにSemantic ModelからSQL生成
 
-名称解決の結果（entity_id、entity_type）は直接SQLに使用せず、必ずSemantic Model上の列名（CUSTOMER_ID、ORDER_NUMBER、PROJECT_NUMBER、DEPARTMENT_ID等）へマッピングしてtext_to_sqlに渡す設計となっている。
+名称解決の結果（entity_id、entity_type）は直接SQLに使用せず、必ずSemantic Model上の列名（[[CUSTOMER_ID]]、[[ORDER_NUMBER]]、[[PROJECT_NUMBER]]、DEPARTMENT_ID等）へマッピングしてtext_to_sqlに渡す設計となっている。
 
 ## 機能
 
@@ -37,7 +37,7 @@ SNOWFLAKE_DEMO_AGENTは、Snowflakeデモ用のCortex Agentであり、部署・
 
 4. Semantic Modelへのマッピング
    - resolve_entity_aliasが返すentity_idは名称辞書上の共通キーであり、列名ではない
-   - entity_typeに応じて正しい列名へマッピング（customer→CUSTOMERS.CUSTOMER_ID、order→ORDERS.ORDER_NUMBER、project→PROJECTS.PROJECT_NUMBER、department→PROJECTS.DEPARTMENT_ID IN (...)）
+   - entity_typeに応じて正しい列名へマッピング（customer→CUSTOMERS.[[CUSTOMER_ID]]、order→ORDERS.[[ORDER_NUMBER]]、project→PROJECTS.[[PROJECT_NUMBER]]、department→PROJECTS.[[DEPARTMENT_ID]] IN (...)）
 
 ## パラメータ
 
@@ -56,7 +56,7 @@ expand_department_scopeへのパラメータ:
 
 text_to_sqlへの指示:
 - 見込み: 「当年度のfiscal_start（7/1）〜fiscal_end（6/30）で集計し、CURRENT_DATEで打ち切らない」
-- 実績/YTD: 「当年度のfiscal_start（7/1）〜min（fiscal_end, CURRENT_DATE）で集計する」
+- 実績/YTD: 「当年度のfiscal_start（7/1）〜min（fiscal_end, [[CURRENT_DATE]]）で集計する」
 
 ## 利用シーン
 

@@ -1,7 +1,7 @@
-# テーブル設計：ANKEN_MEISAI
+# テーブル設計：[[ANKEN_MEISAI]]
 
 ## 概要
-APP_PRODUCTION.ANKEN_MEISAI は、外部システムやファイル（主に CSV）から提供される  
+[[APP_PRODUCTION.ANKEN_MEISAI]] は、外部システムやファイル（主に CSV）から提供される  
 案件明細データをそのまま受け入れるための取込（Raw / Landing）テーブルである。
 
 本テーブルは、業務的に正規化された案件明細の正本を表すものではなく、  
@@ -43,7 +43,7 @@ Vault を正本とした設計思想においては、本テーブルは
 そのため、本テーブルはデータ品質を保証する責務を持たない。
 
 ### 制約を設けないという設計判断
-APP_PRODUCTION.ANKEN_MEISAI では、以下を意図的に行わない。
+[[APP_PRODUCTION.ANKEN_MEISAI]] では、以下を意図的に行わない。
 
 - 主キーによる一意性制約
 - 外部キー制約
@@ -78,7 +78,7 @@ APP_PRODUCTION.ANKEN_MEISAI では、以下を意図的に行わない。
 - 正式な参照先は、必ず後段の整形・業務用テーブルを使用する
 - 再取込・再実行を前提とし、データは冪等に扱う
 
-APP_PRODUCTION.ANKEN_MEISAI は、
+[[APP_PRODUCTION.ANKEN_MEISAI]] は、
 「消してはいけないが、そのまま信用してはいけない層」として運用する。
 
 ## 関連

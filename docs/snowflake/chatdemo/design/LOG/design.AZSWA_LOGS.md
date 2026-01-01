@@ -1,4 +1,4 @@
-# 外部テーブル設計：AZSWA_LOGS
+# 外部テーブル設計：[[AZSWA_LOGS]]
 
 ## 概要
 [[LOG.AZSWA_LOGS]] は、Azure Static Web Apps（フロントエンド）のアクセスログを集約・分析するための外部テーブルである。

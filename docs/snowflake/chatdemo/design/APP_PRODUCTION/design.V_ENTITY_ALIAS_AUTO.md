@@ -1,4 +1,4 @@
-# VIEW設計：V_ENTITY_ALIAS_AUTO（自動生成 別名辞書）
+# VIEW設計：[[V_ENTITY_ALIAS_AUTO]]（自動生成 別名辞書）
 
 ## 概要
 [[APP_PRODUCTION.V_ENTITY_ALIAS_AUTO]] は、名称解決で利用する別名（alias）を 業務データから自動生成する参照用VIEWである。  
@@ -14,15 +14,15 @@
 - is_active=true のみを出力対象とする（無効化は上流で制御）
 
 ## 入力ソース（想定）
-V_ENTITY_ALIAS_AUTO は、以下のデータから alias を生成する。
+[[V_ENTITY_ALIAS_AUTO]] は、以下のデータから alias を生成する。
 
 ### 部署（department）
 - base: [[APP_PRODUCTION.DEPARTMENT_MASTER]]
 - 生成候補（例）：
-  - FULL_NAME（正式名称）
-  - SHORT_NAME（略称）
-  - COMBINED_NAME（複合正式：本部＋部門 等）
-  - COMBINED_SHORT_NAME（複合略称）
+  - [[FULL_NAME]]（正式名称）
+  - [[SHORT_NAME]]（略称）
+  - [[COMBINED_NAME]]（複合正式：本部＋部門 等）
+  - [[COMBINED_SHORT_NAME]]（複合略称）
 
 ### 顧客（customer）
 - base: [[APP_PRODUCTION.V_CUSTOMER_MASTER]]（または同等の正規化ビュー）
@@ -40,10 +40,10 @@ V_ENTITY_ALIAS_AUTO は、以下のデータから alias を生成する。
 - 生成候補（例）：
   - order_name
 
-※ どの VIEW / TABLE を参照するかは、APP_DEVELOPMENT / APP_PRODUCTION で同一仕様とし、配置差のみとする。
+※ どの VIEW / TABLE を参照するかは、[[APP_DEVELOPMENT]] / [[APP_PRODUCTION]] で同一仕様とし、配置差のみとする。
 
 ## 出力仕様（スキーマ）
-V_ENTITY_ALIAS_AUTO は以下の列を返す（AUTO生成候補の列挙）：
+[[V_ENTITY_ALIAS_AUTO]] は以下の列を返す（AUTO生成候補の列挙）：
 
 - alias_raw
   - 元の表記（人が入力しうる名称の原文）
@@ -74,7 +74,7 @@ V_ENTITY_ALIAS_AUTO は以下の列を返す（AUTO生成候補の列挙）：
 
 ## confidence / priority の考え方
 - confidence は「正しさ」ではなく「生成元の信頼度」
-  - 例：department の FULL_NAME は 1.00、略称は 0.85 など
+  - 例：department の [[FULL_NAME]] は 1.00、略称は 0.85 など
 - priority は「winner決定の優先度」
   - AUTOは原則 1000 固定など（MANUALは必ずそれより小さくする）
 
@@ -83,7 +83,7 @@ V_ENTITY_ALIAS_AUTO は以下の列を返す（AUTO生成候補の列挙）：
   - 本VIEWは列挙が責務であり、重複排除は [[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]] で行う
 - NULL 値は生成対象から除外する（where <col> is not null）
 - entity_id / entity_name の定義は「解決に必要な最小限」に留める  
-  （物理化・監査・履歴は DIM_ENTITY_ALIAS 側で担う）
+  （物理化・監査・履歴は [[DIM_ENTITY_ALIAS]] 側で担う）
 
 ## 関連
 - 手動辞書：[[NAME_RESOLUTION.DIM_ENTITY_ALIAS_MANUAL]]

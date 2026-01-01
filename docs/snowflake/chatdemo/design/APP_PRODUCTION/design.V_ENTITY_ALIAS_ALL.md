@@ -1,4 +1,4 @@
-# VIEW設計：V_ENTITY_ALIAS_ALL（別名辞書の統合・winner決定）
+# VIEW設計：[[V_ENTITY_ALIAS_ALL]]（別名辞書の統合・winner決定）
 
 ## 概要
 [[APP_PRODUCTION.V_ENTITY_ALIAS_ALL]] は、名称解決で利用する別名辞書を 統合し、重複を排除して winner を決定する参照用VIEWである。  
@@ -6,7 +6,7 @@
 同一の (alias_normalized, entity_type) に対して priority / confidence に基づき1件に確定する。
 
 本VIEWの出力は、物理検索用テーブル（[[NAME_RESOLUTION.DIM_ENTITY_ALIAS]]）へ refresh により materialize され、  
-Agent / Procedure は原則として物理テーブル側を参照する（V_ENTITY_ALIAS_ALL は「定義」と「確認」に使う）。
+Agent / Procedure は原則として物理テーブル側を参照する（[[V_ENTITY_ALIAS_ALL]] は「定義」と「確認」に使う）。
 
 ## 入力ソース
 
@@ -24,7 +24,7 @@ Agent / Procedure は原則として物理テーブル側を参照する（V_ENT
   - is_active=true のみを対象
 
 ## 出力仕様（スキーマ）
-V_ENTITY_ALIAS_ALL は以下の列を返す（統合後のwinner 1行）：
+[[V_ENTITY_ALIAS_ALL]] は以下の列を返す（統合後のwinner 1行）：
 
 - alias_raw
 - alias_normalized
@@ -35,7 +35,7 @@ V_ENTITY_ALIAS_ALL は以下の列を返す（統合後のwinner 1行）：
 - priority
 - is_active
 
-※ 物理テーブル化（DIM_ENTITY_ALIAS）では refresh_run_id / refreshed_at など運用列を付与する。
+※ 物理テーブル化（[[DIM_ENTITY_ALIAS]]）では refresh_run_id / refreshed_at など運用列を付与する。
 
 ## winner 決定ロジック（重複排除）
 同一の (alias_normalized, entity_type) が複数行存在しうるため、以下の規則で winner を1件に決定する。
@@ -57,7 +57,7 @@ V_ENTITY_ALIAS_ALL は以下の列を返す（統合後のwinner 1行）：
 
 ## 運用・注意点
 
-### V_ENTITY_ALIAS_ALL は正本ではない
+### [[V_ENTITY_ALIAS_ALL]] は正本ではない
 - 「正本」は MANUAL + AUTO の生成規則であり、本VIEWはそれを統合した参照結果
 - 検索性能や安定運用のため、実運用では [[NAME_RESOLUTION.DIM_ENTITY_ALIAS]] を参照する
 

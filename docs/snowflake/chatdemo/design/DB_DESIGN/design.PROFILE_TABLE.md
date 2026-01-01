@@ -1,14 +1,14 @@
-# design.PROFILE_TABLE
+# design.[[PROFILE_TABLE]]
 
 ## 概要
 
 `DB_DESIGN.PROFILE_TABLE` は、指定された単一テーブルの全カラムに対して、品質プロファイルメトリクスを算出・記録するプロシージャです。
 
-- スキーマ: DB_DESIGN (SCH_20251226180633)
+- スキーマ: [[DB_DESIGN]] (SCH_20251226180633)
 - オブジェクトタイプ: PROCEDURE
 - 言語: SQL
 - 実行モード: EXECUTE AS OWNER
-- 戻り値: STRING (RUN_ID)
+- 戻り値: STRING ([[RUN_ID]])
 
 ---
 
@@ -137,13 +137,13 @@ SELECT OBJECT_CONSTRUCT(
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| `P_TARGET_DB` | STRING | ✅ | - | プロファイル対象のデータベース名 |
-| `P_TARGET_SCHEMA` | STRING | ✅ | - | プロファイル対象のスキーマ名 |
-| `P_TARGET_TABLE` | STRING | ✅ | - | プロファイル対象のテーブル名 |
-| `P_SAMPLE_PCT` | FLOAT | - | NULL | サンプリング割合（0.0～100.0）。NULLの場合は全件スキャン |
-| `P_RUN_ID` | STRING | - | NULL | 実行ID。NULLの場合は自動生成（`RUN-` + UUID） |
-| `P_GIT_COMMIT` | STRING | - | NULL | Git コミットハッシュ（バージョン管理用） |
-| `P_NOTE` | STRING | - | NULL | 実行メモ（運用管理用） |
+| [[P_TARGET_DB]] | STRING | ✅ | - | プロファイル対象のデータベース名 |
+| [[P_TARGET_SCHEMA]] | STRING | ✅ | - | プロファイル対象のスキーマ名 |
+| [[P_TARGET_TABLE]] | STRING | ✅ | - | プロファイル対象のテーブル名 |
+| [[P_SAMPLE_PCT]] | FLOAT | - | NULL | サンプリング割合（0.0～100.0）。NULLの場合は全件スキャン |
+| [[P_RUN_ID]] | STRING | - | NULL | 実行ID。NULLの場合は自動生成（`RUN-` + UUID） |
+| [[P_GIT_COMMIT]] | STRING | - | NULL | Git コミットハッシュ（バージョン管理用） |
+| [[P_NOTE]] | STRING | - | NULL | 実行メモ（運用管理用） |
 
 ### パラメータ設計の背景
 - P_SAMPLE_PCT: BERNOULLIサンプリング（行単位）を使用。例: 1.0 = 1%サンプリング、100.0 = 全件
@@ -155,7 +155,7 @@ SELECT OBJECT_CONSTRUCT(
 
 ## 戻り値設計
 
-### 戻り値: RUN_ID（STRING）
+### 戻り値: [[RUN_ID]]（STRING）
 成功時には実行ID（例: `RUN-01HX...`）を返却します。このIDを使用して、PROFILE_RUNSおよびPROFILE_RESULTSから詳細なプロファイル結果を取得できます。
 
 ### 利用例

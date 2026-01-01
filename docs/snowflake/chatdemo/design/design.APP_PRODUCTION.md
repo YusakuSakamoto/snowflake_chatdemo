@@ -1,7 +1,7 @@
-# スキーマ設計：APP_PRODUCTION
+# スキーマ設計：[[APP_PRODUCTION]]
 
 ## 概要
-APP_PRODUCTION スキーマは、デモ用途の「らくらく案件データ」を Snowflake 上で扱うための最小構成スキーマである。  
+[[APP_PRODUCTION]] スキーマは、デモ用途の「らくらく案件データ」を Snowflake 上で扱うための最小構成スキーマである。  
 外部（主に CSV）から取り込んだデータを受け止める取込テーブル層と、取込データを元に整形・正規化して提供する VIEW 層を分離し、Analyst（セマンティックモデル）や Agent（Cortex Agent）から利用できる状態を作る。
 
 本スキーマにおける基本思想は以下：
@@ -16,8 +16,8 @@ CSV をそのまま受け止める一次受け皿。
 形式揺れ、欠損、重複があってもロードを止めない設計判断を許容する。
 
 - 例：
-  - ANKEN_MEISAI（案件明細：CSV取込用）
-  - DEPARTMENT_MASTER（部署マスタ（年度別）：CSV取込用）
+  - [[ANKEN_MEISAI]]（案件明細：CSV取込用）
+  - [[DEPARTMENT_MASTER]]（部署マスタ（年度別）：CSV取込用）
 - 取込層では以下を「意図的に行わない」ことがある：
   - 主キー / 外部キー制約
   - NOT NULL 制約
@@ -29,11 +29,11 @@ CSV をそのまま受け止める一次受け皿。
 デモでは「正規化 VIEW 群」として実装し、Analyst のセマンティックモデルの入力として利用する。
 
 - 例：
-  - V_CUSTOMER_MASTER（案件明細から生成する取引先マスタVIEW）
-  - V_PROJECT_MASTER（案件番号＋枝番＋年度単位の案件マスタVIEW）
-  - V_ORDER_MASTER（オーダ番号単位のオーダマスタVIEW）
-  - V_INVOICE（請求番号×計上月単位、金額集計済のVIEW）
-  - V_PROJECT_FACT（生データ粒度を保持するファクトVIEW）
+  - [[V_CUSTOMER_MASTER]]（案件明細から生成する取引先マスタVIEW）
+  - [[V_PROJECT_MASTER]]（案件番号＋枝番＋年度単位の案件マスタVIEW）
+  - [[V_ORDER_MASTER]]（オーダ番号単位のオーダマスタVIEW）
+  - [[V_INVOICE]]（請求番号×計上月単位、金額集計済のVIEW）
+  - [[V_PROJECT_FACT]]（生データ粒度を保持するファクトVIEW）
 
 提供層は、取込層の内容を「直接更新」せず、参照用途のための投影・整形のみを行う。
 
@@ -56,9 +56,9 @@ CSV をそのまま受け止める一次受け皿。
 
 ## 主要コンポーネントの関係（概念図）
 CSV / 外部ファイル
-  → （STAGE: RAW_DATA）
+  → （STAGE: [[RAW_DATA]]）
   → （COPY INTO）
-  → 取込テーブル（ANKEN_MEISAI / DEPARTMENT_MASTER）
+  → 取込テーブル（[[ANKEN_MEISAI]] / [[DEPARTMENT_MASTER]]）
   → 提供 VIEW（V_*）
   → セマンティックモデル（YAML）
   → Analyst / Agent
@@ -95,7 +95,7 @@ VIEW 層では、以下のような「意味の確定」を行う。
 ## 運用上の注意
 - 取込テーブルへの直接参照を前提に BI / アプリケーションを構築しない
 - 参照先は VIEW（正規化 VIEW 群）を基本とする
-- COPY 実行は ON_ERROR=CONTINUE 等により「止めない」運用を許容する（デモ前提）
+- COPY 実行は [[ON_ERROR]]=CONTINUE 等により「止めない」運用を許容する（デモ前提）
 - セマンティックモデルは VIEW を入力として設計し、同義語・JOIN 関係を明示する
 
 ## 将来拡張の余地

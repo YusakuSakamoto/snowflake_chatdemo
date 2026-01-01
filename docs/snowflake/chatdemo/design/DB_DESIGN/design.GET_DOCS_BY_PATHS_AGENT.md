@@ -1,4 +1,4 @@
-# GET_DOCS_BY_PATHS_AGENT 設計書
+# [[GET_DOCS_BY_PATHS_AGENT]] 設計書
 
 ## 概要
 
@@ -24,7 +24,7 @@ Cortex Agentがレビューやクエリ実行時に複数のドキュメント�
    - PATHS_JSONがNULLまたは空文字列の場合もエラー
 
 2. ドキュメントの一括取得（docs配列）
-   - PATHS_JSON内の各PATHについて、DOCS_OBSIDIAN_V.PATHと照合
+   - PATHS_JSON内の各PATHについて、[[DOCS_OBSIDIAN_V]].PATHと照合
    - 存在するドキュメントについて、以下の情報を含むオブジェクトを配列化
      - path, doc_id, folder, scope, file_type, run_date
      - target_schema, target_table, target_column
@@ -40,12 +40,12 @@ Cortex Agentがレビューやクエリ実行時に複数のドキュメント�
 
 ## パラメータ
 
-PATHS_JSON（必須）:
+[[PATHS_JSON]]（必須）:
 - 型: STRING
-- 説明: JSON配列文字列（例: ["design/design.DB_DESIGN.md", "master/tables/APP_PRODUCTION.CUSTOMER_MASTER.md"]）
+- 説明: JSON配列文字列（例: ["design/design.[[DB_DESIGN]].md", "master/tables/[[APP_PRODUCTION.CUSTOMER_MASTER]].md"]）
 - 制約: NULLまたは空文字列は不可、配列型でない場合はエラー
 
-MAX_CHARS（任意）:
+[[MAX_CHARS]]（任意）:
 - 型: STRING
 - 説明: ドキュメント本文の最大文字数を指定（例: "5000"）
 - 制約: 数値に変換可能な文字列、省略時はCONTENT全文を返却

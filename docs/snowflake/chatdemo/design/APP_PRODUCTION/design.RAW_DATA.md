@@ -1,4 +1,4 @@
-# RAW_DATA ステージ
+# [[RAW_DATA]] ステージ
 
 ## 概要
 
@@ -23,7 +23,7 @@ APP_PRODUCTIONスキーマの内部ステージとして位置づけられ、本
 
 ## パラメータ
 
-- ENCRYPTION: Snowflake管理の暗号化（SNOWFLAKE_SSE）を使用
+- ENCRYPTION: Snowflake管理の暗号化（[[SNOWFLAKE_SSE]]）を使用
 - DIRECTORY: ディレクトリテーブル機能を有効化（ENABLE = TRUE）
 
 ## 利用シーン

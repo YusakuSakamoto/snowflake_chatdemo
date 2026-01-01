@@ -1,4 +1,4 @@
-# 外部テーブル設計：AZFUNCTIONS_LOGS
+# 外部テーブル設計：[[AZFUNCTIONS_LOGS]]
 
 ## 概要
 [[LOG.AZFUNCTIONS_LOGS]] は、Azure Functions（バックエンドAPI）のアプリケーションログを集約・分析するための外部テーブルである。
@@ -30,7 +30,7 @@
 ## 設計方針
 
 ### 外部テーブルを採用する理由
-LOG.AZFUNCTIONS_LOGSでも、EXTERNAL TABLE（外部テーブル） を採用する理由は [[LOG.CORTEX_CONVERSATIONS]] と同様：
+[[LOG]].AZFUNCTIONS_LOGSでも、EXTERNAL TABLE（外部テーブル） を採用する理由は [[LOG.CORTEX_CONVERSATIONS]] と同様：
 - コスト最適化（S3ストレージの安価性）
 - 柔軟な保持期間管理（古いログの自動アーカイブ）
 - スキーマ進化の容易性

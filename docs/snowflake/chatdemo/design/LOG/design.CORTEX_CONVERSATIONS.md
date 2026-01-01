@@ -1,7 +1,7 @@
-# 外部テーブル設計：CORTEX_CONVERSATIONS
+# 外部テーブル設計：[[CORTEX_CONVERSATIONS]]
 
 ## 概要
-LOG.CORTEX_CONVERSATIONS は、Snowflake Cortex Agent との会話履歴を長期保管・分析するための外部テーブルである。
+[[LOG.CORTEX_CONVERSATIONS]] は、Snowflake Cortex Agent との会話履歴を長期保管・分析するための外部テーブルである。
 
 本テーブルは、S3に保存されたJSON Lines形式のログファイルを、Snowflakeから直接クエリ可能にする。  
 `APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT` を含む、全Cortex Agentの会話ログを統合的に管理する。
@@ -118,7 +118,7 @@ ORDER BY timestamp;
 
 #### `agent_name` (VARCHAR)
 - 意味：どのCortex Agentが回答したか
-- 値例：`SNOWFLAKE_DEMO_AGENT`, `CUSTOMER_SUPPORT_AGENT` など
+- 値例：[[SNOWFLAKE_DEMO_AGENT]], [[CUSTOMER_SUPPORT_AGENT]] など
 - 利用例：Agent別の回答品質比較
 
 #### `message_role` (VARCHAR)
@@ -241,7 +241,7 @@ ORDER BY message_count DESC;
 ## 運用上の注意
 
 ### AUTO_REFRESH の動作
-- `AUTO_REFRESH=TRUE` により、S3に新ファイルが追加されると自動的にメタデータ更新
+- `[[AUTO_REFRESH]]=TRUE` により、S3に新ファイルが追加されると自動的にメタデータ更新
 - 通常は数分以内に反映されるが、リアルタイム性が必要な場合は手動 REFRESH も可能
 
 ```sql

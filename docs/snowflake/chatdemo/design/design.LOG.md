@@ -7,13 +7,13 @@ WHERE schema_id = this.schema_id
 SORT schema_id, physical
 ```
 
-## LOG スキーマ 設計意図・全体設計
+## [[LOG]] スキーマ 設計意図・全体設計
 
 ---
 
 ## 1. このスキーマの位置づけ
 
-`LOG` スキーマは、全アプリケーション・サービスのログを統合集約するための専用スキーマである。
+[[LOG]] スキーマは、全アプリケーション・サービスのログを統合集約するための専用スキーマである。
 
 本スキーマの役割は次の3点に集約される：
 
@@ -21,7 +21,7 @@ SORT schema_id, physical
 > 2. Azure Functions / SWA のアプリケーションログの統合
 > 3. Snowflake自体のメトリクス・監査ログの蓄積
 
-つまり `LOG` は、
+つまり [[LOG]] は、
 
 - システム全体の動作履歴を一元管理
 - トラブルシューティングの証跡
@@ -84,10 +84,10 @@ SORT schema_id, physical
 
 ## 3. 各ログテーブルの設計判断
 
-### 3.1 LOG.CORTEX_CONVERSATIONS
+### 3.1 [[LOG.CORTEX_CONVERSATIONS]]
 
 #### 目的
-- Cortex Agent（`APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT`）の会話履歴を保管
+- Cortex Agent（[[APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT]]）の会話履歴を保管
 - ユーザーとAIの対話品質を分析
 - 問題のあるクエリやエラーの追跡
 - 機械学習モデルの改善材料
@@ -118,7 +118,7 @@ GROUP BY 1;
 
 ---
 
-### 3.2 LOG.AZFUNCTIONS_LOGS
+### 3.2 [[LOG.AZFUNCTIONS_LOGS]]
 
 #### 目的
 - Azure Functions のアプリケーションログを集約
@@ -154,7 +154,7 @@ LIMIT 10;
 
 ---
 
-### 3.3 LOG.AZSWA_LOGS
+### 3.3 [[LOG.AZSWA_LOGS]]
 
 #### 目的
 - Azure Static Web Apps（フロントエンド）のアクセスログを集約
@@ -191,7 +191,7 @@ ORDER BY 1;
 
 ---
 
-### 3.4 LOG.SNOWFLAKE_METRICS
+### 3.4 [[LOG.SNOWFLAKE_METRICS]]
 
 #### 目的
 - Snowflake 自体のクエリ実行メトリクスを蓄積
@@ -205,8 +205,8 @@ ORDER BY 1;
 - `query_id` : Snowflakeのクエリ実行IDと紐付け
 
 #### データソース想定
-- `INFORMATION_SCHEMA.QUERY_HISTORY` から定期的にエクスポート
-- `ACCOUNT_USAGE.QUERY_HISTORY` から重要メトリクスを抽出
+- [[INFORMATION_SCHEMA.QUERY_HISTORY]] から定期的にエクスポート
+- [[ACCOUNT_USAGE.QUERY_HISTORY]] から重要メトリクスを抽出
 
 #### クエリパターン想定
 ```sql
@@ -243,7 +243,7 @@ LIMIT 10;
    - Snowflakeストアドプロシージャで会話終了時にS3へ `COPY INTO @stage`
 
 3. Snowflakeメトリクス
-   - 定期タスク（TASK）で `QUERY_HISTORY` から抽出し S3 へエクスポート
+   - 定期タスク（TASK）で [[QUERY_HISTORY]] から抽出し S3 へエクスポート
 
 ### 4.2 パーティション設計詳細
 
@@ -264,7 +264,7 @@ s3://snowflake-chatdemo-vault-prod/logs/cortex_conversations/year=2026/month=01/
 
 ### 4.3 AUTO_REFRESH の設定
 
-すべての外部テーブルで `AUTO_REFRESH=TRUE` を設定：
+すべての外部テーブルで `[[AUTO_REFRESH]]=TRUE` を設定：
 
 - S3に新しいファイルが追加されると、Snowflakeが自動的にメタデータを更新
 - クエリ時に最新データが即座に反映される

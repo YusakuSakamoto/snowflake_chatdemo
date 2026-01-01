@@ -1,4 +1,4 @@
-# 外部テーブル設計：SNOWFLAKE_METRICS
+# 外部テーブル設計：[[SNOWFLAKE_METRICS]]
 
 ## 概要
 [[LOG.SNOWFLAKE_METRICS]] は、Snowflake自体のクエリ実行メトリクスとリソース使用状況を蓄積・分析するための外部テーブルである。
@@ -95,7 +95,7 @@ ORDER BY 2 DESC;
 
 #### `query_id` (VARCHAR, nullable)
 - 意味：Snowflakeのクエリ実行ID
-- 利用例：特定のクエリの詳細分析、`QUERY_HISTORY` との紐付け
+- 利用例：特定のクエリの詳細分析、[[QUERY_HISTORY]] との紐付け
 
 ```sql
 -- 実行時間が長いクエリTOP10

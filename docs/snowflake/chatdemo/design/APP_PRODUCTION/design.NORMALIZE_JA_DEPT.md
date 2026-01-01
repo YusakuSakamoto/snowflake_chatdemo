@@ -1,4 +1,4 @@
-# NORMALIZE_JA_DEPT 設計書
+# [[NORMALIZE_JA_DEPT]] 設計書
 
 ## 概要
 

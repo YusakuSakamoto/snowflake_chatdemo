@@ -1,4 +1,4 @@
-# RESOLVE_ENTITY_ALIAS_TOOL 設計書
+# [[RESOLVE_ENTITY_ALIAS_TOOL]] 設計書
 
 ## 概要
 
@@ -12,8 +12,8 @@ Cortex Agentは、ツールの引数をJSON形式で渡す仕様となってい�
 
 RESOLVE_ENTITY_ALIAS_TOOLはAPP_PRODUCTIONスキーマに配置され、以下のオブジェクトと連携する。
 
-- RESOLVE_ENTITY_ALIAS: 実際の名称解決ロジックを実行するプロシージャ
-- SNOWFLAKE_DEMO_AGENT: 本ツールをresolve_entity_aliasツールとして登録し、自然言語質問から抽出した固有名詞の解決に使用
+- [[RESOLVE_ENTITY_ALIAS]]: 実際の名称解決ロジックを実行するプロシージャ
+- [[SNOWFLAKE_DEMO_AGENT]]: 本ツールをresolve_entity_aliasツールとして登録し、自然言語質問から抽出した固有名詞の解決に使用
 
 本ツールは、JSON形式のペイロードを受け取り、term、max_candidates、entity_type_hintを抽出してRESOLVE_ENTITY_ALIASを呼び出す。entity_type_hintが省略されている場合は2引数、指定されている場合は3引数で呼び出す。
 

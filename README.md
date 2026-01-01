@@ -28,11 +28,11 @@ snowflake_chatdemo/
 │       ├── reviews/                       # 設計レビュー
 │       ├── migrations/                    # マイグレーション
 │       └── README.md
-├── tests/                                  # テストコード
+├── tests/                                  # テストコード & スクリプト
 │   ├── azfunctions/chatdemo/              # バックエンドテスト
 │   ├── azswa/chatdemo/                    # フロントエンドテスト
-│   └── snowflake/chatdemo/                # Snowflakeテスト
-├── scripts/                                # ユーティリティスクリプト
+│   ├── snowflake/chatdemo/                # Snowflakeテスト
+│   └── scripts/                           # ユーティリティスクリプト
 ├── .venv/                                  # Python仮想環境
 └── README.md                               # このファイル
 ```

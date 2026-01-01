@@ -643,7 +643,7 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 - [[design.DOCS_OBSIDIAN]] - Obsidian Vaultのドキュメント管理テーブル
 
 ### 外部システム設計
-- [[docs/awss3/chatdemo/S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Vault用）
+- [[S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Vault用）
 - `OBSIDIAN_VAULT_STRUCTURE` - ObsidianのVault構造定義（未作成）
 
 ---

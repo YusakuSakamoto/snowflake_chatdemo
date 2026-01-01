@@ -419,7 +419,7 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 - [[design.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
 
 ### 運用ドキュメント
-- [[docs/awss3/chatdemo/S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Markdownエクスポート先）
+- [[S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Markdownエクスポート先）
 - `SNOWFLAKE_PROFILING_OPERATIONS` - プロファイル運用手順（未作成）
 
 ---

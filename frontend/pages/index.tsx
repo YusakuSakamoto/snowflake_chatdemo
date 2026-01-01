@@ -28,12 +28,12 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
       // チャートのサイズを拡大し、Y軸ラベルの設定を調整
       const enlargedSpec = {
         ...spec,
-        width: 700,
-        height: 450,
+        width: 600,
+        height: 500,
         config: {
           axisY: {
-            labelLimit: 300,  // Y軸ラベルの最大幅を増やす
-            labelFontSize: 11
+            labelLimit: 500,  // Y軸ラベルの最大幅を大幅に増やす
+            labelFontSize: 10
           }
         },
         autosize: {

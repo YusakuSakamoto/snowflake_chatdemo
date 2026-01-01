@@ -106,8 +106,6 @@
 .markdown h1,
 .markdown h2,
 .markdown h3 {
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
   color: #202123;
   font-weight: 600;
 }
@@ -132,12 +130,26 @@
 
 .markdown ul,
 .markdown ol {
-  margin: 1rem 0;
-  padding-left: 2rem;
+  margin: 0.25rem 0;
+  padding-left: 1.5rem;
 }
 
 .markdown li {
-  margin: 0.5rem 0;
+  margin: 0.1rem 0;
+  line-height: 1.7;
+}
+
+.markdown p {
+  margin: 0.25rem 0;
+  line-height: 1.7;
+}
+
+.markdown p:first-child {
+  margin-top: 0;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
 }
 
 .markdown code {
@@ -166,21 +178,35 @@
 .markdown table {
   border-collapse: collapse;
   width: 100%;
-  margin: 1.5rem 0;
-  border: 1px solid #e5e5e5;
+  margin: 1rem 0;
+  border: 1px solid #d0d7de;
+  font-size: 0.9rem;
+  display: block;
+  max-height: 500px;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .markdown th,
 .markdown td {
-  border: 1px solid #e5e5e5;
-  padding: 0.75rem;
+  border: 1px solid #d0d7de;
+  padding: 0.5rem 0.75rem;
   text-align: left;
+  white-space: nowrap;
 }
 
 .markdown th {
-  background: #f7f7f8;
+  background: #f6f8fa;
   font-weight: 600;
-  color: #202123;
+  color: #24292f;
+}
+
+.markdown td {
+  background: #ffffff;
+}
+
+.markdown tr:nth-child(even) td {
+  background: #f6f8fa;
 }
 
 .markdown blockquote {
@@ -212,17 +238,19 @@
   border-radius: 8px;
   border: 1px solid #e1e4e8;
   overflow-x: auto;
-  overflow-y: hidden;
 }
 
 .chart {
   margin: 1rem 0;
-  min-width: 700px;
 }
 
 .vegaChart {
   width: 100%;
   min-height: 400px;
+}
+
+.vegaChart :global(text) {
+  white-space: normal !important;
 }
 
 .messageHeader {
@@ -267,7 +295,6 @@
 .messageContent {
   word-wrap: break-word;
   line-height: 1.6;
-  white-space: pre-wrap;
 }
 
 .inputForm {

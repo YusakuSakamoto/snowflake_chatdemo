@@ -25,48 +25,8 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
       // 既存のチャートをクリア
       containerRef.current.innerHTML = ''
       
-      // データポイント数を取得して動的にサイズを計算
-      const dataLength = spec.data?.values?.length || 5
-      
-      // Y軸の項目数に応じて高さを動的に設定（1項目あたり70px、最低400px）
-      const dynamicHeight = Math.max(400, dataLength * 70)
-      
-      // データ量に応じて幅を調整（最低600px、最大900px）
-      const dynamicWidth = Math.min(900, Math.max(600, dataLength * 40))
-      
-      // チャートのサイズを拡大し、Y軸ラベルの設定を調整
-      const enlargedSpec = {
-        ...spec,
-        width: dynamicWidth,
-        height: dynamicHeight,
-        encoding: {
-          ...spec.encoding,
-          y: {
-            ...spec.encoding.y,
-            axis: {
-              labelLimit: 400,
-              labelFontSize: 11,
-              labelAlign: 'left',
-              labelExpr: 'length(datum.label) > 30 ? substring(datum.label, 0, 30) + "\\n" + substring(datum.label, 30, 60) + (length(datum.label) > 60 ? "\\n" + substring(datum.label, 60) : "") : datum.label'
-            }
-          }
-        },
-        config: {
-          axisY: {
-            labelLimit: 400,
-            labelFontSize: 11,
-            labelAlign: 'left',
-            labelBaseline: 'middle'
-          }
-        },
-        autosize: {
-          type: 'fit',
-          contains: 'padding'
-        }
-      }
-      
       // チャートを描画
-      embed(containerRef.current, enlargedSpec, {
+      embed(containerRef.current, spec, {
         actions: false,
         renderer: 'svg'
       }).catch(err => {
@@ -140,12 +100,17 @@ export default function Home() {
       })
       
       console.log('Snowflake Response:', response.data)
+      console.log('Answer text:', response.data.answer)
+      console.log('Tool details:', JSON.stringify(response.data.tool_details, null, 2))
       
       if (response.data.ok && response.data.answer) {
-        // チャートデータを抽出
+        // チャートデータとテーブルデータを抽出
         const charts: any[] = []
+        let answerText = response.data.answer
+        
         if (response.data.tool_details) {
           for (const tool of response.data.tool_details) {
+            // チャートデータの処理
             if (tool.tool_name === 'data_to_chart' && tool.raw?.content) {
               for (const content of tool.raw.content) {
                 if (content.json?.charts) {
@@ -166,14 +131,33 @@ export default function Home() {
                 }
               }
             }
+            
+            // テーブルデータの処理
+            if (tool.tool_name === 'text_to_sql' && tool.output?.data) {
+              const tableData = tool.output.data
+              if (Array.isArray(tableData) && tableData.length > 0) {
+                // Markdownテーブルに変換
+                const headers = tableData[0]
+                const rows = tableData.slice(1)
+                
+                let markdownTable = '\n\n| ' + headers.join(' | ') + ' |\n'
+                markdownTable += '| ' + headers.map(() => '---').join(' | ') + ' |\n'
+                
+                for (const row of rows) {
+                  markdownTable += '| ' + row.join(' | ') + ' |\n'
+                }
+                
+                answerText += markdownTable
+              }
+            }
           }
         }
         
         // AIの回答を追加
         const aiMessage: Message = {
           user_id: 'Snowflake AI',
-          message: response.data.answer,
-          ai_response: response.data.answer,
+          message: answerText,
+          ai_response: answerText,
           timestamp: new Date().toISOString(),
           progress: response.data.progress,
           tool_logs: response.data.tool_logs,
@@ -234,7 +218,7 @@ export default function Home() {
                       remarkPlugins={[remarkGfm]}
                       rehypePlugins={[rehypeMermaid]}
                     >
-                      {msg.message}
+                      {msg.message.replace(/\n\s*\n\s*\n/g, '\n\n').trim()}
                     </ReactMarkdown>
                   </div>
                 ) : (

@@ -25,8 +25,19 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
       // 既存のチャートをクリア
       containerRef.current.innerHTML = ''
       
+      // チャートのサイズを拡大
+      const enlargedSpec = {
+        ...spec,
+        width: 700,
+        height: 450,
+        autosize: {
+          type: 'fit',
+          contains: 'padding'
+        }
+      }
+      
       // チャートを描画
-      embed(containerRef.current, spec, {
+      embed(containerRef.current, enlargedSpec, {
         actions: false,
         renderer: 'svg'
       }).catch(err => {

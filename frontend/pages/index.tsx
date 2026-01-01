@@ -3,6 +3,7 @@ import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeMermaid from 'rehype-mermaid'
+import { VegaLite } from 'react-vega'
 import styles from '@/styles/Home.module.css'
 
 interface Message {
@@ -12,6 +13,7 @@ interface Message {
   timestamp: string
   progress?: string[]
   tool_logs?: string[]
+  charts?: any[]
 }
 
 export default function Home() {
@@ -78,6 +80,33 @@ export default function Home() {
       console.log('Snowflake Response:', response.data)
       
       if (response.data.ok && response.data.answer) {
+        // チャートデータを抽出
+        const charts: any[] = []
+        if (response.data.tool_details) {
+          for (const tool of response.data.tool_details) {
+            if (tool.tool_name === 'data_to_chart' && tool.raw?.content) {
+              for (const content of tool.raw.content) {
+                if (content.json?.charts) {
+                  try {
+                    const chartSpecs = Array.isArray(content.json.charts) 
+                      ? content.json.charts 
+                      : [content.json.charts]
+                    for (const chartStr of chartSpecs) {
+                      if (typeof chartStr === 'string') {
+                        charts.push(JSON.parse(chartStr))
+                      } else {
+                        charts.push(chartStr)
+                      }
+                    }
+                  } catch (e) {
+                    console.error('Chart parsing error:', e)
+                  }
+                }
+              }
+            }
+          }
+        }
+        
         // AIの回答を追加
         const aiMessage: Message = {
           user_id: 'Snowflake AI',
@@ -85,7 +114,8 @@ export default function Home() {
           ai_response: response.data.answer,
           timestamp: new Date().toISOString(),
           progress: response.data.progress,
-          tool_logs: response.data.tool_logs
+          tool_logs: response.data.tool_logs,
+          charts: charts.length > 0 ? charts : undefined
         }
         setMessages(prev => [...prev, aiMessage])
       } else {
@@ -147,6 +177,15 @@ export default function Home() {
                   </div>
                 ) : (
                   <div>{msg.message}</div>
+                )}
+                {msg.charts && msg.charts.length > 0 && (
+                  <div className={styles.chartContainer}>
+                    {msg.charts.map((chart, chartIndex) => (
+                      <div key={chartIndex} className={styles.chart}>
+                        <VegaLite spec={chart} actions={false} />
+                      </div>
+                    ))}
+                  </div>
                 )}
                 {msg.tool_logs && msg.tool_logs.length > 0 && (
                   <div className={styles.toolLogs}>

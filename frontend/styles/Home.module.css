@@ -204,6 +204,18 @@
   border: 1px solid #e1e4e8;
 }
 
+.chartContainer {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e1e4e8;
+}
+
+.chart {
+  margin: 1rem 0;
+}
+
 .messageHeader {
   display: flex;
   justify-content: space-between;

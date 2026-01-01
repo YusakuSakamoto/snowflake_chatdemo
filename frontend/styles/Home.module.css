@@ -488,6 +488,8 @@
 .toolOutputSection,
 .toolRawSection {
   margin-top: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .sectionLabel {
@@ -515,9 +517,12 @@
   border-radius: 4px;
   font-size: 0.8rem;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 300px;
   margin: 0;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   line-height: 1.4;
+  white-space: pre;
 }
 
 .jsonCode {
@@ -527,10 +532,13 @@
   border-radius: 4px;
   font-size: 0.75rem;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 300px;
   margin: 0;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   line-height: 1.4;
   border: 1px solid #e0e0e0;
+  white-space: pre;
 }
 
 .dataPreview {

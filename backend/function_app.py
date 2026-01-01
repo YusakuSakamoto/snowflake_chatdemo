@@ -261,44 +261,62 @@ def _try_parse_json_string(v):
 def _extract_tool_detail(obj: dict):
     """ツール実行結果から詳細を抽出"""
     if not isinstance(obj, dict):
-        return {"tool_name": "tool", "status": "unknown", "input": None, "output": None, "sql": None, "raw": obj}
+        return {"tool_name": "tool", "status": "unknown", "input": None, "output": None, "raw": obj}
 
     tool_name = obj.get("name") or obj.get("tool_name") or "tool"
     status = obj.get("status") or "unknown"
     elapsed_ms = obj.get("elapsed_ms") or obj.get("elapsedMs")
 
-    cj = _first_content_json(obj)
+    # content配列から情報を抽出
+    content_list = obj.get("content", [])
+    if not isinstance(content_list, list):
+        content_list = [content_list] if content_list else []
 
-    tool_input = None
-    tool_output = None
-    sql = None
-
-    if isinstance(cj, dict):
-        if "result" in cj:
-            parsed = _try_parse_json_string(cj.get("result"))
-            tool_output = parsed if isinstance(parsed, (dict, list)) else {"result": parsed}
-
-            if isinstance(parsed, dict):
-                tool_input = {"term": parsed.get("term")} if parsed.get("term") else None
-
-        if "sql" in cj and isinstance(cj.get("sql"), str):
-            sql = cj.get("sql")
-
-        if "result_set" in cj and cj.get("result_set") is not None:
-            tool_output = cj.get("result_set")
-
-        if tool_name == "text_to_sql" and tool_input is None:
-            t = cj.get("text")
-            if isinstance(t, str) and t:
-                tool_input = {"note": t}
+    tool_input = {}
+    tool_output = {}
+    
+    for content_item in content_list:
+        if not isinstance(content_item, dict):
+            continue
+            
+        # JSON形式のコンテンツを処理
+        if "json" in content_item:
+            cj = content_item.get("json", {})
+            
+            # SQLを抽出
+            if "sql" in cj and isinstance(cj.get("sql"), str):
+                tool_input["sql"] = cj.get("sql")
+            
+            # テキストを抽出
+            if "text" in cj and isinstance(cj.get("text"), str):
+                tool_input["note"] = cj.get("text")
+            
+            # 結果を抽出
+            if "result" in cj:
+                result_data = cj.get("result")
+                if isinstance(result_data, str):
+                    # JSON文字列の場合はパース
+                    try:
+                        tool_output["result"] = json.loads(result_data)
+                    except:
+                        tool_output["result"] = result_data
+                else:
+                    tool_output["result"] = result_data
+            
+            # result_setを抽出
+            if "result_set" in cj and cj.get("result_set") is not None:
+                tool_output["data"] = cj.get("result_set")
+            
+            # dataを直接抽出
+            if "data" in cj and cj.get("data") is not None:
+                tool_output["data"] = cj.get("data")
 
     return {
         "tool_name": str(tool_name),
         "status": status,
         "elapsed_ms": elapsed_ms,
-        "input": tool_input,
-        "output": tool_output,
-        "sql": sql,
+        "input": tool_input if tool_input else None,
+        "output": tool_output if tool_output else None,
         "raw": obj,
     }
 
@@ -455,9 +473,23 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
 
             # --- tool result ---
             if current_event == "response.tool_result":
+                logging.info(f"🔧 Tool result event: {json.dumps(obj, ensure_ascii=False)[:500]}")
                 detail = _extract_tool_detail(obj)
+                logging.info(f"✅ Extracted detail: {json.dumps(detail, ensure_ascii=False)[:500]}")
                 tool_logs_short.append(f'{detail["tool_name"]} ({detail["status"]})')
                 tool_details.append(detail)
+                add_progress(f"🔧 ツール: **{detail['tool_name']}** ({detail['status']})")
+                continue
+
+            # --- tool call/start/end ---
+            if current_event in ["response.tool.call", "response.tool.start", "response.tool.end"]:
+                tool_name = obj.get("name") or obj.get("tool_name") or "unknown"
+                if current_event == "response.tool.call":
+                    add_progress(f"📞 ツール呼び出し: **{tool_name}**")
+                elif current_event == "response.tool.start":
+                    add_progress(f"▶️ ツール実行開始: **{tool_name}**")
+                elif current_event == "response.tool.end":
+                    add_progress(f"✅ ツール実行完了: **{tool_name}**")
                 continue
 
         # response.text が来ない場合は delta を最終回答にする
@@ -483,3 +515,131 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"ストリーミングエラー: {str(e)}")
         return _json({"ok": False, "error": "internal_error", "message": str(e)}, 500)
+
+
+@app.route(route="chat-stream-sse", methods=["POST", "OPTIONS"])
+def chat_stream_sse(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    ストリーミングSSE対応のCortex Agent APIエンドポイント
+    クライアントにイベントを逐次送信
+    """
+    logging.info('Chat stream SSE endpoint triggered')
+    
+    if req.method == "OPTIONS":
+        return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
+
+    try:
+        body = req.get_json()
+        text = body.get("text") or body.get("input") or body.get("message")
+        if not text:
+            return _json({"ok": False, "error": "text is required"}, 400)
+
+        # --- env ---
+        base_url = _env("SNOWFLAKE_ACCOUNT_URL").rstrip("/")
+        token = _env("SNOWFLAKE_BEARER_TOKEN")
+        database = _env("SNOWFLAKE_DATABASE")
+        schema = _env("SNOWFLAKE_SCHEMA")
+        agent = _env("SNOWFLAKE_AGENT_NAME")
+
+        url = f"{base_url}/api/v2/databases/{database}/schemas/{schema}/agents/{agent}:run"
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+        }
+
+        payload = {
+            "messages": [{"role": "user", "content": [{"type": "text", "text": text}]}],
+            "tool_choice": {"type": "auto"},
+        }
+
+        # ストリーミングレスポンスを生成
+        def generate():
+            try:
+                r = requests.post(url, headers=headers, json=payload, stream=True, timeout=900)
+                if r.status_code >= 400:
+                    yield f"event: error\ndata: {json.dumps({'error': 'snowflake_error', 'status': r.status_code})}\n\n"
+                    return
+
+                # 初期イベント送信
+                yield f"event: start\ndata: {json.dumps({'status': 'connected'})}\n\n"
+
+                current_event = None
+                for raw in r.iter_lines(decode_unicode=False):
+                    if raw is None:
+                        continue
+                    
+                    try:
+                        line = raw.decode("utf-8").rstrip("\r")
+                    except Exception:
+                        continue
+
+                    if line == "":
+                        current_event = None
+                        continue
+
+                    if line.startswith("event:"):
+                        current_event = line[len("event:"):].strip()
+                        continue
+
+                    if not line.startswith("data:"):
+                        continue
+
+                    data_str = line[len("data:"):].strip()
+                    if data_str == "[DONE]":
+                        break
+
+                    try:
+                        obj = json.loads(data_str)
+                    except Exception:
+                        continue
+
+                    # テキストデルタ
+                    if current_event == "response.text.delta":
+                        t = obj.get("text") if isinstance(obj, dict) else None
+                        if isinstance(t, str) and t:
+                            yield f"event: text_delta\ndata: {json.dumps({'text': t})}\n\n"
+
+                    # 最終テキスト
+                    elif current_event == "response.text":
+                        t = obj.get("text") if isinstance(obj, dict) else None
+                        if isinstance(t, str) and t:
+                            yield f"event: text_final\ndata: {json.dumps({'text': t})}\n\n"
+
+                    # ツール結果
+                    elif current_event == "response.tool_result":
+                        detail = _extract_tool_detail(obj)
+                        yield f"event: tool_detail\ndata: {json.dumps(detail, ensure_ascii=False)}\n\n"
+                        
+                    # ツールステップ
+                    elif current_event in ["response.tool.call", "response.tool.start", "response.tool.end"]:
+                        tool_name = obj.get("name") or obj.get("tool_name") or "unknown"
+                        step_type = current_event.split(".")[-1]
+                        yield f"event: tool_step\ndata: {json.dumps({'type': step_type, 'tool_name': tool_name})}\n\n"
+
+                # 完了イベント
+                yield f"event: done\ndata: {json.dumps({'status': 'completed'})}\n\n"
+
+            except Exception as e:
+                logging.exception("SSE generation failed")
+                yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+
+        # SSEレスポンスを返す
+        sse_headers = {
+            **CORS_HEADERS,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+        
+        return func.HttpResponse(
+            body=generate(),
+            status_code=200,
+            headers=sse_headers,
+            mimetype="text/event-stream"
+        )
+
+    except Exception as e:
+        logging.exception("chat_stream_sse failed")
+        return _json({"ok": False, "error": str(e)}, 500)

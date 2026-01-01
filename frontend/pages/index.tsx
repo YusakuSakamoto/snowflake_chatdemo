@@ -223,6 +223,19 @@ export default function Home() {
     const currentMessage = inputMessage
     setInputMessage('')
 
+    // 処理中メッセージを追加
+    const processingMessage: Message = {
+      user_id: 'Snowflake AI',
+      message: '処理中...',
+      timestamp: new Date().toISOString(),
+      progress: ['🔄 Snowflake Cortex Agentに接続中...'],
+      tool_logs: [],
+      tool_details: [],
+      isComplete: false
+    }
+    setMessages(prev => [...prev, processingMessage])
+    const messageIndex = messages.length + 1 // ユーザーメッセージの次
+
     try {
       // Snowflake Cortex Agentのストリーミングエンドポイントを使用
       const response = await axios.post(`${API_URL}/chat-stream`, {
@@ -233,6 +246,20 @@ export default function Home() {
       console.log('Snowflake Response:', response.data)
       console.log('Answer text:', response.data.answer)
       console.log('Tool details:', JSON.stringify(response.data.tool_details, null, 2))
+
+      // レスポンスを受け取ったら、処理中メッセージを更新（tool_detailsを表示）
+      if (response.data.progress || response.data.tool_details) {
+        setMessages(prev => {
+          const newMessages = [...prev]
+          newMessages[messageIndex] = {
+            ...newMessages[messageIndex],
+            progress: response.data.progress || [],
+            tool_details: response.data.tool_details || [],
+            isComplete: false
+          }
+          return newMessages
+        })
+      }
       
       if (response.data.ok && response.data.answer) {
         // チャートデータとテーブルデータを抽出
@@ -264,9 +291,26 @@ export default function Home() {
             }
             
             // テーブルデータの処理
-            if (tool.tool_name === 'text_to_sql' && tool.output?.data) {
-              const tableData = tool.output.data
-              if (Array.isArray(tableData) && tableData.length > 0) {
+            if (tool.tool_name === 'text_to_sql') {
+              // 複数の場所からデータを取得を試みる
+              let tableData = null
+              
+              // 1. tool.output.data
+              if (tool.output?.data && Array.isArray(tool.output.data)) {
+                tableData = tool.output.data
+              }
+              // 2. tool.raw.content[].json.result_set.data
+              else if (tool.raw?.content) {
+                for (const content of tool.raw.content) {
+                  if (content.json?.result_set?.data && Array.isArray(content.json.result_set.data)) {
+                    tableData = content.json.result_set.data
+                    break
+                  }
+                }
+              }
+              
+              if (tableData && tableData.length > 0) {
+                console.log('テーブルデータを発見:', tableData.length, '行')
                 // Markdownテーブルに変換
                 const headers = tableData[0]
                 const rows = tableData.slice(1)
@@ -279,6 +323,8 @@ export default function Home() {
                 }
                 
                 answerText += markdownTable
+              } else {
+                console.log('テーブルデータが見つかりません。tool:', JSON.stringify(tool, null, 2))
               }
             }
           }
@@ -296,20 +342,31 @@ export default function Home() {
           charts: charts.length > 0 ? charts : undefined,
           isComplete: true
         }
-        setMessages(prev => [...prev, aiMessage])
+        
+        // 処理中メッセージを完了メッセージで更新
+        setMessages(prev => {
+          const newMessages = [...prev]
+          newMessages[messageIndex] = aiMessage
+          return newMessages
+        })
       } else {
         throw new Error('AIからの応答がありません')
       }
     } catch (error) {
       console.error('メッセージの送信に失敗しました:', error)
       
-      // エラーメッセージを表示
+      // 処理中メッセージをエラーメッセージで更新
       const errorMessage: Message = {
         user_id: 'System',
         message: 'エラー: メッセージの送信に失敗しました。Snowflakeへの接続を確認してください。',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        isComplete: true
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages(prev => {
+        const newMessages = [...prev]
+        newMessages[messageIndex] = errorMessage
+        return newMessages
+      })
     } finally {
       setLoading(false)
     }

@@ -2,16 +2,30 @@ import azure.functions as func
 import logging
 import os
 import json
-from snowflake_db import SnowflakeConnection
+from datetime import datetime
+
+# モックデータ（開発用）
+mock_messages = []
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
-@app.route(route="chat", methods=["POST"])
+@app.route(route="chat", methods=["POST", "OPTIONS"])
 def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     """
     チャットメッセージを処理し、Snowflakeに保存するエンドポイント
     """
     logging.info('Chat endpoint triggered')
+    
+    # OPTIONSリクエスト（CORS preflight）への対応
+    if req.method == "OPTIONS":
+        return func.HttpResponse(
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type"
+            }
+        )
 
     try:
         # リクエストボディを取得
@@ -23,42 +37,26 @@ def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse(
                 json.dumps({"error": "メッセージが必要です"}),
                 mimetype="application/json",
-                status_code=400
+                status_code=400,
+                headers={
+                    "Access-Control-Allow-Origin": "*"
+                }
             )
 
-        # Snowflakeに接続してメッセージを保存
-        with SnowflakeConnection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO chat_messages (user_id, message, timestamp)
-                VALUES (%s, %s, CURRENT_TIMESTAMP())
-                """,
-                (user_id, message)
-            )
-            
-            # 最近のメッセージを取得
-            cursor.execute(
-                """
-                SELECT user_id, message, timestamp
-                FROM chat_messages
-                ORDER BY timestamp DESC
-                LIMIT 10
-                """
-            )
-            recent_messages = cursor.fetchall()
+        # モックデータに保存（開発用）
+        mock_messages.append({
+            'user_id': user_id,
+            'message': message,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        # 最近のメッセージを取得（最大10件）
+        recent_messages = mock_messages[-10:][::-1]
 
         response_data = {
             "status": "success",
             "message": "メッセージが保存されました",
-            "recent_messages": [
-                {
-                    "user_id": row[0],
-                    "message": row[1],
-                    "timestamp": str(row[2])
-                }
-                for row in recent_messages
-            ]
+            "recent_messages": recent_messages
         }
 
         return func.HttpResponse(
@@ -72,47 +70,50 @@ def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(
             json.dumps({"error": str(e)}),
             mimetype="application/json",
-            status_code=500
+            status_code=500,
+            headers={
+                "Access-Control-Allow-Origin": "*"
+            }
         )
 
 
-@app.route(route="messages", methods=["GET"])
+@app.route(route="messages", methods=["GET", "OPTIONS"])
 def get_messages(req: func.HttpRequest) -> func.HttpResponse:
     """
     Snowflakeからチャットメッセージを取得するエンドポイント
     """
     logging.info('Get messages endpoint triggered')
+    
+    # OPTIONSリクエスト（CORS preflight）への対応
+    if req.method == "OPTIONS":
+        return func.HttpResponse(
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type"
+            }
+        )
 
     try:
-        limit = req.params.get('limit', '50')
+        limit = int(req.params.get('limit', '50'))
         
-        with SnowflakeConnection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                f"""
-                SELECT user_id, message, timestamp
-                FROM chat_messages
-                ORDER BY timestamp DESC
-                LIMIT {int(limit)}
-                """
-            )
-            messages = cursor.fetchall()
+        # モックデータから取得
+        messages = mock_messages[-limit:][::-1]
 
         response_data = {
-            "messages": [
-                {
-                    "user_id": row[0],
-                    "message": row[1],
-                    "timestamp": str(row[2])
-                }
-                for row in messages
-            ]
+            "messages": messages
         }
 
         return func.HttpResponse(
             json.dumps(response_data, ensure_ascii=False),
             mimetype="application/json",
-            status_code=200
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type"
+            }
         )
 
     except Exception as e:
@@ -120,5 +121,8 @@ def get_messages(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(
             json.dumps({"error": str(e)}),
             mimetype="application/json",
-            status_code=500
+            status_code=500,
+            headers={
+                "Access-Control-Allow-Origin": "*"
+            }
         )

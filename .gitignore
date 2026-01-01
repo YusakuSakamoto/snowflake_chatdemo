@@ -46,6 +46,9 @@ docs/.obsidian/workspace.json
 docs/snowflake/chatdemo/.obsidian/
 docs/snowflake/chatdemo/templater_scripts/
 
+# Profile results (S3 managed, not in Git)
+docs/snowflake/chatdemo/profile_results/
+
 # Terraform
 *.tfstate
 *.tfstate.*

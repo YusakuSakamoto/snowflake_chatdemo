@@ -12,7 +12,7 @@
 - 主な利用シーン  
   - Obsidian Vault更新後、GitHub Actions経由でS3に同期された後、手動またはタスクで実行
   - Cortex Agentが最新の設計ドキュメントを参照できるようにする
-  - プロファイル結果（Markdown）のSnowflakeへの取り込み
+  - **注記**：プロファイル結果は外部テーブル（PROFILE_RESULTS_EXTERNAL）で直接参照するため、本プロシージャの対象外
 
 ## 設計上の位置づけ
 
@@ -300,66 +300,53 @@ WHERE file_path NOT IN (
 
 または、プロシージャ内で削除ロジックを追加（将来拡張）。
 
-## プロファイル結果の取り込み
+## プロファイル結果の参照方法
 
-### プロファイル結果もMarkdown形式で出力
-[[DB_DESIGN.PROFILE_ALL_TABLES]] の実行後、[[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] がプロファイル結果をMarkdown形式でS3に出力する：
+### 外部テーブルで直接参照（推奨設計）
+プロファイル結果は、**外部テーブル（PROFILE_RESULTS_EXTERNAL / PROFILE_RUNS_EXTERNAL）で直接S3を参照**する設計を採用：
 
 ```
-s3://snowflake-chatdemo-vault-prod/
-└── profile_results/
-    └── 2026/
-        └── 01/
-            └── 02/
-                ├── profile_APP_PRODUCTION_ANKEN_MEISAI_20260102_140523.md
-                ├── profile_APP_PRODUCTION_DEPARTMENT_MASTER_20260102_140623.md
-                └── ...
+PROFILE_ALL_TABLES (プロファイル実行)
+  ↓ JSON直接書き込み
+S3 (s3://snowflake-chatdemo-vault-prod/profile_results/year=YYYY/month=MM/day=DD/)
+  ↓ 外部テーブル参照
+DB_DESIGN.PROFILE_RESULTS_EXTERNAL (外部テーブル)
+  ↓ クエリ
+Cortex Agent / BI Tool
 ```
 
-### Markdownファイルの構造例
-```markdown
-# プロファイル結果：APP_PRODUCTION.ANKEN_MEISAI
-
-## 実行情報
-- RUN_ID: RUN_20260102_140523
-- 実行日時: 2026-01-02 14:05:23 UTC
-- 対象テーブル: GBPS253YS_DB.APP_PRODUCTION.ANKEN_MEISAI
-- 総行数: 12,345
-
-## カラム別プロファイル結果
-
-### ANKEN_ID
+### 本プロシージャの対象外
+- プロファイル結果（JSON形式）は `INGEST_VAULT_MD` の対象外
+- 設計ドキュメント（Markdown形式）のみを `DOCS_OBSIDIAN` に取り込む
+- 理由：
+  - プロファイル結果は頻繁に更新されない（週次・月次）
+  - リアルタイム性が不要
+  - ストレージコスト削減（S3のみで管理）### ANKEN_ID
 - データ型: VARCHAR(50)
 - NULL数: 0 (0.0%)
 - ユニーク数: 12,345 (100.0%)
 - 最小値: A0001
 - 最大値: A9999
-- 重複TOP3: なし
+- 理由：
+  - プロファイル結果は頻繁に更新されない（週次・月次）
+  - リアルタイム性が不要
+  - ストレージコスト削減（S3のみで管理）
 
-### SHOHIN_CODE_RAW
-- データ型: VARCHAR(100)
-- NULL数: 123 (1.0%)
-- ユニーク数: 456
-- 最頻値: PROD_001 (234回)
-- ...
-```
-
-### INGEST_VAULT_MDによる取り込み
+### プロファイル結果のクエリ例
 ```sql
--- プロファイル結果のMarkdownを取り込み
-CALL DB_DESIGN.INGEST_VAULT_MD(
-    '@DB_DESIGN.OBSIDIAN_VAULT_STAGE',
-    'profile_results/.*\\.md'
-);
-```
-
-取り込み後、Cortex Agentがプロファイル結果を参照可能：
-```sql
--- プロファイル結果を検索
-SELECT file_path, file_content
-FROM DB_DESIGN.DOCS_OBSIDIAN
-WHERE file_path LIKE 'profile_results/%'
-  AND file_content LIKE '%ANKEN_MEISAI%';
+-- 最新のプロファイル結果を参照
+SELECT 
+  target_schema,
+  target_table,
+  target_column,
+  metrics:null_rate::FLOAT AS null_rate,
+  metrics:distinct_count::NUMBER AS distinct_count
+FROM DB_DESIGN.PROFILE_RESULTS_EXTERNAL
+WHERE target_db = 'GBPS253YS_DB'
+  AND target_schema = 'APP_PRODUCTION'
+  AND year = 2026
+  AND month = 1
+ORDER BY target_table, target_column;
 ```
 
 ## 拡張計画

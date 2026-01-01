@@ -103,15 +103,30 @@ snowflake-chatdemo-vault-prod/
 │   └── ddl/
 │       ├── snowflake_ddl_20260101_120000.sql
 │       └── snowflake_external_ddl_20260102_042001.sql
+├── profile_results/                    # プロファイル結果（Git管理外）
+│   └── year=YYYY/
+│       └── month=MM/
+│           └── day=DD/
+│               ├── {run_id}_results.json  # PROFILE_RESULTS
+│               └── {run_id}_run.json      # PROFILE_RUNS
 └── _metadata/                          # メタデータ（同期情報）
     └── sync_history.json
 ```
 
 ### パーティション戦略
+
+#### 設計ドキュメント
 **パーティション不要**：
 - ドキュメントは静的で、時系列ではない
 - ファイルパスによる階層構造で十分に効率的
 - Snowflake External Tableは `metadata$filename` で個別ファイルを特定
+
+#### プロファイル結果
+**日付パーティション（year/month/day）**：
+- 時系列データとして管理（プロファイル実行日ベース）
+- 古いデータのクエリ性能を最適化
+- ライフサイクルポリシーで古いパーティションを自動削除可能
+- パーティションプルーニングによるクエリコスト削減
 
 ## ファイル同期戦略
 
@@ -119,14 +134,17 @@ snowflake-chatdemo-vault-prod/
 
 #### オプション1：手動同期（初期）
 ```bash
-# Obsidian Vault → S3 への同期
+# Obsidian Vault → S3 への同期（設計ドキュメントのみ）
 aws s3 sync \
   /mnt/c/Users/Owner/Documents/snowflake-db/ \
   s3://snowflake-chatdemo-vault-prod/ \
   --exclude ".obsidian/*" \
   --exclude ".trash/*" \
+  --exclude "profile_results/*" \
   --delete
 ```
+
+**注記**：`profile_results/` はSnowflakeから直接書き込まれるため、ローカル同期から除外。
 
 #### オプション2：GitHub Actions経由（推奨）
 ```yaml
@@ -157,6 +175,7 @@ jobs:
           aws s3 sync docs/snowflake/chatdemo/ \
             s3://snowflake-chatdemo-vault-prod/ \
             --exclude ".obsidian/*" \
+            --exclude "profile_results/*" \
             --delete
       
       - name: Trigger Snowflake External Table Refresh
@@ -177,6 +196,7 @@ Obsidian Pluginで変更検知 → 自動S3 Upload
 
 ### External Stage定義
 
+#### ドキュメント用Stage
 ```sql
 CREATE OR REPLACE STAGE DB_DESIGN.VAULT_STAGE
   URL = 's3://snowflake-chatdemo-vault-prod/'
@@ -186,9 +206,20 @@ CREATE OR REPLACE STAGE DB_DESIGN.VAULT_STAGE
 
 **注記**：Markdownファイルはテキストとして読み込むため、FILE_FORMATはCSVでも可（1カラムとして扱う）。
 
+#### プロファイル結果用Stage
+```sql
+CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
+  URL = 's3://snowflake-chatdemo-vault-prod/'
+  STORAGE_INTEGRATION = S3_INTEGRATION_READWRITE
+  DIRECTORY = (ENABLE = TRUE AUTO_REFRESH = FALSE)
+  COMMENT = 'Obsidian Vault用S3ステージ（Markdown/JSON出力先、プロファイル結果含む）';
+```
+
+**注記**：プロファイル結果はSnowflakeから書き込むため、READWRITEアクセスが必要。
+
 ### External Table定義
 
-#### 既存テーブル（DB_DESIGN.DOCS_OBSIDIAN）との統合
+#### 設計ドキュメント（DB_DESIGN.DOCS_OBSIDIAN）
 既存の `DB_DESIGN.DOCS_OBSIDIAN` テーブルを External Table として再定義：
 
 ```sql
@@ -198,6 +229,60 @@ CREATE OR REPLACE EXTERNAL TABLE DB_DESIGN.DOCS_OBSIDIAN (
   file_size NUMBER AS (metadata$file_size::NUMBER),
   last_modified TIMESTAMP_NTZ AS (metadata$file_last_modified::TIMESTAMP_NTZ)
 )
+LOCATION = @DB_DESIGN.VAULT_STAGE
+FILE_FORMAT = (TYPE = 'CSV' FIELD_DELIMITER = 'NONE' RECORD_DELIMITER = 'NONE')
+AUTO_REFRESH = TRUE
+COMMENT = 'Obsidian Vault DB設計ドキュメント（S3外部テーブル）';
+```
+
+**重要**：`FILE_DELIMITER = 'NONE'` でファイル全体を1レコードとして読み込む。
+
+#### プロファイル結果（DB_DESIGN.PROFILE_RESULTS_EXTERNAL）
+```sql
+CREATE OR REPLACE EXTERNAL TABLE DB_DESIGN.PROFILE_RESULTS_EXTERNAL (
+  target_db VARCHAR AS ($1:target_db::VARCHAR),
+  target_schema VARCHAR AS ($1:target_schema::VARCHAR),
+  target_table VARCHAR AS ($1:target_table::VARCHAR),
+  target_column VARCHAR AS ($1:target_column::VARCHAR),
+  run_id VARCHAR AS ($1:run_id::VARCHAR),
+  as_of_at TIMESTAMP_NTZ AS ($1:as_of_at::TIMESTAMP_NTZ),
+  metrics VARIANT AS ($1:metrics::VARIANT),
+  year NUMBER AS (metadata$external_table_partition:year::NUMBER),
+  month NUMBER AS (metadata$external_table_partition:month::NUMBER),
+  day NUMBER AS (metadata$external_table_partition:day::NUMBER)
+)
+LOCATION = @DB_DESIGN.OBSIDIAN_VAULT_STAGE/profile_results/
+FILE_FORMAT = (TYPE = 'JSON')
+PARTITION BY (year, month, day)
+AUTO_REFRESH = FALSE
+COMMENT = 'プロファイル結果（カラム単位メトリクス）の外部テーブル';
+```
+
+#### プロファイル実行履歴（DB_DESIGN.PROFILE_RUNS_EXTERNAL）
+```sql
+CREATE OR REPLACE EXTERNAL TABLE DB_DESIGN.PROFILE_RUNS_EXTERNAL (
+  run_id VARCHAR AS ($1:run_id::VARCHAR),
+  target_db VARCHAR AS ($1:target_db::VARCHAR),
+  target_schema VARCHAR AS ($1:target_schema::VARCHAR),
+  target_table VARCHAR AS ($1:target_table::VARCHAR),
+  started_at TIMESTAMP_NTZ AS ($1:started_at::TIMESTAMP_NTZ),
+  finished_at TIMESTAMP_NTZ AS ($1:finished_at::TIMESTAMP_NTZ),
+  status VARCHAR AS ($1:status::VARCHAR),
+  sample_pct FLOAT AS ($1:sample_pct::FLOAT),
+  warehouse_name VARCHAR AS ($1:warehouse_name::VARCHAR),
+  role_name VARCHAR AS ($1:role_name::VARCHAR),
+  git_commit VARCHAR AS ($1:git_commit::VARCHAR),
+  note VARCHAR AS ($1:note::VARCHAR),
+  year NUMBER AS (metadata$external_table_partition:year::NUMBER),
+  month NUMBER AS (metadata$external_table_partition:month::NUMBER),
+  day NUMBER AS (metadata$external_table_partition:day::NUMBER)
+)
+LOCATION = @DB_DESIGN.OBSIDIAN_VAULT_STAGE/profile_results/
+FILE_FORMAT = (TYPE = 'JSON')
+PARTITION BY (year, month, day)
+AUTO_REFRESH = FALSE
+COMMENT = 'プロファイル実行履歴の外部テーブル';
+```
 LOCATION = @DB_DESIGN.VAULT_STAGE
 FILE_FORMAT = (TYPE = 'CSV' FIELD_DELIMITER = 'NONE' RECORD_DELIMITER = 'NONE')
 AUTO_REFRESH = TRUE

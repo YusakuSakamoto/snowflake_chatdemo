@@ -28,6 +28,7 @@ DROP SCHEMA PUBLIC;
   const TABLES_PATH  = "master/tables";
   const COLUMNS_PATH = "master/columns";
   const VIEWS_PATH   = "master/views";
+  const SEMANTIC_VIEWS_PATH = "master/semanticviews";
   const OTHER_PATH   = "master/other";
 
   // options
@@ -290,9 +291,13 @@ DROP SCHEMA PUBLIC;
       });
     }
 
-    // ---- load views / other ----
+    // ---- load views / semantic views / other ----
     const views = dv.pages(`"${VIEWS_PATH}"`)
       .where(p => p.view_id && p.schema_id && p.physical)
+      .array();
+
+    const semanticViews = dv.pages(`"${SEMANTIC_VIEWS_PATH}"`)
+      .where(p => p.type === "semantic_view" && p.physical)
       .array();
 
     const others = dv.pages(`"${OTHER_PATH}"`)
@@ -387,6 +392,37 @@ DROP SCHEMA PUBLIC;
     });
 
     for (const r of viewBlocks) {
+      if (r?.warn) warns.push(r.warn);
+      if (r?.ddl) out.push(r.ddl);
+    }
+
+    // ---- SEMANTIC VIEWS (YAML) ----
+    out.push(`-- ==============================\n-- SEMANTIC VIEWS (YAML)\n-- ==============================\n`);
+
+    const semanticViewBlocks = await mapLimit(semanticViews, IO_CONCURRENCY, async (sv) => {
+      let md = "";
+      try { md = await dv.io.load(sv.file.path); }
+      catch { return { ddl: "", warn: `semantic_view ${sv.physical} load failed` }; }
+
+      // YAMLブロックを抽出
+      const yamlMatch = md.match(/```yaml\s*([\s\S]*?)```/i);
+      if (!yamlMatch) {
+        return { ddl: `-- SKIP: ${sv.physical} (no yaml block)\n\n`, warn: "" };
+      }
+
+      const yamlContent = yamlMatch[1].trim();
+      const comment = clean(sv.comment) || `Semantic View: ${sv.physical}`;
+
+      const ddl =
+        `-- SEMANTIC VIEW: ${sv.physical}\n` +
+        `-- ${comment}\n` +
+        `-- ファイル出力先: ${sv.physical}.yaml\n` +
+        `/*\n${yamlContent}\n*/\n\n`;
+      
+      return { ddl, warn: "" };
+    });
+
+    for (const r of semanticViewBlocks) {
       if (r?.warn) warns.push(r.warn);
       if (r?.ddl) out.push(r.ddl);
     }

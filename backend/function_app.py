@@ -3,9 +3,11 @@ import logging
 import os
 import json
 from datetime import datetime
+from snowflake_cortex import SnowflakeCortexClient
 
-# モックデータ（開発用）
+# モックデータ（開発用 - USE_MOCK=Trueの場合のみ使用）
 mock_messages = []
+USE_MOCK = os.getenv('USE_MOCK', 'False').lower() == 'true'
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
@@ -43,15 +45,42 @@ def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
                 }
             )
 
-        # モックデータに保存（開発用）
-        mock_messages.append({
-            'user_id': user_id,
-            'message': message,
-            'timestamp': datetime.now().isoformat()
-        })
-        
-        # 最近のメッセージを取得（最大10件）
-        recent_messages = mock_messages[-10:][::-1]
+        if USE_MOCK:
+            # モックデータに保存（開発用）
+            mock_messages.append({
+                'user_id': user_id,
+                'message': message,
+                'ai_response': f"これはモック応答です: {message}",
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            # 最近のメッセージを取得（最大10件）
+            recent_messages = mock_messages[-10:][::-1]
+        else:
+            # Snowflake Cortex Agentを使用
+            cortex_client = SnowflakeCortexClient()
+            
+            # Cortex Agentでメッセージを処理
+            cortex_result = cortex_client.call_cortex_agent(message)
+            
+            ai_response = "応答を取得できませんでした"
+            if cortex_result and 'data' in cortex_result:
+                ai_response = cortex_result['data'][0][0] if cortex_result['data'] else ai_response
+            
+            # メッセージをSnowflakeに保存
+            cortex_client.save_message(user_id, message, ai_response)
+            
+            # 最近のメッセージを取得
+            messages_data = cortex_client.get_messages(10)
+            recent_messages = [
+                {
+                    'user_id': row[0],
+                    'message': row[1],
+                    'ai_response': row[2],
+                    'timestamp': str(row[3])
+                }
+                for row in messages_data
+            ] if messages_data else []
 
         response_data = {
             "status": "success",
@@ -98,8 +127,22 @@ def get_messages(req: func.HttpRequest) -> func.HttpResponse:
     try:
         limit = int(req.params.get('limit', '50'))
         
-        # モックデータから取得
-        messages = mock_messages[-limit:][::-1]
+        if USE_MOCK:
+            # モックデータから取得
+            messages = mock_messages[-limit:][::-1]
+        else:
+            # Snowflakeから取得
+            cortex_client = SnowflakeCortexClient()
+            messages_data = cortex_client.get_messages(limit)
+            messages = [
+                {
+                    'user_id': row[0],
+                    'message': row[1],
+                    'ai_response': row[2],
+                    'timestamp': str(row[3])
+                }
+                for row in messages_data
+            ] if messages_data else []
 
         response_data = {
             "messages": messages

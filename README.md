@@ -52,15 +52,25 @@ npm run dev
   "Values": {
     "AzureWebJobsStorage": "",
     "FUNCTIONS_WORKER_RUNTIME": "python",
+    "USE_MOCK": "false",
     "SNOWFLAKE_ACCOUNT": "your-account",
     "SNOWFLAKE_USER": "your-user",
     "SNOWFLAKE_PASSWORD": "your-password",
     "SNOWFLAKE_WAREHOUSE": "your-warehouse",
     "SNOWFLAKE_DATABASE": "your-database",
-    "SNOWFLAKE_SCHEMA": "your-schema"
+    "SNOWFLAKE_SCHEMA": "your-schema",
+    "SNOWFLAKE_ROLE": "ACCOUNTADMIN"
+  },
+  "Host": {
+    "CORS": "*",
+    "CORSCredentials": false
   }
 }
 ```
+
+**モードの切り替え:**
+- `USE_MOCK=true`: モックデータを使用（開発用）
+- `USE_MOCK=false`: Snowflake Cortex Agentに接続
 
 ### フロントエンド（frontend/.env.local）
 ```

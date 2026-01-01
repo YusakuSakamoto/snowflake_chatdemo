@@ -304,34 +304,12 @@ cp "docs/snowflake/chatdemo/design/DB_DESIGN/design.OBJECT.md" \
 
 ## Git運用規則
 
-### コミットメッセージ
-- **日本語で記載する**
-- プレフィックスを使用（推奨）:
-  - `feat:` - 新機能追加
-  - `fix:` - バグ修正
-  - `docs:` - ドキュメント更新
-  - `refactor:` - リファクタリング
-  - `style:` - フォーマット修正
+詳細は [GIT_WORKFLOW.md](../../git/chatdemo/GIT_WORKFLOW.md) を参照してください。
 
-### コミット前チェックリスト
-- [ ] 命名規則に準拠している
-- [ ] バッククォートが残っていない
-- [ ] リンクが正しく設定されている
-- [ ] Windows Vaultに同期済み
-- [ ] コミットメッセージが日本語
-
-### 例
-```bash
-# 良いコミットメッセージ
-git commit -m "feat: V_CUSTOMER_MASTERビューの設計ドキュメント追加"
-git commit -m "fix: カラム名参照のバッククォートをObsidianリンクに修正"
-git commit -m "refactor: 命名規則に従ってDOCS_OBSIDIAN_VをV_DOCS_OBSIDIANにリネーム"
-
-# 悪いコミットメッセージ
-git commit -m "Update files"
-git commit -m "Fix bug"
-git commit -m "Add new view"
-```
+### 重要ポイント
+- **コミットメッセージは日本語で記載**
+- プレフィックス使用推奨（`feat:`, `fix:`, `docs:`, `refactor:` など）
+- コミット前にWindows Vaultへの同期を確認
 
 ---
 

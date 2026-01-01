@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import styles from '@/styles/Home.module.css'
 
 interface Message {
@@ -14,7 +16,6 @@ interface Message {
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
-  const [userId, setUserId] = useState('anonymous')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -50,7 +51,7 @@ export default function Home() {
     
     // ユーザーメッセージを即座に表示
     const userMessage: Message = {
-      user_id: userId,
+      user_id: 'user',
       message: inputMessage,
       timestamp: new Date().toISOString()
     }
@@ -97,16 +98,8 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1>Snowflake Chat Demo</h1>
-        <div className={styles.userIdInput}>
-          <label>ユーザーID: </label>
-          <input
-            type="text"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            placeholder="ユーザーIDを入力"
-          />
-        </div>
+        <h1>❄️ Snowflake Chat Demo</h1>
+        <p className={styles.subtitle}>Snowflake Cortex Agentに質問してみましょう</p>
       </header>
 
       <main className={styles.main}>
@@ -115,7 +108,7 @@ export default function Home() {
             <div
               key={index}
               className={`${styles.message} ${
-                msg.user_id === userId ? styles.myMessage : 
+                msg.user_id === 'user' ? styles.myMessage : 
                 msg.user_id === 'Snowflake AI' ? styles.aiMessage :
                 msg.user_id === 'System' ? styles.systemMessage :
                 styles.otherMessage
@@ -123,19 +116,25 @@ export default function Home() {
             >
               <div className={styles.messageHeader}>
                 <span className={styles.userName}>
-                  {msg.user_id === 'Snowflake AI' ? '🤖 Snowflake AI' : 
+                  {msg.user_id === 'Snowflake AI' ? '❄️ Snowflake AI' : 
                    msg.user_id === 'System' ? '⚠️ System' : 
-                   msg.user_id}
+                   'あなた'}
                 </span>
                 <span className={styles.timestamp}>
-                  {new Date(msg.timestamp).toLocaleString('ja-JP')}
+                  {new Date(msg.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
               <div className={styles.messageContent}>
-                {msg.message}
+                {msg.user_id === 'Snowflake AI' || msg.user_id === 'System' ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} className={styles.markdown}>
+                    {msg.message}
+                  </ReactMarkdown>
+                ) : (
+                  <div>{msg.message}</div>
+                )}
                 {msg.tool_logs && msg.tool_logs.length > 0 && (
                   <div className={styles.toolLogs}>
-                    <small>🔧 使用ツール: {msg.tool_logs.join(', ')}</small>
+                    <small>🔧 {msg.tool_logs.join(', ')}</small>
                   </div>
                 )}
               </div>

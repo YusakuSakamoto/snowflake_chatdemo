@@ -2,7 +2,7 @@
 
 ## 概要
 
-OBSIDIAN_VAULT_STAGEは、DB_DESIGNスキーマ内に定義された外部ステージであり、AWS S3バケットに格納されたObsidian VaultのMarkdownファイル群にアクセスするための接続設定である。S3統合を利用してセキュアにS3データへアクセスする。
+[[DB_DESIGN.OBSIDIAN_VAULT_STAGE]]は、DB_DESIGNスキーマ内に定義された外部ステージであり、AWS S3バケットに格納されたObsidian VaultのMarkdownファイル群にアクセスするための接続設定である。S3統合を利用してセキュアにS3データへアクセスする。
 
 ## 業務上の意味
 

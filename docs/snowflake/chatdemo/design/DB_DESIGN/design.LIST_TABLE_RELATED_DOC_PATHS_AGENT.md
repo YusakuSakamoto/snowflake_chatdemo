@@ -74,7 +74,7 @@ LIST_TABLE_RELATED_DOC_PATHS_AGENTは、指定されたスキーマ・テーブ�
 
 ## 利用シーン
 
-- テーブルレビュー時のドキュメント範囲確定: OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENTが指摘のためカラム情報が必要なテーブルについて、本プロシージャを呼び出してドキュメントPATHリストを取得
+- テーブルレビュー時のドキュメント範囲確定: [[DB_DESIGN.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT]]が指摘のためカラム情報が必要なテーブルについて、本プロシージャを呼び出してドキュメントPATHリストを取得
 - カラムレベルの詳細レビュー: INCLUDE_COLUMNSを"true"にしてカラムマスタを含め、カラム単位の型・制約・nullable設計をレビュー
 - テーブル固有の設計確認: 特定テーブルの設計方針、テーブルマスタ、テーブル設計ドキュメントを一括で取得
 - カラム数制限: MAX_COLUMNSを指定し、カラム数が多いテーブルでもレビュー対象カラムを制限

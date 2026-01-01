@@ -2,7 +2,7 @@
 
 ## 概要
 
-GET_DOCS_BY_PATHS_AGENTは、Obsidian Vault内のドキュメントを指定されたPATHリスト（JSON配列）から一括取得するストアドプロシージャである。DOCS_OBSIDIAN_Vビューから該当するドキュメント本文とメタ情報を取得し、存在しないPATHについてはmissingリストとして返却する。
+GET_DOCS_BY_PATHS_AGENTは、Obsidian Vault内のドキュメントを指定されたPATHリスト（JSON配列）から一括取得するストアドプロシージャである。V_DOCS_OBSIDIANビューから該当するドキュメント本文とメタ情報を取得し、存在しないPATHについてはmissingリストとして返却する。
 
 ## 業務上の意味
 
@@ -12,7 +12,7 @@ Cortex Agentがレビューやクエリ実行時に複数のドキュメント�
 
 ## 設計上の位置づけ
 
-本プロシージャはDB_DESIGNスキーマに配置され、[[design.DOCS_OBSIDIAN_V]]ビューを参照する。[[design.DOCS_OBSIDIAN_V]]はmaster、design、reviews等のObsidian VaultのMarkdownファイルを格納したビューである。
+本プロシージャはDB_DESIGNスキーマに配置され、[[design.V_DOCS_OBSIDIAN]]ビューを参照する。[[design.V_DOCS_OBSIDIAN]]はmaster、design、reviews等のObsidian VaultのMarkdownファイルを格納したビューである。
 
 本プロシージャは、[[design.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT]]をはじめとする各種Cortex Agentからgeneric toolとして呼び出され、ドキュメント本文取得の共通インターフェースとして機能する。
 
@@ -24,14 +24,14 @@ Cortex Agentがレビューやクエリ実行時に複数のドキュメント�
    - PATHS_JSONがNULLまたは空文字列の場合もエラー
 
 2. ドキュメントの一括取得（docs配列）
-   - PATHS_JSON内の各PATHについて、[[design.DOCS_OBSIDIAN_V]].PATHと照合
+   - PATHS_JSON内の各PATHについて、[[design.V_DOCS_OBSIDIAN]].PATHと照合
    - 存在するドキュメントについて、以下の情報を含むオブジェクトを配列化
      - path, doc_id, folder, scope, file_type, run_date
      - target_schema, target_table, target_column
      - updated_at, content（MAX_CHARSで指定された文字数まで切り詰め）
 
 3. 欠落ドキュメントの列挙（missing配列）
-   - PATHS_JSON内のPATHでDOCS_OBSIDIAN_Vに存在しないものをリストアップ
+   - PATHS_JSON内のPATHでV_DOCS_OBSIDIANに存在しないものをリストアップ
    - 存在しないPATHをmissing配列として返却
 
 4. 結果の返却

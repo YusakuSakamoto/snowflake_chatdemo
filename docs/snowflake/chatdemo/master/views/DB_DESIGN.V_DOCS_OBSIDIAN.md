@@ -2,11 +2,11 @@
 type: view
 view_id: VW_20251227014013
 schema_id: SCH_20251226180633
-physical: DOCS_OBSIDIAN_V
+physical: V_DOCS_OBSIDIAN
 comment: Obsidian VaultのMarkdownを解析し、Cortex Search/Agent用の検索メタ情報を付与したVIEW
 ---
 
-# DOCS_OBSIDIAN_V
+# V_DOCS_OBSIDIAN
 
 ## View Columns
 > ここは VIEW の括弧内定義（列名＋列コメント）を書く（型は不要）

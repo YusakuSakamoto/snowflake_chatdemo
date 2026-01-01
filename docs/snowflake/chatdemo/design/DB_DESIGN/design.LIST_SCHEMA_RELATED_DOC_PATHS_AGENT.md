@@ -12,7 +12,7 @@ LIST_SCHEMA_RELATED_DOC_PATHS_AGENTは、指定されたスキーマに関連す
 
 ## 設計上の位置づけ
 
-本プロシージャはDB_DESIGNスキーマに配置され、[[design.DOCS_OBSIDIAN_V]]ビューを参照する。[[design.DOCS_OBSIDIAN_V]]は、Obsidian Vault内のMarkdownファイルをPATH、SCOPE、`FILE_TYPE`、`TARGET_SCHEMA`等のメタ情報とともに保持している。
+本プロシージャはDB_DESIGNスキーマに配置され、[[design.V_DOCS_OBSIDIAN]]ビューを参照する。[[design.V_DOCS_OBSIDIAN]]は、Obsidian Vault内のMarkdownファイルをPATH、SCOPE、`FILE_TYPE`、`TARGET_SCHEMA`等のメタ情報とともに保持している。
 
 本プロシージャは、[[design.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT]]からgeneric toolとして呼び出され、スキーマレビューの第1ステップ（ドキュメントPATH列挙）を担当する。列挙されたPATHリストは、次に[[design.GET_DOCS_BY_PATHS_AGENT]]に渡されて本文が取得される。
 
@@ -27,7 +27,7 @@ LIST_SCHEMA_RELATED_DOC_PATHS_AGENTは、指定されたスキーマに関連す
    - design/design.<TARGET_SCHEMA>.mdを含める（対象スキーマの設計方針）
 
 3. テーブルマスタの列挙
-   - DOCS_OBSIDIAN_VからPATH LIKE 'master/tables/%'で絞り込み
+   - V_DOCS_OBSIDIANからPATH LIKE 'master/tables/%'で絞り込み
    - TARGET_SCHEMA = :v_schemaでスキーマを絞り込み
    - ROW_NUMBERでMAX_TABLES件までに制限
 

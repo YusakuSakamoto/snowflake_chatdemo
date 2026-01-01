@@ -12,7 +12,7 @@ LIST_TABLE_RELATED_DOC_PATHS_AGENTは、指定されたスキーマ・テーブ�
 
 ## 設計上の位置づけ
 
-本プロシージャはDB_DESIGNスキーマに配置され、[[design.DOCS_OBSIDIAN_V]]ビューを参照する。[[design.DOCS_OBSIDIAN_V]]は、Obsidian Vault内のMarkdownファイルをPATH、`TARGET_SCHEMA`、`TARGET_TABLE`、`TARGET_COLUMN`等のメタ情報とともに保持している。
+本プロシージャはDB_DESIGNスキーマに配置され、[[design.V_DOCS_OBSIDIAN]]ビューを参照する。[[design.V_DOCS_OBSIDIAN]]は、Obsidian Vault内のMarkdownファイルをPATH、`TARGET_SCHEMA`、`TARGET_TABLE`、`TARGET_COLUMN`等のメタ情報とともに保持している。
 
 本プロシージャは、[[design.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT]]からgeneric toolとして呼び出され、特定テーブルの詳細レビュー時（カラム情報が必要な場合）に使用される。列挙されたPATHリストは、[[design.GET_DOCS_BY_PATHS_AGENT]]に渡されて本文が取得される。
 
@@ -33,7 +33,7 @@ LIST_TABLE_RELATED_DOC_PATHS_AGENTは、指定されたスキーマ・テーブ�
    - design/<SCHEMA>/design.<TABLE>.md（テーブル設計ドキュメント）
 
 4. カラムマスタの列挙（INCLUDE_COLUMNSがtrueの場合のみ）
-   - DOCS_OBSIDIAN_VからPATH LIKE 'master/columns/%'で絞り込み
+   - V_DOCS_OBSIDIANからPATH LIKE 'master/columns/%'で絞り込み
    - TARGET_SCHEMA = :v_schema AND TARGET_TABLE = :v_tableでスキーマ・テーブルを絞り込み
    - ROW_NUMBERでMAX_COLUMNS件までに制限
 
@@ -59,7 +59,7 @@ TARGET_SCHEMA（必須）:
 
 TARGET_TABLE（必須）:
 - 型: STRING
-- 説明: 対象テーブル名（例: "`CUSTOMER_MASTER`"、"[[design.DOCS_OBSIDIAN_V]]"）
+- 説明: 対象テーブル名（例: "`CUSTOMER_MASTER`"、"[[design.V_DOCS_OBSIDIAN]]"）
 - 制約: NULLまたは空文字列は不可
 
 INCLUDE_COLUMNS（必須）:

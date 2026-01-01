@@ -1,8 +1,8 @@
-# [[design.DOCS_OBSIDIAN_V]] 設計書
+# [[design.V_DOCS_OBSIDIAN]] 設計書
 
 ## 概要
 
-DOCS_OBSIDIAN_Vは、DOCS_OBSIDIANテーブルに格納されたObsidian VaultのMarkdownファイルを解析し、Cortex SearchおよびCortex Agent向けに検索メタ情報を付与したビューである。ファイルパスやfrontmatterから、大分類（SCOPE）、詳細種別（FILE_TYPE）、対象日（RUN_DATE）、対象スキーマ・テーブル・カラム名を自動抽出する。
+V_DOCS_OBSIDIANは、DOCS_OBSIDIANテーブルに格納されたObsidian VaultのMarkdownファイルを解析し、Cortex SearchおよびCortex Agent向けに検索メタ情報を付与したビューである。ファイルパスやfrontmatterから、大分類（SCOPE）、詳細種別（FILE_TYPE）、対象日（RUN_DATE）、対象スキーマ・テーブル・カラム名を自動抽出する。
 
 ## 業務上の意味
 

@@ -7,25 +7,25 @@
 
 ## 関連コンポーネントとの関係
 
-### [[design.DOCS_OBSIDIAN_V]] との関係
-[[DB_DESIGN.DOCS_OBSIDIAN_V]] は [[design.DOCS_OBSIDIAN]] を基底とする参照専用ビューであり、検索・閲覧・Agent 利用に適した形で情報を提供する層である。
+### [[design.V_DOCS_OBSIDIAN]] との関係
+[[DB_DESIGN.V_DOCS_OBSIDIAN]] は [[design.DOCS_OBSIDIAN]] を基底とする参照専用ビューであり、検索・閲覧・Agent 利用に適した形で情報を提供する層である。
 
 - 保管・提供の流れ  
-  [[DB_DESIGN.DOCS_OBSIDIAN]] → [[DB_DESIGN.DOCS_OBSIDIAN_V]] → DB_DESIGN.OBSIDIAN_VAULT_SEARCH
+  [[DB_DESIGN.DOCS_OBSIDIAN]] → [[DB_DESIGN.V_DOCS_OBSIDIAN]] → DB_DESIGN.OBSIDIAN_VAULT_SEARCH
 
 - 役割分担  
   - [[DB_DESIGN.DOCS_OBSIDIAN]]  
     Vault から取り込んだ Markdown を 1ファイル単位で保持する保管層。
-  - [[DB_DESIGN.DOCS_OBSIDIAN_V]]  
+  - [[DB_DESIGN.V_DOCS_OBSIDIAN]]  
     下流（検索サービス・Agent）向けに整形された提供層。
 
-[[design.DOCS_OBSIDIAN_V]] は [[design.DOCS_OBSIDIAN]] の内容を変更せず、参照用途のための投影・整形のみを行う。  
+[[design.V_DOCS_OBSIDIAN]] は [[design.DOCS_OBSIDIAN]] の内容を変更せず、参照用途のための投影・整形のみを行う。  
 Evidence の根拠単位は常に [[DB_DESIGN.DOCS_OBSIDIAN.PATH]] によって示される実在する .md ファイルであり、ビュー側でその意味を変えない。
 
-### [[design.DOCS_OBSIDIAN_V]] から `OBSIDIAN_VAULT_SEARCH` への連携
-DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、[[DB_DESIGN.DOCS_OBSIDIAN_V]] を検索インデックスの入力として利用する Cortex Search サービスである。
+### [[design.V_DOCS_OBSIDIAN]] から `OBSIDIAN_VAULT_SEARCH` への連携
+DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、[[DB_DESIGN.V_DOCS_OBSIDIAN]] を検索インデックスの入力として利用する Cortex Search サービスである。
 
-- [[DB_DESIGN.DOCS_OBSIDIAN_V]] で提供されたテキストおよびメタ情報をインデックス化する
+- [[DB_DESIGN.V_DOCS_OBSIDIAN]] で提供されたテキストおよびメタ情報をインデックス化する
 - Agent は検索結果を探索の補助として利用するが、存在有無や正否判断は Vault 上の実在する [[DB_DESIGN.DOCS_OBSIDIAN.PATH]] を根拠とする
 
 検索結果のスコアやヒット有無のみを根拠に、設計定義やカラムの存在有無を判断しない。
@@ -44,7 +44,7 @@ DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、[[DB_DESIGN.DOCS_OBSIDIAN_V]] を検索イ
 - このテーブルが表す概念  
   Vault 内 Markdown 資産の台帳。1行が 1つの .md ファイルを表す。
 - 主な利用シーン  
-  - 設計資産の検索・参照（[[DB_DESIGN.DOCS_OBSIDIAN_V]] / DB_DESIGN.OBSIDIAN_VAULT_SEARCH 経由）  
+  - 設計資産の検索・参照（[[DB_DESIGN.V_DOCS_OBSIDIAN]] / DB_DESIGN.OBSIDIAN_VAULT_SEARCH 経由）  
   - 設計レビューの自動化・高度化（Vault 正本を Snowflake 上で扱うための基盤）  
   - 取り込み運用・監査（取り込み鮮度・遅延の把握）
 
@@ -102,7 +102,7 @@ DB_DESIGN.OBSIDIAN_VAULT_SEARCH は、[[DB_DESIGN.DOCS_OBSIDIAN_V]] を検索イ
 
 table_id:: TBL_20251227124901
 
-- 関連ビュー：[[DB_DESIGN.DOCS_OBSIDIAN_V]]
+- 関連ビュー：[[DB_DESIGN.V_DOCS_OBSIDIAN]]
 - 関連検索サービス：DB_DESIGN.OBSIDIAN_VAULT_SEARCH
 - 関連プロシージャ：[[DB_DESIGN.INGEST_VAULT_MD]]
 - 関連 External Stage：[[DB_DESIGN.OBSIDIAN_VAULT_STAGE]]

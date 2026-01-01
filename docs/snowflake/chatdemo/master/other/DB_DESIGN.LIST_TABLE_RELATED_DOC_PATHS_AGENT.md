@@ -58,7 +58,7 @@ BEGIN
       INTO :v_col_paths
     FROM (
       SELECT d.PATH
-      FROM DB_DESIGN.DOCS_OBSIDIAN_V d
+      FROM DB_DESIGN.V_DOCS_OBSIDIAN d
       WHERE d.PATH LIKE 'master/columns/%'
         AND d.TARGET_SCHEMA = :v_schema
         AND d.TARGET_TABLE  = :v_table

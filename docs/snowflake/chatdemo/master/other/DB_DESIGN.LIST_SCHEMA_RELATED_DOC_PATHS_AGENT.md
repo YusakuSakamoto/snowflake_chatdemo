@@ -47,7 +47,7 @@ BEGIN
     INTO :v_table_paths
   FROM (
     SELECT d.PATH
-    FROM DB_DESIGN.DOCS_OBSIDIAN_V d
+    FROM DB_DESIGN.V_DOCS_OBSIDIAN d
     WHERE d.PATH LIKE 'master/tables/%'
       AND d.TARGET_SCHEMA = :v_schema
     QUALIFY ROW_NUMBER() OVER (ORDER BY d.PATH) <= :v_max_tables

@@ -1,10 +1,10 @@
-# design.[[PROFILE_COLUMN]]
+# design.[[design.PROFILE_COLUMN]]
 
 ## 概要
 
 `DB_DESIGN.PROFILE_COLUMN` は、指定された単一カラムの品質プロファイルメトリクスを算出し、VARIANT形式で返却するプロシージャです。
 
-- スキーマ: [[DB_DESIGN]] (SCH_20251226180633)
+- スキーマ: [[design.DB_DESIGN]] (SCH_20251226180633)
 - オブジェクトタイプ: PROCEDURE
 - 言語: SQL
 - 実行モード: EXECUTE AS OWNER
@@ -39,9 +39,9 @@ PROFILE_RESULTS (カラム別メトリクス記録)
 ```
 
 ### 他コンポーネントとの連携
-- 上流: [[DB_DESIGN.PROFILE_TABLE]] (テーブルプロファイル実行・ループ呼び出し)
-- 出力先: [[DB_DESIGN.PROFILE_RESULTS]] (METRICSカラムにVARIANT形式で保存)
-- 連携先: [[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (メトリクス集計・出力)
+- 上流: DB_DESIGN.[[design.PROFILE_TABLE]] (テーブルプロファイル実行・ループ呼び出し)
+- 出力先: DB_DESIGN.[[design.PROFILE_RESULTS]] (METRICSカラムにVARIANT形式で保存)
+- 連携先: DB_DESIGN.[[design.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (メトリクス集計・出力)
 
 ---
 
@@ -126,11 +126,11 @@ TOP_VALUES AS (
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| [[P_TARGET_DB]] | STRING | ✅ | - | プロファイル対象のデータベース名 |
-| [[P_TARGET_SCHEMA]] | STRING | ✅ | - | プロファイル対象のスキーマ名 |
-| [[P_TARGET_TABLE]] | STRING | ✅ | - | プロファイル対象のテーブル名 |
-| [[P_TARGET_COLUMN]] | STRING | ✅ | - | プロファイル対象のカラム名 |
-| [[P_SAMPLE_PCT]] | FLOAT | - | NULL | サンプリング割合（0.0～100.0）。NULLの場合は全件スキャン |
+| `P_TARGET_DB` | STRING | ✅ | - | プロファイル対象のデータベース名 |
+| `P_TARGET_SCHEMA` | STRING | ✅ | - | プロファイル対象のスキーマ名 |
+| `P_TARGET_TABLE` | STRING | ✅ | - | プロファイル対象のテーブル名 |
+| `P_TARGET_COLUMN` | STRING | ✅ | - | プロファイル対象のカラム名 |
+| `P_SAMPLE_PCT` | FLOAT | - | NULL | サンプリング割合（0.0～100.0）。NULLの場合は全件スキャン |
 
 ### パラメータ設計の背景
 - P_TARGET_DB / P_TARGET_SCHEMA / P_TARGET_TABLE: 動的なフル修飾名構築に使用
@@ -271,7 +271,7 @@ SELECT METRICS
 ```sql
 RETURN V_METRICS;
 ```
-- 呼び出し元（[[PROFILE_TABLE]]）にVARIANT形式のメトリクスを返却
+- 呼び出し元（[[design.PROFILE_TABLE]]）にVARIANT形式のメトリクスを返却
 
 ---
 

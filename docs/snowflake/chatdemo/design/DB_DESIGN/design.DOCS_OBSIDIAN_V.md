@@ -1,8 +1,8 @@
-# [[DOCS_OBSIDIAN_V]] 設計書
+# [[design.DOCS_OBSIDIAN_V]] 設計書
 
 ## 概要
 
-DOCS_OBSIDIAN_Vは、DOCS_OBSIDIANテーブルに格納されたObsidian VaultのMarkdownファイルを解析し、Cortex SearchおよびCortex Agent向けに検索メタ情報を付与したビューである。ファイルパスやfrontmatterから、大分類（SCOPE）、詳細種別（[[FILE_TYPE]]）、対象日（[[RUN_DATE]]）、対象スキーマ・テーブル・カラム名を自動抽出する。
+DOCS_OBSIDIAN_Vは、DOCS_OBSIDIANテーブルに格納されたObsidian VaultのMarkdownファイルを解析し、Cortex SearchおよびCortex Agent向けに検索メタ情報を付与したビューである。ファイルパスやfrontmatterから、大分類（SCOPE）、詳細種別（`FILE_TYPE`）、対象日（`RUN_DATE`）、対象スキーマ・テーブル・カラム名を自動抽出する。
 
 ## 業務上の意味
 
@@ -18,14 +18,14 @@ Obsidian Vaultには、データベース設計のマスタ情報（master/）�
 
 ## クエリロジック
 
-1. base CTE: DOCS_OBSIDIANからDOC_ID、[[PATH]]、[[FOLDER]]、[[CONTENT]]、INGESTED_ATを取得
+1. base CTE: DOCS_OBSIDIANからDOC_ID、`PATH`、`FOLDER`、`CONTENT`、INGESTED_ATを取得
 2. parsed CTE: PATHおよびCONTENTを正規表現解析し、以下のメタ情報を抽出
    - SCOPE: PATH先頭セグメント（master/design/views/templates/other）から大分類を判定
-   - [[FILE_TYPE]]: PATH詳細パターン（master/columns/、design/reviews/profiles/等）から詳細種別を判定
-   - [[RUN_DATE]]: design/reviews配下の日付ディレクトリ、またはfrontmatter内のreview_date/generated_onフィールドから対象日を抽出
-   - [[TARGET_SCHEMA]]: master/columnsの場合はPATHのスキーマ部分、design/reviewsの場合は日付直後のディレクトリ名から抽出
-   - [[TARGET_TABLE]]: master/columnsの場合はPATHのテーブル部分、design/reviewsの場合は最終ディレクトリ名から抽出
-   - [[TARGET_COLUMN]]: master/columns配下の場合のみ、PATHのカラム部分を抽出
+   - `FILE_TYPE`: PATH詳細パターン（master/columns/、design/reviews/profiles/等）から詳細種別を判定
+   - `RUN_DATE`: design/reviews配下の日付ディレクトリ、またはfrontmatter内のreview_date/generated_onフィールドから対象日を抽出
+   - `TARGET_SCHEMA`: master/columnsの場合はPATHのスキーマ部分、design/reviewsの場合は日付直後のディレクトリ名から抽出
+   - `TARGET_TABLE`: master/columnsの場合はPATHのテーブル部分、design/reviewsの場合は最終ディレクトリ名から抽出
+   - `TARGET_COLUMN`: master/columns配下の場合のみ、PATHのカラム部分を抽出
 
 3. メインSELECT: parsed CTEの全カラムを返却
 
@@ -35,7 +35,7 @@ Obsidian Vaultには、データベース設計のマスタ情報（master/）�
 - Cortex Agent: 検索結果を利用してコンテキストを取得し、自然言語で回答を生成
 - マスタ参照API: 特定スキーマ・テーブルのマスタ情報を取得する際、SCOPE='master'およびTARGET_SCHEMA/TARGET_TABLEで絞り込み
 - プロファイルエビデンス検索: RUN_DATEおよびFILE_TYPE='profile_evidence'で特定日付のプロファイル結果を抽出
-- Agent Review検索: [[FILE_TYPE]]='agent_review'で過去のAgent実行レビュー結果を検索
+- Agent Review検索: `FILE_TYPE`='agent_review'で過去のAgent実行レビュー結果を検索
 
 ## 運用
 

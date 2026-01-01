@@ -1,18 +1,18 @@
-# 外部テーブル設計：[[PROFILE_RESULTS_EXTERNAL]]
+# 外部テーブル設計：[[design.PROFILE_RESULTS_EXTERNAL]]
 
 ## 概要
-[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
+DB_DESIGN.[[design.PROFILE_RESULTS_EXTERNAL]] は、データベーステーブルの各カラムに対して算出されたプロファイル計測結果をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
 1行が「1回のプロファイル実行（run）」における「1カラム分の計測結果」を表し、  
-[[DB_DESIGN.PROFILE_RUNS]].[[RUN_ID]] を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
+DB_DESIGN.[[design.PROFILE_RUNS]].`RUN_ID` を起点として、対象テーブル・対象カラム・計測時点・計測結果を紐づける。
 
-本テーブルは、プロファイル処理の結果を外部ストレージに永続化し、品質確認・比較・監査・設計レビューの根拠として利用される。内部テーブル版（[[PROFILE_RESULTS]]）と同一の論理構造を持ちながら、S3直接参照によるストレージコスト最適化と長期保存を実現する。
+本テーブルは、プロファイル処理の結果を外部ストレージに永続化し、品質確認・比較・監査・設計レビューの根拠として利用される。内部テーブル版（[[design.PROFILE_RESULTS]]）と同一の論理構造を持ちながら、S3直接参照によるストレージコスト最適化と長期保存を実現する。
 
 ## 業務上の意味
 - このテーブルが表す概念  
   - 「プロファイル結果（column-level metrics）」の外部永続化蓄積。
   - 1行は、ある run における、ある 1カラムの計測結果を表す。
   - 計測対象は  
-    [[TARGET_DB]] / [[TARGET_SCHEMA]] / [[TARGET_TABLE]] / [[TARGET_COLUMN]]  
+    `TARGET_DB` / `TARGET_SCHEMA` / `TARGET_TABLE` / `TARGET_COLUMN`  
     により特定される。
 - 主な利用シーン  
   - 長期データ品質トレンド分析（過去数ヶ月〜数年の比較）
@@ -23,11 +23,11 @@
 ## 設計上の位置づけ
 
 ### 内部テーブル版との関係
-本外部テーブルは [[DB_DESIGN.PROFILE_RESULTS]] と論理的に同一構造を持つ。
+本外部テーブルは DB_DESIGN.[[design.PROFILE_RESULTS]] と論理的に同一構造を持つ。
 
 - 論理設計の共通性  
   - カラム構成、データ型、主キーの考え方は内部テーブル版と同一とする。
-  - [[RUN_ID]] と [[TARGET_COLUMN]] の複合キーにより、1run・1カラムあたり1行を前提とする。
+  - `RUN_ID` と `TARGET_COLUMN` の複合キーにより、1run・1カラムあたり1行を前提とする。
   - METRICS 構造は VARIANT 型であり、将来拡張を許容する。
 
 - 物理配置の違い  
@@ -35,12 +35,12 @@
   - 外部テーブル：S3直接参照、ストレージコスト最適化・長期保存に適する
 
 ### 使い分けの方針
-- 内部テーブル（[[PROFILE_RESULTS]]）を使うべきケース  
+- 内部テーブル（[[design.PROFILE_RESULTS]]）を使うべきケース  
   - 頻繁なクエリ実行（日次監視、リアルタイム分析）
   - 複雑な JOIN や集計が必要な分析処理
   - 低レイテンシが要求される運用監視
   
-- 外部テーブル（[[PROFILE_RESULTS_EXTERNAL]]）を使うべきケース  
+- 外部テーブル（[[design.PROFILE_RESULTS_EXTERNAL]]）を使うべきケース  
   - 長期保存が主目的（過去1年以上のデータ）
   - 参照頻度が低い履歴データの保管
   - ストレージコストの削減が優先される状況
@@ -49,10 +49,10 @@
 ## 設計方針
 
 ### S3統合設計
-- ステージ名：[[OBSIDIAN_VAULT_STAGE]]  
+- ステージ名：[[design.OBSIDIAN_VAULT_STAGE]]  
   S3バケット `s3://snowflake-chatdemo-vault-prod/` への外部ステージを前提とする。
 
-- ファイルフォーマット：[[FF_JSON_LINES]]  
+- ファイルフォーマット：`FF_JSON_LINES`  
   1行1JSONのJSON Lines形式（NDJSON）を採用し、ストリーミング書き込みと部分読み取りの効率化を図る。
 
 - S3パス構造：  
@@ -107,7 +107,7 @@
   - マイクロパーティション・クラスタリングにより、高速な検索・集計が実現される。
 
 ### 運用の考え方
-- 初期段階では内部テーブル（[[PROFILE_RESULTS]]）にデータを蓄積し、定期的に外部テーブル（[[PROFILE_RESULTS_EXTERNAL]]）へアーカイブする運用を推奨する。
+- 初期段階では内部テーブル（[[design.PROFILE_RESULTS]]）にデータを蓄積し、定期的に外部テーブル（[[design.PROFILE_RESULTS_EXTERNAL]]）へアーカイブする運用を推奨する。
 - 直近数ヶ月のデータは内部テーブルで高速参照を実現し、過去データは外部テーブルでコスト効率的に保存する。
 - 必要に応じて、内部テーブルと外部テーブルを統合するビュー（UNION ALL）を定義し、アプリケーションからは統一的にアクセスできるようにする。
 
@@ -145,7 +145,7 @@
 
 ## 関連
 
-- 内部テーブル版：[[DB_DESIGN.PROFILE_RESULTS]]
-- 関連外部テーブル：[[DB_DESIGN.PROFILE_RUNS_EXTERNAL]]
-- 関連プロシージャ：[[DB_DESIGN.PROFILE_TABLE]], [[DB_DESIGN.PROFILE_ALL_TABLES]]
-- マスター定義：[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]]（master/externaltables/）
+- 内部テーブル版：DB_DESIGN.[[design.PROFILE_RESULTS]]
+- 関連外部テーブル：DB_DESIGN.[[design.PROFILE_RUNS_EXTERNAL]]
+- 関連プロシージャ：DB_DESIGN.[[design.PROFILE_TABLE]], DB_DESIGN.[[design.PROFILE_ALL_TABLES]]
+- マスター定義：DB_DESIGN.[[design.PROFILE_RESULTS_EXTERNAL]]（master/externaltables/）

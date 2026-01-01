@@ -1,10 +1,10 @@
-# design.[[EXPORT_PROFILE_EVIDENCE_MD_VFINAL]]
+# design.[[design.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]]
 
 ## 概要
 
 `DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL` は、プロファイル結果（PROFILE_RESULTSテーブル）をMarkdown形式およびJSON形式でS3バケットにエクスポートするプロシージャです。Cortex Agentがデータ品質エビデンスとして参照できるよう、Obsidian Vault形式で構造化されたドキュメントを生成します。
 
-- スキーマ: [[DB_DESIGN]] (SCH_20251226180633)
+- スキーマ: [[design.DB_DESIGN]] (SCH_20251226180633)
 - オブジェクトタイプ: PROCEDURE
 - 言語: SQL
 - 実行モード: EXECUTE AS CALLER
@@ -49,10 +49,10 @@ APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT (DB設計レビューエージェント)
 ```
 
 ### 他コンポーネントとの連携
-- 上流: [[DB_DESIGN.PROFILE_ALL_TABLES]] → [[DB_DESIGN.PROFILE_RESULTS]] (プロファイル結果のソース)
-- 下流: [[DB_DESIGN.INGEST_VAULT_MD]] (エクスポートしたMarkdownを再取り込み)
-- 外部システム: S3バケット `snowflake-chatdemo-vault-prod`（[[S3_DESIGN_VAULT_DB_DOCS]]参照）
-- 最終消費者: [[APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT]] (Cortex Agent)
+- 上流: DB_DESIGN.[[design.PROFILE_ALL_TABLES]] → DB_DESIGN.[[design.PROFILE_RESULTS]] (プロファイル結果のソース)
+- 下流: DB_DESIGN.[[design.INGEST_VAULT_MD]] (エクスポートしたMarkdownを再取り込み)
+- 外部システム: S3バケット `snowflake-chatdemo-vault-prod`（`S3_DESIGN_VAULT_DB_DOCS`参照）
+- 最終消費者: APP_PRODUCTION.[[design.SNOWFLAKE_DEMO_AGENT]] (Cortex Agent)
 
 ---
 
@@ -71,7 +71,7 @@ APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT (DB設計レビューエージェント)
 ### 2. Obsidian Vault互換の構造
 方針: Obsidianのベストプラクティスに準拠したYAML frontmatter + Markdown本文  
 理由:
-- Cortex Agentは [[DOCS_OBSIDIAN]] テーブルをRAGソースとして利用
+- Cortex Agentは [[design.DOCS_OBSIDIAN]] テーブルをRAGソースとして利用
 - frontmatterで構造化メタデータを埋め込むことで、セマンティック検索の精度向上
 
 実装例:
@@ -144,13 +144,13 @@ END;
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| [[P_SOURCE_DB]] | VARCHAR | ✅ | - | プロファイル結果が格納されているDB（例: `GBPS253YS_DB`） |
-| [[P_SOURCE_SCHEMA]] | VARCHAR | ✅ | - | プロファイル結果が格納されているスキーマ（例: [[DB_DESIGN]]） |
-| [[P_SOURCE_VIEW]] | VARCHAR | ✅ | - | プロファイル結果のビュー名（例: [[V_PROFILE_RESULTS_LATEST]]） |
-| [[P_TARGET_DB]] | VARCHAR | ✅ | - | プロファイル対象のDB（フィルタ条件） |
-| [[P_RUN_DATE]] | VARCHAR | ✅ | - | 実行日（YYYY-MM-DD形式）。S3パスの日付部分に使用 |
-| [[P_VAULT_PREFIX]] | VARCHAR | ✅ | - | S3の基底パス（例: `reviews/profiles`） |
-| [[P_TARGET_SCHEMA]] | VARCHAR | - | NULL | プロファイル対象のスキーマ（NULLの場合は全スキーマ） |
+| `P_SOURCE_DB` | VARCHAR | ✅ | - | プロファイル結果が格納されているDB（例: `GBPS253YS_DB`） |
+| `P_SOURCE_SCHEMA` | VARCHAR | ✅ | - | プロファイル結果が格納されているスキーマ（例: [[design.DB_DESIGN]]） |
+| `P_SOURCE_VIEW` | VARCHAR | ✅ | - | プロファイル結果のビュー名（例: [[design.V_PROFILE_RESULTS_LATEST]]） |
+| `P_TARGET_DB` | VARCHAR | ✅ | - | プロファイル対象のDB（フィルタ条件） |
+| `P_RUN_DATE` | VARCHAR | ✅ | - | 実行日（YYYY-MM-DD形式）。S3パスの日付部分に使用 |
+| `P_VAULT_PREFIX` | VARCHAR | ✅ | - | S3の基底パス（例: `reviews/profiles`） |
+| `P_TARGET_SCHEMA` | VARCHAR | - | NULL | プロファイル対象のスキーマ（NULLの場合は全スキーマ） |
 
 ### パラメータ設計の背景
 - P_SOURCE_VIEW: 最新のプロファイル結果のみをエクスポートするため、ビュー経由で取得
@@ -214,7 +214,7 @@ WHERE TARGET_DB = '{P_TARGET_DB}'
 SELECT COUNT(*) INTO v_total FROM TMP_TARGETS;
 ```
 - 一時テーブル作成: ループ前に対象テーブルを確定
-- フィルタリング: [[TARGET_DB]] と [[TARGET_SCHEMA]] で絞り込み
+- フィルタリング: `TARGET_DB` と `TARGET_SCHEMA` で絞り込み
 
 ### ステップ3: テーブルごとのMarkdown/JSON生成（ループ処理）
 ```sql
@@ -538,7 +538,7 @@ ALTER TASK DB_DESIGN.TASK_PROFILE_AND_EXPORT RESUME;
 ### 想定エラーケース
 | エラー | 原因 | 対処方法 |
 |---|---|---|
-| `Stage does not exist` | [[OBSIDIAN_VAULT_STAGE]] が未作成 | ステージ作成コマンドを実行 |
+| `Stage does not exist` | [[design.OBSIDIAN_VAULT_STAGE]] が未作成 | ステージ作成コマンドを実行 |
 | `Insufficient privileges` | ステージへのWRITE権限不足 | `GRANT WRITE ON STAGE TO ROLE` |
 | `Invalid JSON` | METRICS列のVARIANT型が不正 | PROFILE_TABLEの実行ログを確認 |
 | `Object does not exist` | v_view_fqnが存在しない | P_SOURCE_VIEW名を確認 |
@@ -556,8 +556,8 @@ ALTER TASK DB_DESIGN.TASK_PROFILE_AND_EXPORT RESUME;
 - 必要な権限:
   - `USAGE` on source database/schema
   - `SELECT` on source view
-  - `USAGE` on [[DB_DESIGN]] schema
-  - `WRITE` on [[DB_DESIGN.OBSIDIAN_VAULT_STAGE]]
+  - `USAGE` on [[design.DB_DESIGN]] schema
+  - `WRITE` on DB_DESIGN.[[design.OBSIDIAN_VAULT_STAGE]]
 
 ### S3バケットのIAM権限
 ```json
@@ -601,13 +601,13 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 ## データ品質とバリデーション
 
 ### 入力バリデーション
-- [[P_RUN_DATE]]: YYYY-MM-DD形式であることを前提。不正な形式の場合はS3パスが不正になるが、COPY INTOはエラーを返す
-- [[P_VAULT_PREFIX]]: スラッシュ始まり/終わりを含まないこと（例: `reviews/profiles` OK, `/reviews/profiles/` NG）
+- `P_RUN_DATE`: YYYY-MM-DD形式であることを前提。不正な形式の場合はS3パスが不正になるが、COPY INTOはエラーを返す
+- `P_VAULT_PREFIX`: スラッシュ始まり/終わりを含まないこと（例: `reviews/profiles` OK, `/reviews/profiles/` NG）
 
 ### 出力の妥当性チェック
 - ファイル存在確認: `LIST @STAGE/path/` で出力ファイルが生成されているか検証
 - Markdown構文チェック: Obsidianで開いてレンダリングが正常か目視確認
-- JSON構文チェック: `[[PARSE_JSON]]()` で読み取り可能か検証
+- JSON構文チェック: ``PARSE_JSON`()` で読み取り可能か検証
 
 ---
 
@@ -638,13 +638,13 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 - [[design.INGEST_VAULT_MD]] - エクスポートしたMarkdownを再取り込み
 
 ### 詳細設計
-- [[master/other/[[DB_DESIGN.PROFILE_TABLE]] - 個別テーブルのプロファイル実行
-- [[master/tables/[[DB_DESIGN.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
-- [[master/tables/[[DB_DESIGN.DOCS_OBSIDIAN]] - Obsidian Vaultのドキュメント管理テーブル
+- [[master/other/DB_DESIGN.[[design.PROFILE_TABLE]] - 個別テーブルのプロファイル実行
+- [[master/tables/DB_DESIGN.[[design.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
+- [[master/tables/DB_DESIGN.[[design.DOCS_OBSIDIAN]] - Obsidian Vaultのドキュメント管理テーブル
 
 ### 外部システム設計
 - [[docs/awss3/chatdemo/S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Vault用）
-- [[OBSIDIAN_VAULT_STRUCTURE]] - ObsidianのVault構造定義（未作成）
+- `OBSIDIAN_VAULT_STRUCTURE` - ObsidianのVault構造定義（未作成）
 
 ---
 
@@ -652,7 +652,7 @@ CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
 
 | 日付 | 変更者 | 変更内容 |
 |---|---|---|
-| 2026-01-02 | System | 初版作成（design.[[EXPORT_PROFILE_EVIDENCE_MD_VFINAL]]） |
+| 2026-01-02 | System | 初版作成（design.[[design.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]]） |
 
 ---
 

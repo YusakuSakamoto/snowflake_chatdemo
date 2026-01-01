@@ -1,4 +1,4 @@
-# [[EXPAND_DEPARTMENT_SCOPE_TOOL]] 設計書
+# [[design.EXPAND_DEPARTMENT_SCOPE_TOOL]] 設計書
 
 ## 概要
 
@@ -12,8 +12,8 @@ EXPAND_DEPARTMENT_SCOPE_TOOLは、指定された部署IDから配下組織のID
 
 EXPAND_DEPARTMENT_SCOPE_TOOLはAPP_PRODUCTIONスキーマに配置され、以下のオブジェクトと連携する。
 
-- [[DEPARTMENT_MASTER]]: 部署マスタテーブル（年度別の部署階層情報を保持）
-- [[SNOWFLAKE_DEMO_AGENT]]: 本ツールをexpand_department_scopeツールとして登録し、部署名解決後に自動的に呼び出してスコープ展開を実行
+- [[design.DEPARTMENT_MASTER]]: 部署マスタテーブル（年度別の部署階層情報を保持）
+- [[design.SNOWFLAKE_DEMO_AGENT]]: 本ツールをexpand_department_scopeツールとして登録し、部署名解決後に自動的に呼び出してスコープ展開を実行
 
 本ツールは、年度と部署IDを受け取り、部署カテゴリ（本部/部/課/グループ）に応じて配下の部署IDリストを返却する。include_selfパラメータにより、指定部署自身をスコープに含めるかどうかを制御できる。
 

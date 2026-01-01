@@ -1,10 +1,10 @@
-# design.[[PROFILE_ALL_TABLES]]
+# design.[[design.PROFILE_ALL_TABLES]]
 
 ## 概要
 
 `DB_DESIGN.PROFILE_ALL_TABLES` は、指定されたデータベース・スキーマ内のすべてのテーブルに対して、プロファイル処理を一括実行するオーケストレーション用プロシージャです。
 
-- スキーマ: [[DB_DESIGN]] (SCH_20251226180633)
+- スキーマ: [[design.DB_DESIGN]] (SCH_20251226180633)
 - オブジェクトタイプ: PROCEDURE
 - 言語: SQL
 - 実行モード: EXECUTE AS OWNER
@@ -49,9 +49,9 @@ DOCS_OBSIDIAN (Cortex Agentが参照)
 
 ### 他コンポーネントとの連携
 - 上流: INFORMATION_SCHEMA (Snowflake標準ビュー)
-- 下流: [[DB_DESIGN.PROFILE_TABLE]] (個別テーブルプロファイル実行)
-- 並列処理: [[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (結果をMarkdownでエクスポート)
-- 集約層: [[DB_DESIGN.PROFILE_RESULTS]], [[DB_DESIGN.PROFILE_RUNS]]
+- 下流: DB_DESIGN.[[design.PROFILE_TABLE]] (個別テーブルプロファイル実行)
+- 並列処理: DB_DESIGN.[[design.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] (結果をMarkdownでエクスポート)
+- 集約層: DB_DESIGN.[[design.PROFILE_RESULTS]], DB_DESIGN.[[design.PROFILE_RUNS]]
 
 ---
 
@@ -123,10 +123,10 @@ V_QSC := '''' || REPLACE(P_TARGET_SCHEMA,'''','''''') || '''';
 
 | パラメータ名 | 型 | 必須 | デフォルト値 | 説明 |
 |---|---|---|---|---|
-| [[P_TARGET_DB]] | STRING | ✅ | - | プロファイル対象のデータベース名 |
-| [[P_TARGET_SCHEMA]] | STRING | ✅ | - | プロファイル対象のスキーマ名 |
-| [[P_SAMPLE_PCT]] | FLOAT | - | NULL | サンプリング割合（0.0～1.0）。NULLの場合は全件スキャン |
-| [[P_NOTE]] | STRING | - | `'manual weekly all-tables run'` | 実行メモ（運用管理用） |
+| `P_TARGET_DB` | STRING | ✅ | - | プロファイル対象のデータベース名 |
+| `P_TARGET_SCHEMA` | STRING | ✅ | - | プロファイル対象のスキーマ名 |
+| `P_SAMPLE_PCT` | FLOAT | - | NULL | サンプリング割合（0.0～1.0）。NULLの場合は全件スキャン |
+| `P_NOTE` | STRING | - | `'manual weekly all-tables run'` | 実行メモ（運用管理用） |
 
 ### パラメータ設計の背景
 - P_SAMPLE_PCT: 大規模テーブル（数億行）に対しては、サンプリングでコスト削減が可能。NULLの場合は正確性を優先
@@ -189,8 +189,8 @@ ORDER BY TABLE_NAME
 V_TBL_RS := (EXECUTE IMMEDIATE :V_SQL_LIST);
 ```
 - INFORMATION_SCHEMA.TABLES: Snowflake標準ビューでテーブルメタデータ取得
-- フィルタ: `[[TABLE_TYPE]] = 'BASE TABLE'` でビュー/マテリアライズドビューを除外
-- ソート: `ORDER BY [[TABLE_NAME]]` で処理順序を安定化
+- フィルタ: ``TABLE_TYPE` = 'BASE TABLE'` でビュー/マテリアライズドビューを除外
+- ソート: `ORDER BY `TABLE_NAME`` で処理順序を安定化
 
 ### ステップ3: ループ実行（個別テーブルプロファイル）
 ```sql
@@ -226,7 +226,7 @@ END FOR;
 ```
 
 重要な実装ポイント:
-- RESULT_SCAN(LAST_QUERY_ID()): PROFILE_TABLEの戻り値（[[RUN_ID]]）を取得
+- RESULT_SCAN(LAST_QUERY_ID()): PROFILE_TABLEの戻り値（`RUN_ID`）を取得
 - 列名依存回避: `$1::STRING` で最初の列を取得（列名に依存しない）
 - TRY-CATCH: 個別テーブルの失敗が全体に波及しない
 
@@ -301,7 +301,7 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 ```
 
 ### モニタリング指標
-- 実行時間: `[[ARRAY_SIZE]](results)` で処理テーブル数を確認、予想実行時間を推定
+- 実行時間: ``ARRAY_SIZE`(results)` で処理テーブル数を確認、予想実行時間を推定
 - 失敗率: `results` 配列内の `status='FAILED'` 件数を集計
 - アラート条件: 失敗率が20%を超える場合は権限問題を疑う
 
@@ -315,7 +315,7 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 - 推奨: 大規模スキーマは深夜バッチで実行
 
 ### コスト最適化
-- サンプリング活用: `[[P_SAMPLE_PCT]] = 0.1` で90%のコスト削減が可能
+- サンプリング活用: ``P_SAMPLE_PCT` = 0.1` で90%のコスト削減が可能
 - Warehouse選択: `EXECUTE AS OWNER` のため、プロシージャ実行者のデフォルトWHを使用。専用WHの設定を推奨
 - AUTO_SUSPEND: プロファイル完了後、WHが自動停止するよう設定
 
@@ -334,12 +334,12 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 |---|---|---|
 | `Insufficient privileges` | テーブルへのSELECT権限不足 | GRANTで権限付与、または該当テーブルをスキップ |
 | `Object does not exist` | 実行中にテーブルがDROP | 一時的なエラーとして記録、次回実行で解消 |
-| `Statement execution time limit exceeded` | 巨大テーブル（数十億行）のスキャン | [[P_SAMPLE_PCT]] を設定してサンプリング |
+| `Statement execution time limit exceeded` | 巨大テーブル（数十億行）のスキャン | `P_SAMPLE_PCT` を設定してサンプリング |
 | `Warehouse suspended` | 実行中にWH停止 | WHのAUTO_RESUME設定を確認 |
 
 ### リトライ戦略
 - 自動リトライ: 実装なし（個別テーブルの失敗は記録のみ）
-- 手動リトライ: 失敗したテーブルのみを後から [[PROFILE_TABLE]] で個別実行
+- 手動リトライ: 失敗したテーブルのみを後から [[design.PROFILE_TABLE]] で個別実行
 - 冪等性: 同じテーブルを複数回実行しても問題なし（新しいRUN_IDで記録）
 
 ---
@@ -349,12 +349,12 @@ ALTER TASK DB_DESIGN.WEEKLY_PROFILE_ALL RESUME;
 ### 実行権限
 - EXECUTE AS OWNER: プロシージャ所有者の権限で実行
 - 必要な権限:
-  - `SELECT` on `[[INFORMATION_SCHEMA]].TABLES`
+  - `SELECT` on ``INFORMATION_SCHEMA`.TABLES`
   - `USAGE` on target database and schema
   - `SELECT` on all tables in target schema
-  - `USAGE` on [[DB_DESIGN]] schema
-  - `EXECUTE` on [[DB_DESIGN.PROFILE_TABLE]]
-  - `INSERT` on [[DB_DESIGN.PROFILE_RUNS]], [[DB_DESIGN.PROFILE_RESULTS]]
+  - `USAGE` on [[design.DB_DESIGN]] schema
+  - `EXECUTE` on DB_DESIGN.[[design.PROFILE_TABLE]]
+  - `INSERT` on DB_DESIGN.[[design.PROFILE_RUNS]], DB_DESIGN.[[design.PROFILE_RESULTS]]
 
 ### 権限設計の推奨事項
 ```sql
@@ -377,11 +377,11 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 ## データ品質とバリデーション
 
 ### 入力バリデーション
-- `P_TARGET_DB` / [[P_TARGET_SCHEMA]]: 存在しない場合、INFORMATION_SCHEMA.TABLESで0件となり、空の結果を返す
-- `P_SAMPLE_PCT`: 範囲外の値（負数、1超）は [[PROFILE_TABLE]] 側でバリデーション
+- `P_TARGET_DB` / `P_TARGET_SCHEMA`: 存在しない場合、INFORMATION_SCHEMA.TABLESで0件となり、空の結果を返す
+- `P_SAMPLE_PCT`: 範囲外の値（負数、1超）は [[design.PROFILE_TABLE]] 側でバリデーション
 
 ### 結果の妥当性チェック
-- 想定テーブル数との照合: 事前に `SELECT COUNT(*) FROM [[INFORMATION_SCHEMA]].TABLES` で期待値を確認
+- 想定テーブル数との照合: 事前に `SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.TABLES` で期待値を確認
 - 失敗テーブルの調査: `status='FAILED'` のテーブルはエラーメッセージを確認し、権限/データ品質問題を特定
 
 ---
@@ -390,11 +390,11 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 
 ### フェーズ2: 並列実行対応
 - SnowflakeのTask DAGで複数スキーマを並列プロファイル
-- [[P_MAX_PARALLEL]] パラメータで並列度を制御
+- `P_MAX_PARALLEL` パラメータで並列度を制御
 
 ### フェーズ3: インクリメンタルプロファイル
 - 前回実行時からデータ変更がないテーブルはスキップ
-- [[LAST_ALTERED]] タイムスタンプを比較してスキップ判定
+- `LAST_ALTERED` タイムスタンプを比較してスキップ判定
 
 ### フェーズ4: プロファイル結果の差分分析
 - 前回実行との比較（null_rate増加、distinct_count減少など）を自動検出
@@ -414,13 +414,13 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 - [[design.INGEST_VAULT_MD]] - エクスポートしたMarkdownをSnowflakeに再取り込み
 
 ### 詳細設計
-- [[master/other/[[DB_DESIGN.PROFILE_TABLE]] - 個別テーブルのプロファイル実行
-- [[master/tables/[[DB_DESIGN.PROFILE_RUNS]] - プロファイル実行履歴テーブル
-- [[master/tables/[[DB_DESIGN.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
+- [[master/other/DB_DESIGN.[[design.PROFILE_TABLE]] - 個別テーブルのプロファイル実行
+- [[master/tables/DB_DESIGN.[[design.PROFILE_RUNS]] - プロファイル実行履歴テーブル
+- [[master/tables/DB_DESIGN.[[design.PROFILE_RESULTS]] - カラム単位のメトリクス蓄積テーブル
 
 ### 運用ドキュメント
 - [[docs/awss3/chatdemo/S3_DESIGN_VAULT_DB_DOCS]] - S3バケット設計（Markdownエクスポート先）
-- [[SNOWFLAKE_PROFILING_OPERATIONS]] - プロファイル運用手順（未作成）
+- `SNOWFLAKE_PROFILING_OPERATIONS` - プロファイル運用手順（未作成）
 
 ---
 
@@ -428,7 +428,7 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA GBPS253YS_DB.PUBLIC TO ROLE PROFILER_ROL
 
 | 日付 | 変更者 | 変更内容 |
 |---|---|---|
-| 2026-01-02 | System | 初版作成（design.[[PROFILE_ALL_TABLES]]） |
+| 2026-01-02 | System | 初版作成（design.[[design.PROFILE_ALL_TABLES]]） |
 
 ---
 

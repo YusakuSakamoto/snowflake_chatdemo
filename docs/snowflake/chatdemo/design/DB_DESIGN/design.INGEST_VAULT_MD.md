@@ -1,18 +1,18 @@
-# プロシージャ設計：[[INGEST_VAULT_MD]]
+# プロシージャ設計：[[design.INGEST_VAULT_MD]]
 
 ## 概要
-[[DB_DESIGN.INGEST_VAULT_MD]] は、S3ステージに同期されたObsidian VaultのMarkdownファイルを読み込み、[[DB_DESIGN.DOCS_OBSIDIAN]] テーブルに取り込むための専用プロシージャである。
+DB_DESIGN.[[design.INGEST_VAULT_MD]] は、S3ステージに同期されたObsidian VaultのMarkdownファイルを読み込み、DB_DESIGN.[[design.DOCS_OBSIDIAN]] テーブルに取り込むための専用プロシージャである。
 
 本プロシージャは、GitHub → S3 → Snowflake の同期フローにおいて、Snowflake側のデータ取り込みを担当する唯一の書き込み経路である。
 
 ## 業務上の意味
 - このプロシージャが表す概念  
-  1つのMarkdownファイルを1レコードとして、[[DB_DESIGN]].DOCS_OBSIDIANテーブルにUPSERT（INSERT or UPDATE）する。
+  1つのMarkdownファイルを1レコードとして、[[design.DB_DESIGN]].DOCS_OBSIDIANテーブルにUPSERT（INSERT or UPDATE）する。
 
 - 主な利用シーン  
   - Obsidian Vault更新後、GitHub Actions経由でS3に同期された後、手動またはタスクで実行
   - Cortex Agentが最新の設計ドキュメントを参照できるようにする
-  - 注記：プロファイル結果は外部テーブル（[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]]）で直接参照するため、本プロシージャの対象外
+  - 注記：プロファイル結果は外部テーブル（DB_DESIGN.[[design.PROFILE_RESULTS_EXTERNAL]]）で直接参照するため、本プロシージャの対象外
 
 ## 設計上の位置づけ
 
@@ -34,12 +34,12 @@ Cortex Agent (SNOWFLAKE_DEMO_AGENT)
 本プロシージャは、S3からSnowflakeへの橋渡しを担当する。
 
 ### DOCS_OBSIDIANテーブルとの関係
-- [[DB_DESIGN.DOCS_OBSIDIAN]] への INSERT / UPDATE / DELETE は、本プロシージャのみが行う
+- DB_DESIGN.[[design.DOCS_OBSIDIAN]] への INSERT / UPDATE / DELETE は、本プロシージャのみが行う
 - 直接のDML（手動INSERT/UPDATEなど）は禁止
 - データ整合性と一元管理のため、取り込みロジックを本プロシージャに集約
 
 ### External Tableとの違い
-External Tableとして [[DB_DESIGN.DOCS_OBSIDIAN]] を定義する案もあるが、本設計では内部テーブル + [[INGEST_VAULT_MD]] を採用：
+External Tableとして DB_DESIGN.[[design.DOCS_OBSIDIAN]] を定義する案もあるが、本設計では内部テーブル + [[design.INGEST_VAULT_MD]] を採用：
 
 #### 内部テーブル + プロシージャの利点
 - クエリ高速化：Cortex Agentが頻繁にアクセスするため、内部テーブルの方が高速
@@ -48,7 +48,7 @@ External Tableとして [[DB_DESIGN.DOCS_OBSIDIAN]] を定義する案もある�
 - バージョン管理：UPDATED_ATでVault更新履歴を追跡
 
 #### External Tableとの比較
-| 項目 | Internal Table + [[INGEST_VAULT_MD]] | External Table |
+| 項目 | Internal Table + [[design.INGEST_VAULT_MD]] | External Table |
 |------|----------------------------------|----------------|
 | クエリ速度 | ◎ 高速（内部ストレージ） | △ 低速（S3スキャン） |
 | 全文検索 | ◎ Search Optimization | △ 制限あり |
@@ -64,7 +64,7 @@ External Tableとして [[DB_DESIGN.DOCS_OBSIDIAN]] を定義する案もある�
 
 #### 1. STAGE_NAME (VARCHAR)
 - 意味：読み込み対象のSnowflake External Stage名
-- 値例：`@[[DB_DESIGN.OBSIDIAN_VAULT_STAGE]]`
+- 値例：`@DB_DESIGN.[[design.OBSIDIAN_VAULT_STAGE]]`
 - 用途：S3バケット（`s3://snowflake-chatdemo-vault-prod/`）をマウントしたステージ
 
 #### 2. PATTERN (VARCHAR)
@@ -110,9 +110,9 @@ def _to_relpath(name: str) -> str:
     return n
 ```
 
-`s3://snowflake-chatdemo-vault-prod/design/[[APP_PRODUCTION]]/design.[[ANKEN_MEISAI]].md`
+`s3://snowflake-chatdemo-vault-prod/design/[[design.APP_PRODUCTION]]/design.[[design.ANKEN_MEISAI]].md`
   ↓
-`design/[[APP_PRODUCTION]]/design.[[ANKEN_MEISAI]].md`
+`design/[[design.APP_PRODUCTION]]/design.[[design.ANKEN_MEISAI]].md`
 
 #### ステップ4：コンテンツハッシュ計算
 ```python
@@ -303,7 +303,7 @@ WHERE file_path NOT IN (
 ## プロファイル結果の参照方法
 
 ### 外部テーブルで直接参照（推奨設計）
-プロファイル結果は、外部テーブル（[[PROFILE_RESULTS_EXTERNAL]] / [[PROFILE_RUNS_EXTERNAL]]）で直接S3を参照する設計を採用：
+プロファイル結果は、外部テーブル（[[design.PROFILE_RESULTS_EXTERNAL]] / [[design.PROFILE_RUNS_EXTERNAL]]）で直接S3を参照する設計を採用：
 
 ```
 PROFILE_ALL_TABLES (プロファイル実行)
@@ -436,7 +436,7 @@ with ThreadPoolExecutor(max_workers=10) as executor:
 ```
 
 ## 設計レビュー時のチェックポイント
-- [ ] ステージ（[[OBSIDIAN_VAULT_STAGE]]）が正しく定義されているか
+- [ ] ステージ（[[design.OBSIDIAN_VAULT_STAGE]]）が正しく定義されているか
 - [ ] IAMポリシーでS3読み取り権限が付与されているか
 - [ ] プロシージャのPATTERNパラメータが適切か（全md vs 特定ディレクトリ）
 - [ ] content_hashによる差分検知が機能しているか
@@ -446,7 +446,7 @@ with ThreadPoolExecutor(max_workers=10) as executor:
 - [ ] パフォーマンスが許容範囲内か（大量ファイルの場合）
 
 ## 参考リンク
-- [[DB_DESIGN.DOCS_OBSIDIAN]] - 取り込み先テーブルの設計
-- [[DB_DESIGN.OBSIDIAN_VAULT_STAGE]] - S3ステージの定義
+- DB_DESIGN.[[design.DOCS_OBSIDIAN]] - 取り込み先テーブルの設計
+- DB_DESIGN.[[design.OBSIDIAN_VAULT_STAGE]] - S3ステージの定義
 - Snowflake SnowparkFile: https://docs.snowflake.com/en/developer-guide/snowpark/python/working-with-files
 - S3 External Stage: https://docs.snowflake.com/en/user-guide/data-load-s3

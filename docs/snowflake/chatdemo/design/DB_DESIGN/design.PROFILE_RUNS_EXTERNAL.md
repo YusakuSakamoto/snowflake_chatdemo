@@ -1,17 +1,17 @@
-# 外部テーブル設計：[[PROFILE_RUNS_EXTERNAL]]
+# 外部テーブル設計：[[design.PROFILE_RUNS_EXTERNAL]]
 
 ## 概要
-[[DB_DESIGN.PROFILE_RUNS_EXTERNAL]] は、データベーステーブルに対して実行したプロファイル処理（例：行数、列統計、欠損率などの算出）の実行履歴をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
+DB_DESIGN.[[design.PROFILE_RUNS_EXTERNAL]] は、データベーステーブルに対して実行したプロファイル処理（例：行数、列統計、欠損率などの算出）の実行履歴をS3上のJSONLファイルとして保持し、Snowflakeから外部テーブルとして直接参照するテーブルである。  
 1行が1回のプロファイル実行（= run）を表し、対象テーブル・実行条件・実行時間・実行状態を記録することで、監視・再実行・トラブルシュート・結果テーブルとの紐付けに利用する。
 
-本テーブルは、プロファイル実行履歴を外部ストレージに永続化し、長期的なトレーサビリティ確保とストレージコスト最適化を実現する。内部テーブル版（[[PROFILE_RUNS]]）と同一の論理構造を持ちながら、S3直接参照による長期保存とコスト削減を両立する。
+本テーブルは、プロファイル実行履歴を外部ストレージに永続化し、長期的なトレーサビリティ確保とストレージコスト最適化を実現する。内部テーブル版（[[design.PROFILE_RUNS]]）と同一の論理構造を持ちながら、S3直接参照による長期保存とコスト削減を両立する。
 
 ## 業務上の意味
 - このテーブルが表す概念  
   - 「プロファイル実行ジョブ（run）」の外部永続化台帳（ジョブ管理・履歴管理）。
   - runは「いつ」「どの対象（DB / Schema / Table）に」「どんな条件（サンプル率、Warehouse、Role、コードバージョン）」で実行されたか、
     および「結果が成功／失敗／実行中のどれか」を表す。
-  - 各runは [[RUN_ID]] により識別され、結果テーブル（[[PROFILE_RESULTS_EXTERNAL]]）と論理的に関連付けられる。
+  - 各runは `RUN_ID` により識別され、結果テーブル（[[design.PROFILE_RESULTS_EXTERNAL]]）と論理的に関連付けられる。
   
 - 主な利用シーン  
   - 長期的なプロファイル実行履歴の監査・トレーサビリティ確保
@@ -22,11 +22,11 @@
 ## 設計上の位置づけ
 
 ### 内部テーブル版との関係
-本外部テーブルは [[DB_DESIGN.PROFILE_RUNS]] と論理的に同一構造を持つ。
+本外部テーブルは DB_DESIGN.[[design.PROFILE_RUNS]] と論理的に同一構造を持つ。
 
 - 論理設計の共通性  
   - カラム構成、データ型、主キーの考え方は内部テーブル版と同一とする。
-  - [[RUN_ID]] により1回の実行を一意に識別する。
+  - `RUN_ID` により1回の実行を一意に識別する。
   - STATUS（RUNNING / SUCCEEDED / FAILED）による状態管理を前提とする。
 
 - 物理配置の違い  
@@ -34,34 +34,34 @@
   - 外部テーブル：S3直接参照、ストレージコスト最適化・長期保存に適する
 
 ### 使い分けの方針
-- 内部テーブル（[[PROFILE_RUNS]]）を使うべきケース  
+- 内部テーブル（[[design.PROFILE_RUNS]]）を使うべきケース  
   - 日次運用監視（最新の実行状態確認、失敗runの即時検知）
   - 頻繁なクエリ実行（直近数週間〜数ヶ月の履歴参照）
   - 低レイテンシが要求される運用監視ダッシュボード
 
-- 外部テーブル（[[PROFILE_RUNS_EXTERNAL]]）を使うべきケース  
+- 外部テーブル（[[design.PROFILE_RUNS_EXTERNAL]]）を使うべきケース  
   - 長期保存が主目的（過去1年以上の実行履歴）
   - 監査・コンプライアンス対応における証跡データとしての参照
   - 参照頻度が低い履歴データの保管
   - ストレージコストの削減が優先される状況
 
 ### 結果テーブルとの関係
-[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]] は本テーブルに紐づく結果詳細を保持する。
+DB_DESIGN.[[design.PROFILE_RESULTS_EXTERNAL]] は本テーブルに紐づく結果詳細を保持する。
 
 - 関係性  
-  [[PROFILE_RUNS_EXTERNAL]]（1） → [[PROFILE_RESULTS_EXTERNAL]]（N）
+  [[design.PROFILE_RUNS_EXTERNAL]]（1） → [[design.PROFILE_RESULTS_EXTERNAL]]（N）
 - 関連キー  
-  [[PROFILE_RESULTS_EXTERNAL.RUN_ID]] → [[PROFILE_RUNS_EXTERNAL.RUN_ID]]
+  PROFILE_RESULTS_EXTERNAL.RUN_ID → PROFILE_RUNS_EXTERNAL.RUN_ID
 
 外部テーブル間でのJOINも可能だが、性能面では内部テーブル版のJOINに劣る可能性がある。
 
 ## 設計方針
 
 ### S3統合設計
-- ステージ名：[[OBSIDIAN_VAULT_STAGE]]  
+- ステージ名：[[design.OBSIDIAN_VAULT_STAGE]]  
   S3バケット `s3://snowflake-chatdemo-vault-prod/` への外部ステージを前提とする。
 
-- ファイルフォーマット：[[FF_JSON_LINES]]  
+- ファイルフォーマット：`FF_JSON_LINES`  
   1行1JSONのJSON Lines形式（NDJSON）を採用し、ストリーミング書き込みと部分読み取りの効率化を図る。
 
 - S3パス構造：  
@@ -109,15 +109,15 @@
 - 外部テーブル：低速〜中速  
   - S3からのファイル読み取りはネットワーク経由となり、レイテンシが発生する。
   - パーティションプルーニングが効果的に働く場合、性能劣化は限定的である。
-  - [[PROFILE_RESULTS_EXTERNAL]] との JOIN は、両方とも外部テーブルの場合、性能が劣化する可能性がある。
+  - [[design.PROFILE_RESULTS_EXTERNAL]] との JOIN は、両方とも外部テーブルの場合、性能が劣化する可能性がある。
 
 - 内部テーブル：高速  
   - Snowflake管理ストレージは最適化されており、低レイテンシでのアクセスが可能。
   - マイクロパーティション・クラスタリングにより、高速な検索・集計が実現される。
-  - [[PROFILE_RESULTS]] との JOIN も高速に実行される。
+  - [[design.PROFILE_RESULTS]] との JOIN も高速に実行される。
 
 ### 運用の考え方
-- 初期段階では内部テーブル（[[PROFILE_RUNS]]）にデータを蓄積し、定期的に外部テーブル（[[PROFILE_RUNS_EXTERNAL]]）へアーカイブする運用を推奨する。
+- 初期段階では内部テーブル（[[design.PROFILE_RUNS]]）にデータを蓄積し、定期的に外部テーブル（[[design.PROFILE_RUNS_EXTERNAL]]）へアーカイブする運用を推奨する。
 - 直近数ヶ月の実行履歴は内部テーブルで高速参照を実現し、過去データは外部テーブルでコスト効率的に保存する。
 - 必要に応じて、内部テーブルと外部テーブルを統合するビュー（UNION ALL）を定義し、アプリケーションからは統一的にアクセスできるようにする。
 
@@ -140,12 +140,12 @@
 ### パーティション管理
 - パーティションフォルダ（year=YYYY/month=MM/day=DD/）の命名規則を厳守する。
 - 誤ったパーティション構造でファイルを配置すると、クエリ時のパーティションプルーニングが機能せず、性能劣化やコスト増加を招く。
-- [[STARTED_AT]] の日時とパーティションフォルダの日付が一致することを確認する。
+- `STARTED_AT` の日時とパーティションフォルダの日付が一致することを確認する。
 
 ### データ品質担保
 - 外部テーブルは Snowflake の制約（PRIMARY KEY、CHECK）を持たない。
 - データ品質は書き込み側のプロセス（プロシージャ、外部アプリケーション）で担保する必要がある。
-- 状態遷移の整合性（RUNNING → SUCCEEDED / FAILED）や時刻の整合性（[[STARTED_AT]] ≦ [[FINISHED_AT]]）は書き込み側で保証する。
+- 状態遷移の整合性（RUNNING → SUCCEEDED / FAILED）や時刻の整合性（`STARTED_AT` ≦ `FINISHED_AT`）は書き込み側で保証する。
 
 ### 実行中ステータスの扱い
 - STATUS='RUNNING' のrunは、実行中または異常終了により完了していない可能性がある。
@@ -158,11 +158,11 @@
 - 内部テーブルとの自動同期機構（Task + Stream による定期アーカイブ）
 - 外部テーブル用マテリアライズドビューの検討（頻繁な集計クエリの高速化）
 - S3ライフサイクルポリシーとの連携（古いパーティションのGlacier移行）
-- 実行失敗時のエラー情報詳細化（[[ERROR_CODE]]、[[ERROR_MESSAGE]] の構造化）
+- 実行失敗時のエラー情報詳細化（`ERROR_CODE`、`ERROR_MESSAGE` の構造化）
 
 ## 関連
 
-- 内部テーブル版：[[DB_DESIGN.PROFILE_RUNS]]
-- 関連外部テーブル：[[DB_DESIGN.PROFILE_RESULTS_EXTERNAL]]
-- 関連プロシージャ：[[DB_DESIGN.PROFILE_TABLE]], [[DB_DESIGN.PROFILE_ALL_TABLES]]
-- マスター定義：[[DB_DESIGN.PROFILE_RUNS_EXTERNAL]]（master/externaltables/）
+- 内部テーブル版：DB_DESIGN.[[design.PROFILE_RUNS]]
+- 関連外部テーブル：DB_DESIGN.[[design.PROFILE_RESULTS_EXTERNAL]]
+- 関連プロシージャ：DB_DESIGN.[[design.PROFILE_TABLE]], DB_DESIGN.[[design.PROFILE_ALL_TABLES]]
+- マスター定義：DB_DESIGN.[[design.PROFILE_RUNS_EXTERNAL]]（master/externaltables/）

@@ -1,7 +1,7 @@
-# 外部テーブル設計：[[SNOWFLAKE_METRICS]]
+# 外部テーブル設計：[[design.SNOWFLAKE_METRICS]]
 
 ## 概要
-[[LOG.SNOWFLAKE_METRICS]] は、Snowflake自体のクエリ実行メトリクスとリソース使用状況を蓄積・分析するための外部テーブルである。
+LOG.[[design.SNOWFLAKE_METRICS]] は、Snowflake自体のクエリ実行メトリクスとリソース使用状況を蓄積・分析するための外部テーブルである。
 
 本テーブルは、Snowflakeの `INFORMATION_SCHEMA` や `ACCOUNT_USAGE` から定期的にエクスポートされたメトリクスデータを、S3経由で長期保管する。  
 コスト分析、パフォーマンス最適化、容量計画の根拠データとして活用される。
@@ -18,7 +18,7 @@
   - 容量計画（ストレージ使用量の予測）
 
 ## 設計上の位置づけ
-[[LOG.SNOWFLAKE_METRICS]] は、以下のシステム全体の「観測性の基盤」として機能する：
+LOG.[[design.SNOWFLAKE_METRICS]] は、以下のシステム全体の「観測性の基盤」として機能する：
 
 - アプリケーションログ（SWA, Azure Functions）
 - Cortex Agent 会話ログ
@@ -95,7 +95,7 @@ ORDER BY 2 DESC;
 
 #### `query_id` (VARCHAR, nullable)
 - 意味：Snowflakeのクエリ実行ID
-- 利用例：特定のクエリの詳細分析、[[QUERY_HISTORY]] との紐付け
+- 利用例：特定のクエリの詳細分析、`QUERY_HISTORY` との紐付け
 
 ```sql
 -- 実行時間が長いクエリTOP10
@@ -154,7 +154,7 @@ ORDER BY 2 DESC;
 ```
 
 #### パーティションカラム（`year`, `month`, `day`, `hour`）
-- [[LOG.CORTEX_CONVERSATIONS]] と同様
+- LOG.[[design.CORTEX_CONVERSATIONS]] と同様
 
 ## データソースと収集方法
 

@@ -4,7 +4,7 @@
 
 ## � ドキュメント一覧
 
-- **[命名規則](naming_conventions.md)** - Python/Azure Functions固有の命名規則
+- **[命名規則](NAMING_CONVENTIONS_GUIDE.md)** - Python/Azure Functions固有の命名規則
 - **[メンテナンスガイド](MAINTENANCE_GUIDE.md)** - 開発・テスト・デプロイ手順
 
 ## 📋 予定コンテンツ

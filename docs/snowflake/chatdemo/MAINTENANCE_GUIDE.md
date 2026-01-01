@@ -7,7 +7,7 @@
 
 ## 命名規則
 
-詳細は [naming_conventions.md](naming_conventions.md) を参照してください。
+詳細は [NAMING_CONVENTIONS_GUIDE.md](NAMING_CONVENTIONS_GUIDE.md) を参照してください。
 
 ### 主要ルール
 - **ビュー（View）**: `V_` プレフィックス必須

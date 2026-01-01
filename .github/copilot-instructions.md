@@ -9,7 +9,7 @@
 Copilotは以下のドキュメントを必ず参照してください：
 
 ### 1. Snowflake 命名規則
-**ファイル:** `docs/snowflake/chatdemo/naming_conventions.md`
+**ファイル:** `docs/snowflake/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
 
 **重要ポイント:**
 - ビュー（View）: `V_` プレフィックス必須（例: `V_CUSTOMER_MASTER`, `V_DOCS_OBSIDIAN`）
@@ -30,7 +30,7 @@ Copilotは以下のドキュメントを必ず参照してください：
 - マスターファイル構造とデザインファイル構造
 
 ### 3. Azure Functions 命名規則
-**ファイル:** `docs/azfunctions/chatdemo/naming_conventions.md`
+**ファイル:** `docs/azfunctions/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
 
 **重要ポイント:**
 - モジュール: `lowercase_with_underscores.py`
@@ -49,7 +49,7 @@ Copilotは以下のドキュメントを必ず参照してください：
 - 構造化ログ推奨
 
 ### 5. Azure SWA 命名規則
-**ファイル:** `docs/azswa/chatdemo/naming_conventions.md`
+**ファイル:** `docs/azswa/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
 
 **重要ポイント:**
 - コンポーネント: `PascalCase`

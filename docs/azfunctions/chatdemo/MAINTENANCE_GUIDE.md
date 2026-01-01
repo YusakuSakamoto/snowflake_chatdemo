@@ -7,7 +7,7 @@
 
 ## 命名規則
 
-詳細は [naming_conventions.md](naming_conventions.md) を参照してください。
+詳細は [NAMING_CONVENTIONS_GUIDE.md](NAMING_CONVENTIONS_GUIDE.md) を参照してください。
 
 ### 主要ルール
 - **モジュール**: `lowercase_with_underscores.py`
@@ -585,5 +585,5 @@ git commit -m "Add new feature"  # 英語（日本語推奨）
 - [Azure Functions Python開発ガイド](https://learn.microsoft.com/azure/azure-functions/functions-reference-python)
 - [PEP 8 - Style Guide for Python Code](https://peps.python.org/pep-0008/)
 - [Snowflake REST API Documentation](https://docs.snowflake.com/en/developer-guide/sql-api/index.html)
-- [命名規則](naming_conventions.md)
+- [命名規則](NAMING_CONVENTIONS_GUIDE.md)
 - [Git運用規則](../../git/chatdemo/GIT_WORKFLOW.md)

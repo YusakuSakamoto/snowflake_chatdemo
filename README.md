@@ -63,7 +63,7 @@ snowflake_chatdemo/
 
 ### 重要な規則
 Copilotは以下のドキュメントを常に参照します：
-- 命名規則: `docs/snowflake/chatdemo/naming_conventions.md`
+- 命名規則: `docs/snowflake/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
 - メンテナンスガイド: `docs/snowflake/chatdemo/MAINTENANCE_GUIDE.md`
 - Git運用規則: `docs/git/chatdemo/GIT_WORKFLOW.md`
 

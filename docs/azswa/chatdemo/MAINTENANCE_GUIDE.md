@@ -7,7 +7,7 @@
 
 ## 命名規則
 
-詳細は [naming_conventions.md](naming_conventions.md) を参照してください。
+詳細は [NAMING_CONVENTIONS_GUIDE.md](NAMING_CONVENTIONS_GUIDE.md) を参照してください。
 
 ### 主要ルール
 - **コンポーネント**: `PascalCase`
@@ -742,5 +742,5 @@ import ReactMarkdown from 'react-markdown'
 - [React Documentation](https://react.dev/)
 - [TypeScript Documentation](https://www.typescriptlang.org/docs/)
 - [Azure Static Web Apps Documentation](https://learn.microsoft.com/azure/static-web-apps/)
-- [命名規則](naming_conventions.md)
+- [命名規則](NAMING_CONVENTIONS_GUIDE.md)
 - [Git運用規則](../../git/chatdemo/GIT_WORKFLOW.md)

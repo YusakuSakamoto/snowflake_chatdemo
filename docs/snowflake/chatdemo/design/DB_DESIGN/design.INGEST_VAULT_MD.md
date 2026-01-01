@@ -303,7 +303,7 @@ WHERE file_path NOT IN (
 ## プロファイル結果の取り込み
 
 ### プロファイル結果もMarkdown形式で出力
-[[DB_DESIGN.PROFILE_TABLE]] および [[DB_DESIGN.PROFILE_ALL_TABLES]] の実行後、プロファイル結果をMarkdown形式でS3に出力する：
+[[DB_DESIGN.PROFILE_ALL_TABLES]] の実行後、[[DB_DESIGN.EXPORT_PROFILE_EVIDENCE_MD_VFINAL]] がプロファイル結果をMarkdown形式でS3に出力する：
 
 ```
 s3://snowflake-chatdemo-vault-prod/

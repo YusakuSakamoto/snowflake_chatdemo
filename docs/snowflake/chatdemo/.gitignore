@@ -1,0 +1,13 @@
+# Obsidian workspace (個人設定)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# キャッシュ
+.obsidian/cache/
+.obsidian/plugins/*/
+
+# トラッシュ
+.trash/
+
+# 一時ファイル
+*.tmp

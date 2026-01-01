@@ -2,6 +2,8 @@ import os
 import snowflake.connector
 from dotenv import load_dotenv
 from snowflake_auth import SnowflakeAuthClient
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 
 load_dotenv()
 
@@ -14,6 +16,24 @@ class SnowflakeConnection:
     def __init__(self):
         self.connection = None
         self.auth_client = SnowflakeAuthClient()
+        
+    def _load_private_key(self):
+        """秘密鍵をロードしてRSAPrivateKeyオブジェクトを返す"""
+        if not self.auth_client.private_key_path or not os.path.exists(self.auth_client.private_key_path):
+            return None
+        
+        with open(self.auth_client.private_key_path, "rb") as key_file:
+            private_key_data = key_file.read()
+        
+        passphrase = self.auth_client.private_key_passphrase.encode() if self.auth_client.private_key_passphrase else None
+        
+        private_key = serialization.load_pem_private_key(
+            private_key_data,
+            password=passphrase,
+            backend=default_backend()
+        )
+        
+        return private_key
         
     def __enter__(self):
         """
@@ -32,20 +52,20 @@ class SnowflakeConnection:
                 schema=self.auth_client.schema
             )
         elif self.auth_client.auth_method == "private_key":
-            # JWT Token認証
-            jwt_token = self.auth_client.get_jwt_token()
-            if jwt_token:
+            # 秘密鍵認証（RSAPrivateKeyオブジェクトを直接渡す）
+            private_key = self._load_private_key()
+            if private_key:
                 self.connection = snowflake.connector.connect(
                     account=self.auth_client.account,
                     user=self.auth_client.user,
-                    authenticator='oauth',
-                    token=jwt_token,
+                    private_key=private_key,
                     warehouse=self.auth_client.warehouse,
                     database=self.auth_client.database,
-                    schema=self.auth_client.schema
+                    schema=self.auth_client.schema,
+                    role=self.auth_client.role
                 )
             else:
-                raise ValueError("Failed to generate JWT token from private key")
+                raise ValueError("Failed to load private key")
         else:
             raise ValueError("SNOWFLAKE_BEARER_TOKEN or SNOWFLAKE_PRIVATE_KEY_PATH must be set")
         

@@ -2,6 +2,7 @@ import os
 import requests
 import json
 from typing import Dict, Any, Optional
+from snowflake_auth import SnowflakeAuthClient
 
 class SnowflakeCortexClient:
     """
@@ -9,14 +10,14 @@ class SnowflakeCortexClient:
     """
     
     def __init__(self):
-        self.account = os.getenv('SNOWFLAKE_ACCOUNT')
-        self.host = os.getenv('SNOWFLAKE_HOST', f"{self.account}.snowflakecomputing.com")
-        self.user = os.getenv('SNOWFLAKE_USER')
-        self.bearer_token = os.getenv('SNOWFLAKE_BEARER_TOKEN')  # Personal Access Token
-        self.warehouse = os.getenv('SNOWFLAKE_WAREHOUSE')
-        self.database = os.getenv('SNOWFLAKE_DATABASE')
-        self.schema = os.getenv('SNOWFLAKE_SCHEMA', 'PUBLIC')
-        self.role = os.getenv('SNOWFLAKE_ROLE', 'ACCOUNTADMIN')
+        self.auth_client = SnowflakeAuthClient()
+        self.account = self.auth_client.account
+        self.host = self.auth_client.host
+        self.user = self.auth_client.user
+        self.warehouse = self.auth_client.warehouse
+        self.database = self.auth_client.database
+        self.schema = self.auth_client.schema
+        self.role = self.auth_client.role
         self.agent_name = os.getenv('SNOWFLAKE_AGENT_NAME', 'SNOWFLAKE_DEMO_AGENT')
         
         # Snowflake REST APIエンドポイント
@@ -25,12 +26,14 @@ class SnowflakeCortexClient:
         
     def authenticate(self) -> bool:
         """
-        Snowflake REST APIで認証を行う（PAT使用）
+        Snowflake REST APIで認証を行う（PAT/JWT対応）
         """
         try:
-            # Bearer Tokenが設定されているか確認
-            if not self.bearer_token:
-                print("Bearer Token (PAT)が設定されていません")
+            # 認証ヘッダーを取得
+            auth_header = self.auth_client.get_auth_header()
+            
+            if not auth_header:
+                print("認証情報が設定されていません")
                 return False
             
             # 接続テスト
@@ -47,14 +50,17 @@ class SnowflakeCortexClient:
     
     def execute_query(self, query: str) -> Optional[Dict[str, Any]]:
         """
-        Snowflake REST API経由でクエリを実行（PAT認証）
+        Snowflake REST API経由でクエリを実行（PAT/JWT認証）
         """
         url = f"{self.base_url}/statements"
+        
+        # 認証ヘッダーを取得
+        auth_header = self.auth_client.get_auth_header()
         
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': f'Bearer {self.bearer_token}'
+            **auth_header
         }
         
         payload = {

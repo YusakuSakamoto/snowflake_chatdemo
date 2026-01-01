@@ -25,11 +25,17 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
       // 既存のチャートをクリア
       containerRef.current.innerHTML = ''
       
-      // チャートのサイズを拡大
+      // チャートのサイズを拡大し、Y軸ラベルの設定を調整
       const enlargedSpec = {
         ...spec,
         width: 700,
         height: 450,
+        config: {
+          axisY: {
+            labelLimit: 300,  // Y軸ラベルの最大幅を増やす
+            labelFontSize: 11
+          }
+        },
         autosize: {
           type: 'fit',
           contains: 'padding'

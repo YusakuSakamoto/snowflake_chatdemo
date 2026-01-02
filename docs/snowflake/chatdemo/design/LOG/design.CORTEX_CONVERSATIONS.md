@@ -61,7 +61,7 @@ s3://135365622922-snowflake-chatdemo-vault-prod/cortex_conversations/
           {uuid}.json
 ```
 
-パーティションカラム（year, month, day, hour）は `metadata$filename` から抽出される。
+パーティションカラム（YEAR, MONTH, DAY, HOUR）は `metadata$filename` から抽出される。
 
 #### パーティションプルーニングの例：
 ```sql
@@ -74,7 +74,7 @@ SELECT * FROM LOG.CORTEX_CONVERSATIONS
 WHERE timestamp > CURRENT_TIMESTAMP() - INTERVAL '1 day';
 ```
 
-重要：時系列クエリでは必ず year, month, day を WHERE句に含めること。
+重要：時系列クエリでは必ず YEAR, MONTH, DAY を WHERE句に含めること。
 
 ### JSON Lines フォーマットの選択理由
 
@@ -181,7 +181,7 @@ WHERE message_role = 'assistant'
 GROUP BY 1;
 ```
 
-#### パーティションカラム（year, month, day, hour）
+#### パーティションカラム（YEAR, MONTH, DAY, HOUR）
 - 意味：S3パスから抽出されるパーティション情報
 - データ型：NUMBER（0埋めなしの整数）
 - 利用：必ず WHERE句で指定してパーティションプルーニングを有効化

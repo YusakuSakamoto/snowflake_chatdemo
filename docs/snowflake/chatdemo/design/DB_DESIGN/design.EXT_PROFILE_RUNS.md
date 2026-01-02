@@ -66,13 +66,13 @@
 
 - S3パス構造：  
   ```
-  s3://snowflake-chatdemo-vault-prod/profile_runs/year=YYYY/month=MM/day=DD/
+  s3://snowflake-chatdemo-vault-prod/profile_runs/YEAR=YYYY/MONTH=MM/DAY=DD/
   ```
   - プロファイル実行開始日時（STARTED_AT）を基準としたパーティション構造とする。
   - 年月日によるパーティショニングにより、クエリ時のスキャン範囲を限定し、検索効率を向上させる。
 
 ### パーティショニング戦略
-- パーティションキー：year / month / day  
+- パーティションキー：YEAR / MONTH / DAY  
   実行開始日時（STARTED_AT）に基づく時系列パーティションを採用する。
 
 - 設計理由  
@@ -138,7 +138,7 @@
 - リフレッシュは定期的なスケジュール実行（Task）または手動実行により行う。
 
 ### パーティション管理
-- パーティションフォルダ（year=YYYY/month=MM/day=DD/）の命名規則を厳守する。
+- パーティションフォルダ（YEAR=YYYY/MONTH=MM/DAY=DD/）の命名規則を厳守する。
 - 誤ったパーティション構造でファイルを配置すると、クエリ時のパーティションプルーニングが機能せず、性能劣化やコスト増加を招く。
 - STARTED_AT の日時とパーティションフォルダの日付が一致することを確認する。
 

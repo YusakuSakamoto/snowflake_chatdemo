@@ -37,10 +37,10 @@
 S3パス構造：
 ```
 s3://snowflake-chatdemo-vault-prod/logs/snowflake_metrics/
-  year=2026/
-    month=01/
-      day=02/
-        hour=14/
+  YEAR=2026/
+    MONTH=01/
+      DAY=02/
+        HOUR=14/
           {uuid}.json
 ```
 
@@ -153,7 +153,7 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
-#### パーティションカラム（year, month, day, hour）
+#### パーティションカラム（YEAR, MONTH, DAY, HOUR）
 - [[LOG.CORTEX_CONVERSATIONS]] と同様
 
 ## データソースと収集方法
@@ -166,7 +166,7 @@ CREATE TASK collect_query_metrics
   WAREHOUSE = ETL_WH
   SCHEDULE = '60 MINUTE'
 AS
-INSERT INTO @LOG_STAGE/snowflake_metrics/year={{YEAR}}/month={{MONTH}}/day={{DAY}}/hour={{HOUR}}/metrics.json
+INSERT INTO @LOG_STAGE/snowflake_metrics/YEAR={{YEAR}}/MONTH={{MONTH}}/DAY={{DAY}}/HOUR={{HOUR}}/metrics.json
 SELECT 
   UUID_STRING() AS metric_id,
   'query_execution_time' AS metric_name,

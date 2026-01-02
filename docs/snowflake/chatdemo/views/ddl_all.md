@@ -778,16 +778,17 @@ DROP SCHEMA PUBLIC;
 
       // 固定マッピング: YEAR=2, MONTH=3, DAY=4, HOUR=5
       const PARTITION_INDEX_MAP = { YEAR: 2, MONTH: 3, DAY: 4, HOUR: 5 };
+      // カラム名リスト（大文字）
+      const colPhysicalSet = new Set(colsArr.map(c => c.physical.toUpperCase()));
 
       for (const c of colsArr) {
         const colName = q(c.physical);
         const domain = clean(c.domain) || "VARCHAR";
         const upperName = c.physical.toUpperCase();
-        if (PARTITION_INDEX_MAP[upperName]) {
-          // パーティションカラムはインデックス固定
-          const idx = PARTITION_INDEX_MAP[upperName];
+        if (PARTITION_INDEX_MAP[upperName] && colPhysicalSet.has(upperName)) {
+          // パーティションカラムはカラム定義に存在する場合のみSPLIT_PART式を生成
           partitionLines.push(
-            `  ${colName} ${domain} AS CAST(SPLIT_PART(SPLIT_PART(metadata$filename, '/', ${idx}), '=', 2) AS ${domain})`
+            `  ${colName} ${domain} AS CAST(SPLIT_PART(SPLIT_PART(metadata$filename, '/', ${PARTITION_INDEX_MAP[upperName]}), '=', 2) AS ${domain})`
           );
         } else {
           // 通常カラム

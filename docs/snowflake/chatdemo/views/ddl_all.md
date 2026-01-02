@@ -29,6 +29,13 @@ DROP SCHEMA PUBLIC;
 2. **External Tables DDL Generator** - S3/Azure連携の外部テーブル
 3. **YAML FILE Generator** - セマンティックビューのYAMLファイル生成
 
+> **運用ガイド：EXTERNAL TABLEの制約出力について**
+ > - SnowflakeのEXTERNAL TABLEでもPRIMARY KEY/UNIQUE/FOREIGN KEY制約は構文上宣言可能ですが、NOT NULL以外の制約は強制（enforced）されません（違反してもエラーになりません）。
+ > - CHECK制約はSnowflake自体がサポートしていません（EXTERNAL TABLEに限らず）。
+ > - 本DDL Generatorでは、EXTERNAL TABLEのPK/UNIQUE制約も「強制されない」ことを明記した上で、DDLとして出力する設計としています。
+ > - データ品質・一意性担保は設計ドキュメント・運用・検証クエリで担保してください。
+ > - 内部テーブル化・集約時にはPK/UNIQUE/CHECK等の制約をDDLで明示し、品質担保を強化してください。
+
 > **Note:** セマンティックビュー（YAML）は、Snowflake DDL Generatorではコメント形式で出力されます。  
 > 実際のYAMLファイルとして出力する場合は、YAML FILE Generatorを使用してください。
 
@@ -772,9 +779,11 @@ DROP SCHEMA PUBLIC;
       }
 
 
+
       // Build column definitions with metadata$ extraction (partition columns fixed index)
       const lines = [];
       const partitionLines = [];
+      const pkCols = [];
 
       // 固定マッピング: YEAR=2, MONTH=3, DAY=4, HOUR=5
       const PARTITION_INDEX_MAP = { YEAR: 2, MONTH: 3, DAY: 4, HOUR: 5 };
@@ -786,18 +795,18 @@ DROP SCHEMA PUBLIC;
         const domain = clean(c.domain) || "VARCHAR";
         const upperName = c.physical.toUpperCase();
         if (PARTITION_INDEX_MAP[upperName] && colPhysicalSet.has(upperName)) {
-          // パーティションカラムはカラム定義に存在する場合のみSPLIT_PART式を生成
           partitionLines.push(
             `  ${colName} ${domain} AS CAST(SPLIT_PART(SPLIT_PART(metadata$filename, '/', ${PARTITION_INDEX_MAP[upperName]}), '=', 2) AS ${domain})`
           );
         } else {
-          // 通常カラム
           lines.push(`  ${colName} ${domain} AS (value:${c.physical.toLowerCase()}::${domain})`);
         }
+        if (bool(c.pk)) pkCols.push(colName);
       }
 
       // Combine regular and partition columns
       const allLines = [...lines, ...partitionLines];
+      if (pkCols.length) allLines.push(`  PRIMARY KEY (${pkCols.join(", ")})`);
 
       out.push(`CREATE OR REPLACE EXTERNAL TABLE ${fqtn}(\n`);
       out.push(allLines.join(",\n") + "\n");

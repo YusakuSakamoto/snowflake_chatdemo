@@ -26,7 +26,7 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
     if (containerRef.current && spec) {
       // 既存のチャートをクリア
       containerRef.current.innerHTML = ''
-      
+
       // チャートを描画
       embed(containerRef.current, spec, {
         actions: false,
@@ -41,11 +41,11 @@ function VegaChart({ spec, index }: { spec: any; index: number }) {
 }
 
 // プログレス情報とツール詳細を表示するコンポーネント
-function ToolDetails({ progress, tool_logs, tool_details, isComplete }: { 
-  progress?: string[], 
-  tool_logs?: string[], 
+function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
+  progress?: string[],
+  tool_logs?: string[],
   tool_details?: any[],
-  isComplete?: boolean 
+  isComplete?: boolean
 }) {
   const [isExpanded, setIsExpanded] = useState(!isComplete)
 
@@ -53,14 +53,14 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
 
   return (
     <div className={styles.toolDetailsContainer}>
-      <button 
+      <button
         className={styles.toolDetailsToggle}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <span>{isExpanded ? '▼' : '▶'}</span>
         <span>実行詳細 ({progress?.length || 0}ステップ, {tool_details?.length || 0}ツール)</span>
       </button>
-      
+
       {isExpanded && (
         <div className={styles.toolDetailsContent}>
           {/* プログレス表示（Markdownでレンダリング） */}
@@ -80,7 +80,7 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
               </ol>
             </div>
           )}
-          
+
           {/* ツール詳細表示 */}
           {tool_details && tool_details.length > 0 && (
             <div className={styles.toolSection}>
@@ -95,13 +95,13 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
                       {tool.status === 'success' ? '✓' : '✗'} {tool.status}
                     </span>
                   </div>
-                  
+
                   {tool.elapsed_ms && (
                     <div className={styles.toolElapsed}>
                       ⏱️ {tool.elapsed_ms}ms
                     </div>
                   )}
-                  
+
                   {/* 入力情報を詳細表示 */}
                   {tool.input && Object.keys(tool.input).length > 0 && (
                     <div className={styles.toolInputSection}>
@@ -117,7 +117,7 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
                       )}
                     </div>
                   )}
-                  
+
                   {/* 出力情報を詳細表示 */}
                   {tool.output && Object.keys(tool.output).length > 0 && (
                     <div className={styles.toolOutputSection}>
@@ -139,7 +139,7 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
                       )}
                     </div>
                   )}
-                  
+
                   {/* raw情報を表示 */}
                   {tool.raw && (
                     <div className={styles.toolRawSection}>
@@ -153,7 +153,7 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
               ))}
             </div>
           )}
-          
+
           {/* ツールログ表示 */}
           {tool_logs && tool_logs.length > 0 && (
             <div className={styles.logsSection}>
@@ -171,6 +171,8 @@ function ToolDetails({ progress, tool_logs, tool_details, isComplete }: {
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([])
+  const messagesRef = useRef<Message[]>([])
+  useEffect(() => { messagesRef.current = messages }, [messages])
   const [inputMessage, setInputMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -208,154 +210,59 @@ export default function Home() {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!inputMessage.trim()) return
 
     setLoading(true)
-    
+
     // ユーザーメッセージを即座に表示
     const userMessage: Message = {
       user_id: 'user',
       message: inputMessage,
       timestamp: new Date().toISOString()
     }
-    setMessages(prev => [...prev, userMessage])
-    const currentMessage = inputMessage
+    // ユーザーメッセージ＋AIメッセージを追加し、その後ストリーム処理
+    setMessages(prev => {
+      const arr = [...prev, userMessage]
+      return [...arr, {
+        user_id: 'Snowflake AI',
+        message: '処理中...',
+        timestamp: new Date().toISOString(),
+        progress: ['🔄 Snowflake Cortex Agentに接続中...'],
+        tool_logs: [],
+        tool_details: [],
+        isComplete: false
+      }]
+    })
     setInputMessage('')
 
-    // 処理中メッセージを追加
-    const processingMessage: Message = {
-      user_id: 'Snowflake AI',
-      message: '処理中...',
-      timestamp: new Date().toISOString(),
-      progress: ['🔄 Snowflake Cortex Agentに接続中...'],
-      tool_logs: [],
-      tool_details: [],
-      isComplete: false
-    }
-    setMessages(prev => [...prev, processingMessage])
-    const messageIndex = messages.length + 1 // ユーザーメッセージの次
-
     try {
-      // Snowflake Cortex Agentのストリーミングエンドポイントを使用
-      const response = await axios.post(`${API_URL}/chat-stream`, {
-        text: currentMessage,
-        message: currentMessage
+      const response = await fetch(`${API_URL}/chat-stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: inputMessage, message: inputMessage })
       })
-      
-      console.log('Snowflake Response:', response.data)
-      console.log('Answer text:', response.data.answer)
-      console.log('Tool details:', JSON.stringify(response.data.tool_details, null, 2))
-
-      // レスポンスを受け取ったら、処理中メッセージを更新（tool_detailsを表示）
-      if (response.data.progress || response.data.tool_details) {
-        setMessages(prev => {
-          const newMessages = [...prev]
-          newMessages[messageIndex] = {
-            ...newMessages[messageIndex],
-            progress: response.data.progress || [],
-            tool_details: response.data.tool_details || [],
-            isComplete: false
-          }
-          return newMessages
-        })
-      }
-      
-      if (response.data.ok && response.data.answer) {
-        // チャートデータとテーブルデータを抽出
-        const charts: any[] = []
-        let answerText = response.data.answer
-        
-        if (response.data.tool_details) {
-          for (const tool of response.data.tool_details) {
-            // チャートデータの処理
-            if (tool.tool_name === 'data_to_chart' && tool.raw?.content) {
-              for (const content of tool.raw.content) {
-                if (content.json?.charts) {
-                  try {
-                    const chartSpecs = Array.isArray(content.json.charts) 
-                      ? content.json.charts 
-                      : [content.json.charts]
-                    for (const chartStr of chartSpecs) {
-                      if (typeof chartStr === 'string') {
-                        charts.push(JSON.parse(chartStr))
-                      } else {
-                        charts.push(chartStr)
-                      }
-                    }
-                  } catch (e) {
-                    console.error('Chart parsing error:', e)
-                  }
-                }
-              }
-            }
-            
-            // テーブルデータの処理
-            if (tool.tool_name === 'text_to_sql') {
-              // 複数の場所からデータを取得を試みる
-              let tableData = null
-              
-              // 1. tool.output.data
-              if (tool.output?.data && Array.isArray(tool.output.data)) {
-                tableData = tool.output.data
-              }
-              // 2. tool.raw.content[].json.result_set.data
-              else if (tool.raw?.content) {
-                for (const content of tool.raw.content) {
-                  if (content.json?.result_set?.data && Array.isArray(content.json.result_set.data)) {
-                    tableData = content.json.result_set.data
-                    break
-                  }
-                }
-              }
-              
-              if (tableData && tableData.length > 0) {
-                console.log('テーブルデータを発見:', tableData.length, '行')
-                // Markdownテーブルに変換
-                const headers = tableData[0]
-                const rows = tableData.slice(1)
-                
-                let markdownTable = '\n\n| ' + headers.join(' | ') + ' |\n'
-                markdownTable += '| ' + headers.map(() => '---').join(' | ') + ' |\n'
-                
-                for (const row of rows) {
-                  markdownTable += '| ' + row.join(' | ') + ' |\n'
-                }
-                
-                answerText += markdownTable
-              } else {
-                console.log('テーブルデータが見つかりません。tool:', JSON.stringify(tool, null, 2))
-              }
-            }
-          }
-        }
-        
-        // AIの回答を追加
-        const aiMessage: Message = {
-          user_id: 'Snowflake AI',
+      if (!response.ok) throw new Error('APIリクエスト失敗')
+      const data = await response.json()
+      const answerText = data.answer || data.text || '完了'
+      setMessages(prev => {
+        const newMessages = [...prev]
+        const idx = newMessages.length - 1
+        newMessages[idx] = {
+          ...newMessages[idx],
           message: answerText,
           ai_response: answerText,
-          timestamp: new Date().toISOString(),
-          progress: response.data.progress,
-          tool_logs: response.data.tool_logs,
-          tool_details: response.data.tool_details,
-          charts: charts.length > 0 ? charts : undefined,
+          progress: data.progress || [],
+          tool_logs: data.tool_logs || [],
+          tool_details: data.tool_details || [],
+          charts: data.charts || [],
           isComplete: true
         }
-        
-        // 処理中メッセージを完了メッセージで更新
-        setMessages(prev => {
-          const newMessages = [...prev]
-          newMessages[messageIndex] = aiMessage
-          return newMessages
-        })
-      } else {
-        throw new Error('AIからの応答がありません')
-      }
+        return newMessages
+      })
     } catch (error) {
       console.error('メッセージの送信に失敗しました:', error)
-      
-      // 処理中メッセージをエラーメッセージで更新
+      // エラー時も必ず末尾を上書き
       const errorMessage: Message = {
         user_id: 'System',
         message: 'エラー: メッセージの送信に失敗しました。Snowflakeへの接続を確認してください。',
@@ -364,7 +271,8 @@ export default function Home() {
       }
       setMessages(prev => {
         const newMessages = [...prev]
-        newMessages[messageIndex] = errorMessage
+        const idx = newMessages.length - 1
+        newMessages[idx] = errorMessage
         return newMessages
       })
     } finally {
@@ -384,18 +292,17 @@ export default function Home() {
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`${styles.message} ${
-                msg.user_id === 'user' ? styles.myMessage : 
+              className={`${styles.message} ${msg.user_id === 'user' ? styles.myMessage :
                 msg.user_id === 'Snowflake AI' ? styles.aiMessage :
-                msg.user_id === 'System' ? styles.systemMessage :
-                styles.otherMessage
-              }`}
+                  msg.user_id === 'System' ? styles.systemMessage :
+                    styles.otherMessage
+                }`}
             >
               <div className={styles.messageHeader}>
                 <span className={styles.userName}>
-                  {msg.user_id === 'Snowflake AI' ? '❄️ Snowflake AI' : 
-                   msg.user_id === 'System' ? '⚠️ System' : 
-                   'あなた'}
+                  {msg.user_id === 'Snowflake AI' ? '❄️ Snowflake AI' :
+                    msg.user_id === 'System' ? '⚠️ System' :
+                      'あなた'}
                 </span>
                 <span className={styles.timestamp}>
                   {new Date(msg.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
@@ -406,16 +313,16 @@ export default function Home() {
                   <>
                     {/* ツール詳細表示 */}
                     {msg.user_id === 'Snowflake AI' && (
-                      <ToolDetails 
+                      <ToolDetails
                         progress={msg.progress}
                         tool_logs={msg.tool_logs}
                         tool_details={msg.tool_details}
                         isComplete={msg.isComplete}
                       />
                     )}
-                    
+
                     <div className={styles.markdown}>
-                      <ReactMarkdown 
+                      <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         rehypePlugins={[rehypeMermaid]}
                       >

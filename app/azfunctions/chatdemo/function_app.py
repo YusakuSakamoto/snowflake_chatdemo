@@ -363,7 +363,7 @@ def _extract_tool_detail(obj: dict):
 
 @app.route(route="chat-stream", methods=["POST", "OPTIONS"])
 def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
-        import uuid
+    import uuid
     """
     ストリーミング対応のCortex Agent APIエンドポイント
     """
@@ -383,20 +383,21 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
             body = json.loads(raw) if raw else {}
 
         text = body.get("text") or body.get("input") or body.get("message")
+
+        # S3アップロード用情報（常に定義）
+        s3_bucket = os.getenv("CHAT_S3_BUCKET")
+        conversation_id = body.get('conversation_id') or str(uuid.uuid4())
+        session_id = body.get('session_id')
+        user_id = body.get('user_id', 'anonymous')
+        agent_name = os.getenv("SNOWFLAKE_AGENT_NAME", "")
+        now = datetime.utcnow()
+        year = now.strftime('%Y')
+        month = now.strftime('%m')
+        day = now.strftime('%d')
+        hour = now.strftime('%H')
+
         if not text:
             return _json({"ok": False, "error": "text is required"}, 400)
-
-            # S3アップロード用情報
-            s3_bucket = os.getenv("CHAT_S3_BUCKET")
-            conversation_id = body.get('conversation_id') or str(uuid.uuid4())
-            session_id = body.get('session_id')
-            user_id = body.get('user_id', 'anonymous')
-            agent_name = os.getenv("SNOWFLAKE_AGENT_NAME", "")
-            now = datetime.utcnow()
-            year = now.strftime('%Y')
-            month = now.strftime('%m')
-            day = now.strftime('%d')
-            hour = now.strftime('%H')
 
         # --- env ---
         base_url = _env("SNOWFLAKE_ACCOUNT_URL").rstrip("/")

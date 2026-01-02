@@ -794,12 +794,13 @@ DROP SCHEMA PUBLIC;
         const colName = q(c.physical);
         const domain = clean(c.domain) || "VARCHAR";
         const upperName = c.physical.toUpperCase();
+        const notNull = (c.is_nullable === false || c.is_nullable === "false") ? " NOT NULL" : "";
         if (PARTITION_INDEX_MAP[upperName] && colPhysicalSet.has(upperName)) {
           partitionLines.push(
-            `  ${colName} ${domain} AS CAST(SPLIT_PART(SPLIT_PART(metadata$filename, '/', ${PARTITION_INDEX_MAP[upperName]}), '=', 2) AS ${domain})`
+            `  ${colName} ${domain} AS CAST(SPLIT_PART(SPLIT_PART(metadata$filename, '/', ${PARTITION_INDEX_MAP[upperName]}), '=', 2) AS ${domain})${notNull}`
           );
         } else {
-          lines.push(`  ${colName} ${domain} AS (value:${c.physical.toLowerCase()}::${domain})`);
+          lines.push(`  ${colName} ${domain} AS (value:${c.physical.toLowerCase()}::${domain})${notNull}`);
         }
         if (bool(c.pk)) pkCols.push(colName);
       }

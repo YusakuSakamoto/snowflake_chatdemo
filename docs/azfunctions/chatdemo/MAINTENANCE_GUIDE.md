@@ -1,4 +1,20 @@
 # Azure Functions メンテナンスガイド
+---
+
+## Azure Functions × Snowflake チャットAPI運用・開発の実践知見（2026年1月）
+
+- **SSE/ストリーミングAPIはAzure Functions（Python）で動作しない。必ずワンショットJSON応答APIに統一すること。**
+    - func.HttpResponseでtext/event-streamや逐次yieldは不可。
+    - ストリーミング用エンドポイント・ロジックは全削除。
+- **API設計は「POSTでJSONを受け取り、JSONで一括返す」方式に統一する。**
+    - フロントエンドもawait fetch→response.json()で一括受信。
+- **エラー時も必ずJSONで返し、CORSヘッダも必須。**
+- **S3へのチャット履歴保存はNDJSON形式で2行（user/assistant）を推奨。**
+- **Pythonのtry/except構造・インデントエラーに注意。**
+    - try:は必ずexceptまたはfinallyが必要。不要なtry/exceptやネストは極力排除し、returnで早期終了する設計が安全。
+    - インデント崩れやtry:のみの残骸でSyntaxError/IndentationErrorが頻発する。
+- **Git管理下での復元はgit restoreで可能だが、インデント崩れが残る場合は手動修正が必要。**
+- **フロントエンドもAPI設計に合わせてfetch/await/response.json()で統一。**
 
 ## 概要
 本ドキュメントは、Azure Functions（Python）プロジェクトのメンテナンス規則と手順を定義します。

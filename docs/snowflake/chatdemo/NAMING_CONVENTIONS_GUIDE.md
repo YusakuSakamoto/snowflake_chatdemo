@@ -1,63 +1,31 @@
 # Snowflake オブジェクト命名規則
 
-## 概要
-本ドキュメントは、Snowflakeのデータベースオブジェクトに対する命名規則を定義します。一貫性のある命名により、オブジェクトの種類や用途を即座に識別でき、保守性とコードの可読性が向上します。
+本ドキュメントは、Snowflakeのデータベースオブジェクトに対する命名規則の要点をまとめています。詳細・例外・禁止事項は[MAINTENANCE_GUIDE.md](MAINTENANCE_GUIDE.md)を参照してください。
 
-## 命名規則一覧
+---
 
-### スキーマ（Schema）
-- **形式**: `大文字の英単語`
-- **例**: 
-  - `APP_PRODUCTION` - 本番アプリケーションデータ
-  - `APP_DEVELOPMENT` - 開発環境データ
-  - `DB_DESIGN` - DB設計・メタデータ管理
-  - `NAME_RESOLUTION` - エンティティ名解決
-  - `LOG` - ログデータ集約
+## 主要ルール（抜粋）
 
-### テーブル（Table）
-- **形式**: `大文字の英単語_大文字の英単語`
-- **例**:
-  - `ANKEN_MEISAI` - 案件明細テーブル
-  - `DEPARTMENT_MASTER` - 部署マスタ
-  - `DOCS_OBSIDIAN` - Obsidianドキュメント管理
-  - `PROFILE_RESULTS` - プロファイル結果
-  - `PROFILE_RUNS` - プロファイル実行履歴
+| 区分 | 形式・プレフィックス | 例 |
+|------|----------------------|----|
+| スキーマ | 大文字英単語 | APP_PRODUCTION |
+| テーブル | 大文字英単語_大文字英単語 | DOCS_OBSIDIAN |
+| ビュー | `V_` + 大文字英単語_大文字英単語 | V_CUSTOMER_MASTER |
+| マテリアライズドビュー | `MV_` + 大文字英単語_大文字英単語 | MV_DAILY_SALES_SUMMARY |
+| 外部テーブル | 通常のテーブル名または`_EXTERNAL`サフィックス | PROFILE_RESULTS_EXTERNAL |
+| カラム | 大文字英単語_大文字英単語 | CUSTOMER_ID |
 
-### ビュー（View）
-- **形式**: `V_` + `大文字の英単語_大文字の英単語`
-- **プレフィックス**: `V_`
-- **例**:
-  - `V_CUSTOMER_MASTER` - 顧客マスタビュー
-  - `V_ORDER_MASTER` - 受注マスタビュー
-  - `V_PROJECT_FACT` - プロジェクトファクトビュー
-  - `V_ENTITY_ALIAS_ALL` - エンティティエイリアス統合ビュー
-  - `V_PROFILE_RESULTS_LATEST` - 最新プロファイル結果ビュー
+---
 
-### マテリアライズドビュー（Materialized View）
-- **形式**: `MV_` + `大文字の英単語_大文字の英単語`
-- **プレフィックス**: `MV_`
-- **例**:
-  - `MV_DAILY_SALES_SUMMARY` - 日次売上サマリー
-  - `MV_CUSTOMER_PROFILE` - 顧客プロファイル
-  - `MV_PROJECT_METRICS` - プロジェクトメトリクス
+## 注意事項
 
-### 外部テーブル（External Table）
-- **形式**: 通常のテーブルと同じ、または `_EXTERNAL` サフィックス
-- **例**:
-  - `CORTEX_CONVERSATIONS` - Cortex対話ログ（外部テーブル）
-  - `AZFUNCTIONS_LOGS` - Azure Functions実行ログ（外部テーブル）
-  - `PROFILE_RESULTS_EXTERNAL` - プロファイル結果（外部テーブル）
-  - `PROFILE_RUNS_EXTERNAL` - プロファイル実行履歴（外部テーブル）
+- 命名規則・リンク規則・例外・禁止事項は[MAINTENANCE_GUIDE.md](MAINTENANCE_GUIDE.md)に集約
+- Obsidianリンクは必ず`[[]]`形式を使用
+- バッククォートやパス付きリンクは禁止
 
-### カラム（Column）
-- **形式**: `大文字の英単語_大文字の英単語` または `小文字の英単語_小文字の英単語`
-- **推奨**: 大文字（Snowflakeの標準に従う）
-- **例**:
-  - `CUSTOMER_ID` - 顧客ID
-  - `CREATED_AT` - 作成日時
-  - `TARGET_DB` - 対象データベース
-  - `TARGET_SCHEMA` - 対象スキーマ
-  - `TARGET_TABLE` - 対象テーブル
+---
+
+> ※本ガイドは重複・冗長な説明を避け、詳細は各ガイドに集約しています。
   - `TARGET_COLUMN` - 対象カラム
 
 ### プロシージャ（Procedure）

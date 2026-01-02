@@ -1,63 +1,58 @@
+
 # メンテナンスガイド
 
-## 概要
-本ドキュメントは、Snowflake設計ドキュメント（Obsidian Vault）のメンテナンス規則と手順を定義します。
+本ドキュメントは、Snowflake設計ドキュメント（Obsidian Vault）のメンテナンス規則・手順の要点をまとめたものです。
+詳細な命名規則・リンク規則・設計思想は[NAMING_CONVENTIONS_GUIDE.md](NAMING_CONVENTIONS_GUIDE.md)を参照してください。
 
 ---
 
-## 命名規則
+## 主要ルール（抜粋）
 
-詳細は [NAMING_CONVENTIONS_GUIDE.md](NAMING_CONVENTIONS_GUIDE.md) を参照してください。
-
-### 主要ルール
-- **ビュー（View）**: `V_` プレフィックス必須
-  - 例: `V_CUSTOMER_MASTER`, `V_DOCS_OBSIDIAN`
-- **マテリアライズドビュー（Materialized View）**: `MV_` プレフィックス必須
-  - 例: `MV_DAILY_SALES_SUMMARY`
-- **テーブル（Table）**: `UPPERCASE_UNDERSCORE` 形式
-  - 例: `DOCS_OBSIDIAN`, `PROFILE_RESULTS`
+| 区分 | ルール | 例 |
+|------|--------|----|
+| ビュー | `V_` プレフィックス必須 | `V_CUSTOMER_MASTER` |
+| マテリアライズドビュー | `MV_` プレフィックス必須 | `MV_DAILY_SALES_SUMMARY` |
+| テーブル | `UPPERCASE_UNDERSCORE` 形式 | `DOCS_OBSIDIAN` |
+| Obsidianリンク | `[[]]` 形式必須 | `[[DB_DESIGN.DOCS_OBSIDIAN]]` |
 
 ---
 
-## Obsidianリンク規則
+## Obsidianリンク規則（要点）
 
-### 基本原則
-すべてのスキーマオブジェクト参照には `[[]]` 形式のObsidianリンクを使用します。これにより、Obsidianのファイル名変更機能で自動的にリンクが更新されます。
+- 設計思想・意図参照：`[[design.OBJECT]]`
+- 実体参照：`[[SCHEMA.OBJECT]]`
+- カラム参照：`[[SCHEMA.TABLE.COLUMN]]`
 
-### リンク形式の使い分け
+詳細・例外・禁止事項は[NAMING_CONVENTIONS_GUIDE.md](NAMING_CONVENTIONS_GUIDE.md)を参照。
 
-#### 1. 設計ドキュメント参照
-設計思想や意図を参照する場合：
-```markdown
-[[design.OBJECT_NAME]]
-```
+---
 
-例：
-- `[[design.DOCS_OBSIDIAN]]` - テーブルの設計思想
-- `[[design.PROFILE_TABLE]]` - プロシージャの設計意図
-- `[[design.APP_PRODUCTION]]` - スキーマの設計方針
+## 禁止事項・例外（抜粋）
 
-#### 2. エンティティ（実体）参照
-実際のデータベースオブジェクトを参照する場合：
-```markdown
-[[SCHEMA.OBJECT]]
-```
+| 禁止事項 | 例 | 正しい例 |
+|----------|----|----------|
+| バッククォートでカラム・パラメータ名を囲む | `TARGET_SCHEMA` | TARGET_SCHEMA |
+| パス付きリンク | `[[master/tables/DB_DESIGN.DOCS_OBSIDIAN]]` | `[[DB_DESIGN.DOCS_OBSIDIAN]]` |
+| 重複プレフィックス | `design.[[design.OBJECT]]` | `[[design.OBJECT]]` |
 
-例：
-- `[[DB_DESIGN.DOCS_OBSIDIAN]]` - テーブル実体
-- `[[DB_DESIGN.PROFILE_TABLE]]` - プロシージャ実体
-- `[[APP_PRODUCTION.V_CUSTOMER_MASTER]]` - ビュー実体
+---
 
-#### 3. カラム参照
-カラムを参照する場合：
-```markdown
-[[SCHEMA.TABLE.COLUMN]]
-```
+## 設計レビュー・Agent運用の要点
 
-例：
-- `[[DB_DESIGN.DOCS_OBSIDIAN.PATH]]` - PATHカラム
-- `[[DB_DESIGN.PROFILE_RESULTS.RUN_ID]]` - RUN_IDカラム
-- `[[APP_PRODUCTION.ANKEN_MEISAI.CUSTOMER_ID]]` - CUSTOMER_IDカラム
+- AgentはREST API経由でのみ実行（SQL直接実行不可）
+- 設計レビュー結果は`docs/snowflake/chatdemo/reviews/`配下に自動保存
+- 詳細な手順・出力例は本ガイド下部または[README_DB_DESIGN.md](README_DB_DESIGN.md)参照
+
+---
+
+## その他
+
+- 設計思想・運用ルール・ファイル構造の全体像は[README.md](README.md)を参照
+- Git運用規則は[docs/git/chatdemo/GIT_WORKFLOW.md](../../git/chatdemo/GIT_WORKFLOW.md)を参照
+
+---
+
+> ※本ガイドは重複・冗長な説明を避け、詳細は各ガイドに集約しています。
 
 ### 禁止事項
 
@@ -1437,8 +1432,29 @@ ls -1 | grep -v '\.V_' | grep -v '^V_'
 
 ---
 
+
+---
+
+## 2026年1月：Snowflakeチャット運用・開発の実践知見
+
+- **Azure Functions（Python）でSSE/ストリーミングAPIは動作しない。必ずワンショットJSON応答APIに統一すること。**
+  - func.HttpResponseでtext/event-streamや逐次yieldは不可。
+  - ストリーミング用エンドポイント・ロジックは全削除。
+- **API設計は「POSTでJSONを受け取り、JSONで一括返す」方式に統一。**
+  - フロントエンドもawait fetch→response.json()で一括受信。
+- **エラー時も必ずJSONで返し、CORSヘッダも必須。**
+- **S3へのチャット履歴保存はNDJSON形式で2行（user/assistant）を推奨。**
+- **Pythonのtry/except構造・インデントエラーに注意。**
+  - try:は必ずexceptまたはfinallyが必要。不要なtry/exceptやネストは極力排除し、returnで早期終了する設計が安全。
+  - インデント崩れやtry:のみの残骸でSyntaxError/IndentationErrorが頻発する。
+- **Git管理下での復元はgit restoreで可能だが、インデント崩れが残る場合は手動修正が必要。**
+- **フロントエンドもAPI設計に合わせてfetch/await/response.json()で統一。**
+
+---
+
 ## 変更履歴
 
 | 日付 | 変更内容 |
 |------|---------|
 | 2026-01-02 | 初版作成：命名規則、リンク規則、メンテナンス手順を定義 |
+| 2026-01-03 | チャットAPI運用・開発の実践知見を追記 |

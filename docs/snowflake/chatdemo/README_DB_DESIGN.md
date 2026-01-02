@@ -129,67 +129,44 @@ type: column
 column_id: COL_RUN_ID
 table_id: TBL_PROFILE_RUNS
 logical: 実行ID
-physical: RUN_ID
-domain: string
-pk: true
-is_nullable: false
-default:
-comment: プロファイル実行を一意に識別するID
+
+# Obsidian DB設計ノート README
+
+このVaultはObsidianをDB設計の正本（Single Source of Truth）として扱うための設計ノートです。
+詳細な運用ルール・命名規則・リンク規則は[MAINTENANCE_GUIDE.md](MAINTENANCE_GUIDE.md)および[NAMING_CONVENTIONS_GUIDE.md](NAMING_CONVENTIONS_GUIDE.md)を参照してください。
+
 ---
+
+## 要点
+
+- DB設計情報はObsidian Vaultに一元集約
+- schema / table / columnは1定義1ファイルで管理
+- 設計意図と定義を明確に分離
+- Snowflake DDL生成・Cortex Search/Agent連携を前提とした設計
+- 実DBへの反映・マイグレーション管理・データ操作は対象外（設計・合意・レビュー・改善サイクル専用）
+
+---
+
+## フォルダ構成（抜粋）
+
+```text
+/master/    # 定義の正本（DDL生成対象）
+/design/    # 設計意図・判断
+/reviews/   # レビュー結果・Agent出力
+/views/     # Dataview専用ビュー
 ```
 
 ---
 
-## 設計書（design）の使い方
+## プラグイン・前提環境
 
-### スキーマ設計書（必須）
-
-`design/design.<SCHEMA>.md`
-- スキーマ全体の設計思想
-- 命名規約
-- 制約ポリシー（DDLで縛らない理由等）
-- 例外・アンチパターン
-
-※ レビュー時・Agent実行時に必ず参照される前提
+- Obsidian最新版
+- Dataview（必須・JavaScriptクエリ有効）
+- Templater/QuickAdd/Advanced Tables（任意）
 
 ---
 
-### テーブル設計書（必須）
-
-`design/<SCHEMA>/design.<TABLE>.md`
-- テーブル単位の設計判断
-- nullable / default / domain の理由
-- PK / FK の選択理由
-- 運用・拡張時の前提
-
-※ 存在しない場合は「設計意図未記録」としてレビューで明示される
-
----
-## reviews の使い方（レビュー履歴）
-
-### 設計レビュー（人・Agent）
-
-`reviews/<YYYY-MM-DD>/<SCHEMA>.<TABLE>.md`
-- Cortex Agent による設計レビュー結果
-- 人手レビューの記録
-- 改善提案・差分案（master は直接編集しない）
-
-### プロファイル・計測レビュー
-
-`reviews/profiles/YYYYMMDD_HH24MISSFF3/<SCHEMA>/<TABLE>.md`
-- プロファイル結果（raw / summary）
-- 設計との乖離指摘
-- 次アクション提案
-
-※ 実データの計測結果も Vault 上の md が正本
-
----
-
-## views の使い方（一覧・管理）
-
-### table 一覧
-
-DB全体のテーブル俯瞰・レビュー用
+> ※本READMEは重複・冗長な説明を避け、詳細は各ガイドに集約しています。
 
 `views/tables.md`
 ```

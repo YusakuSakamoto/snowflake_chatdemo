@@ -765,26 +765,26 @@ DROP SCHEMA PUBLIC;
       const autoRefresh = bool(t.auto_refresh, true);
       const partitionBy = Array.isArray(t.partition_by) ? t.partition_by : [];
 
-      // Build column definitions with metadata$ extraction
+
+      // Build column definitions with metadata$ extraction (partition columns fixed index)
       const lines = [];
       const partitionLines = [];
+
+      // 固定マッピング: YEAR=2, MONTH=3, DAY=4, HOUR=5
+      const PARTITION_INDEX_MAP = { YEAR: 2, MONTH: 3, DAY: 4, HOUR: 5 };
 
       for (const c of colsArr) {
         const colName = q(c.physical);
         const domain = clean(c.domain) || "VARCHAR";
-        
-        // Check if this is a partition column
-        if (partitionBy.includes(c.physical.toLowerCase()) || 
-            partitionBy.includes(c.physical)) {
-          // Partition columns are extracted from metadata$filename
-          const idx = partitionBy.indexOf(c.physical.toLowerCase()) >= 0 
-            ? partitionBy.indexOf(c.physical.toLowerCase()) 
-            : partitionBy.indexOf(c.physical);
+        const upperName = c.physical.toUpperCase();
+        if (PARTITION_INDEX_MAP[upperName]) {
+          // パーティションカラムはインデックス固定
+          const idx = PARTITION_INDEX_MAP[upperName];
           partitionLines.push(
-            `  ${colName} ${domain} AS CAST(SPLIT_PART(SPLIT_PART(metadata$filename, '/', ${idx+1}), '=', 2) AS ${domain})`
+            `  ${colName} ${domain} AS CAST(SPLIT_PART(SPLIT_PART(metadata$filename, '/', ${idx}), '=', 2) AS ${domain})`
           );
         } else {
-          // Regular columns from JSON value
+          // 通常カラム
           lines.push(`  ${colName} ${domain} AS (value:${c.physical.toLowerCase()}::${domain})`);
         }
       }

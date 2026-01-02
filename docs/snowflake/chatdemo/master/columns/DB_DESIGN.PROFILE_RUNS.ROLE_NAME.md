@@ -5,6 +5,9 @@ table_id: TBL_20251226180943
 physical: ROLE_NAME
 domain: VARCHAR
 pk: false
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: true
 default:
 comment: プロファイル実行時のセッションロール名。実行ユーザやジョブの権限確認・監査目的で記録する。ロールが明示されていない場合はNULLとなる。

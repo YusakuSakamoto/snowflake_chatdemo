@@ -5,6 +5,9 @@ table_id: TBL_20251227124901
 physical: DOC_ID
 domain: VARCHAR
 pk: true
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: false
 default:
 comment: Vault 内の Markdown ファイルを一意に識別する ID。INGEST 処理で生成され、論理的な主キーとして使用される。

@@ -5,6 +5,9 @@ table_id: TBL_20260102230002
 physical: NOTE
 domain: VARCHAR
 pk: false
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: true
 default: null
 comment: 実行に関する補足情報やユーザメモ。異常終了時にはエラーコードおよびエラーメッセージが追記されることがある。 (外部テーブル版: EXT_PROFILE_RUNS)

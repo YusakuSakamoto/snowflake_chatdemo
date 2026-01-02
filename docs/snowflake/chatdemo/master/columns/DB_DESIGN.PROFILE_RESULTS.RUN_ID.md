@@ -5,6 +5,9 @@ table_id: TBL_20251226182257
 physical: RUN_ID
 domain: VARCHAR
 pk: true
+ref_table_id: TBL_20251226180943
+ref_column: RUN_ID
+ref_cardinality: N:1
 is_nullable: false
 default:
 comment: プロファイル実行（run）を識別するID。PROFILE_RUNS.RUN_ID と対応し、どの実行に紐づく結果かを示す。

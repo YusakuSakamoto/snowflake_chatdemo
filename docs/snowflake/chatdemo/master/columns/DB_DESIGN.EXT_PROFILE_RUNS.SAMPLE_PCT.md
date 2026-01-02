@@ -5,6 +5,9 @@ table_id: TBL_20260102230002
 physical: SAMPLE_PCT
 domain: FLOAT
 pk: false
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: true
 default: null
 comment: プロファイル実行時に使用したサンプリング率（BERNOULLI）。NULLの場合は全件を対象にプロファイルを実行する。値は 0〜100 の割合を想定する。

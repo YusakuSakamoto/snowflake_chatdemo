@@ -5,6 +5,9 @@ table_id: TBL_20251226180943
 physical: GIT_COMMIT
 domain: VARCHAR
 pk: false
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: true
 default:
 comment: プロファイル実行に使用されたコードのGitコミットID。手動実行やローカル実行など、コミット情報を取得できない場合はNULLとなる。

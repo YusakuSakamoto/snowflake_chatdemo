@@ -81,6 +81,9 @@ table_id: <%- tableId %>
 physical: <%- physicalRaw %>
 domain: <%- domain %>
 pk: <%- pk %>
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: <%- isNullable %>
 default: <%- defaultVal %>
 comment: <%- comment %>

@@ -5,6 +5,9 @@ table_id: TBL_20251227124901
 physical: FOLDER
 domain: VARCHAR
 pk: false
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: false
 default:
 comment: "PATH から抽出した最上位フォルダ名（例: master, design, reviews, views, templates）。分類・検索・スコープ判定用。"

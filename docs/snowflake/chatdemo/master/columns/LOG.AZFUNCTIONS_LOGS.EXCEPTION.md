@@ -5,6 +5,9 @@ table_id: TBL_20260102000102
 physical: EXCEPTION
 domain: VARIANT
 pk: false
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: true
 default: 
 comment: 例外情報

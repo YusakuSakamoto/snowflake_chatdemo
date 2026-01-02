@@ -5,6 +5,9 @@ table_id: TBL_20260102230002
 physical: STARTED_AT
 domain: TIMESTAMP_LTZ
 pk: false
+ref_table_id:
+ref_column:
+ref_cardinality:
 is_nullable: false
 default: null
 comment: プロファイル実行開始時刻。STATUS='RUNNING' となった時点で設定される。 (外部テーブル版: EXT_PROFILE_RUNS)

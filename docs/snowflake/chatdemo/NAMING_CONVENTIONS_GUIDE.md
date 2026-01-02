@@ -29,8 +29,8 @@
   - `TARGET_COLUMN` - 対象カラム
 
 ### プロシージャ（Procedure）
-- **形式**: `大文字の英単語_大文字の英単語`
-- **動詞始まり推奨**:
+- 形式: `大文字の英単語_大文字の英単語`
+- 動詞始まり推奨:
   - `PROFILE_TABLE` - テーブルプロファイル実行
   - `PROFILE_COLUMN` - カラムプロファイル実行
   - `PROFILE_ALL_TABLES` - 全テーブルプロファイル実行
@@ -39,36 +39,36 @@
   - `RESOLVE_ENTITY_ALIAS` - エンティティエイリアス解決
 
 ### 関数（Function）
-- **形式**: `大文字の英単語_大文字の英単語`
-- **動詞始まり推奨**:
+- 形式: `大文字の英単語_大文字の英単語`
+- 動詞始まり推奨:
   - `NORMALIZE_JA` - 日本語正規化
   - `NORMALIZE_JA_DEPT` - 部署名正規化
 
 ### Cortex Agentツール（Tool）
-- **形式**: `動詞_名詞_TOOL` または `動詞_名詞_AGENT`
-- **例**:
+- 形式: `動詞_名詞_TOOL` または `動詞_名詞_AGENT`
+- 例:
   - `RESOLVE_ENTITY_ALIAS_TOOL` - エンティティエイリアス解決ツール
   - `EXPAND_DEPARTMENT_SCOPE_TOOL` - 部署スコープ展開ツール
   - `GET_DOCS_BY_PATHS_AGENT` - ドキュメントパス検索エージェント
   - `LIST_SCHEMA_RELATED_DOC_PATHS_AGENT` - スキーマ関連ドキュメントパス一覧エージェント
 
 ### ステージ（Stage）
-- **形式**: `大文字の英単語_STAGE`
-- **サフィックス**: `_STAGE`
-- **例**:
+- 形式: `大文字の英単語_STAGE`
+- サフィックス: `_STAGE`
+- 例:
   - `OBSIDIAN_VAULT_STAGE` - Obsidian Vault用S3ステージ
 
 ### ファイルフォーマット（File Format）
-- **形式**: `FF_` + `大文字の英単語`
-- **プレフィックス**: `FF_`
-- **例**:
+- 形式: `FF_` + `大文字の英単語`
+- プレフィックス: `FF_`
+- 例:
   - `FF_JSON_LINES` - JSON Lines形式
   - `FF_CSV_STANDARD` - 標準CSV形式
   - `FF_MD_LINE` - Markdown行単位形式
 
 ### パーティションカラム（Partition Column）
-- **形式**: 小文字の英単語
-- **例**:
+- 形式: 小文字の英単語
+- 例:
   - `year` - 年パーティション
   - `month` - 月パーティション
   - `day` - 日パーティション
@@ -77,17 +77,17 @@
 ## 設計ドキュメント命名規則
 
 ### 設計ドキュメント（Design Document）
-- **形式**: `design.` + `スキーマ名` または `design.` + `オブジェクト名`
-- **拡張子**: `.md`
-- **例**:
+- 形式: `design.` + `スキーマ名` または `design.` + `オブジェクト名`
+- 拡張子: `.md`
+- 例:
   - `design.APP_PRODUCTION.md` - APP_PRODUCTIONスキーマ設計
   - `design.ANKEN_MEISAI.md` - ANKEN_MEISAIテーブル設計
   - `design.V_CUSTOMER_MASTER.md` - V_CUSTOMER_MASTERビュー設計
   - `design.PROFILE_TABLE.md` - PROFILE_TABLEプロシージャ設計
 
 ### マスター定義ファイル（Master Definition）
-- **形式**: `スキーマ名.オブジェクト名.md`
-- **例**:
+- 形式: `スキーマ名.オブジェクト名.md`
+- 例:
   - `APP_PRODUCTION.ANKEN_MEISAI.md` - テーブル定義
   - `DB_DESIGN.V_PROFILE_RESULTS_LATEST.md` - ビュー定義
   - `LOG.CORTEX_CONVERSATIONS.md` - 外部テーブル定義
@@ -128,10 +128,10 @@
 ```
 
 ### リンクの利点
-- **名称変更への対応**: Obsidianでファイル名を変更すると、リンクしているすべてのドキュメントが自動更新される
-- **トレーサビリティ**: オブジェクト間の依存関係を追跡しやすい
-- **ナビゲーション**: Ctrl+クリックで即座に定義元へジャンプ可能
-- **グラフビュー**: オブジェクト間の関係を視覚化できる
+- 名称変更への対応: Obsidianでファイル名を変更すると、リンクしているすべてのドキュメントが自動更新される
+- トレーサビリティ: オブジェクト間の依存関係を追跡しやすい
+- ナビゲーション: Ctrl+クリックで即座に定義元へジャンプ可能
+- グラフビュー: オブジェクト間の関係を視覚化できる
 
 ## 命名の原則
 
@@ -152,8 +152,8 @@
 - 使用する場合はダブルクォートで囲む
 
 ### 5. 大文字・小文字の使い分け
-- **スキーマ・テーブル・カラム**: 大文字（Snowflake標準）
-- **パーティションカラム**: 小文字（Hiveスタイル互換）
+- スキーマ・テーブル・カラム: 大文字（Snowflake標準）
+- パーティションカラム: 小文字（Hiveスタイル互換）
 
 ## 既存オブジェクトの移行
 

@@ -4,12 +4,12 @@
 
 ## 1. Snowflake から S3 に接続する基本原則
 
-- Snowflake は **IAM Role 経由**で S3 にアクセスする（Access Key / Secret Key の直接指定は非推奨）
-- Snowflake 側では **Storage Integration** を作成し、それを使って **External Stage** を定義する
-- 実体としての接続制御・境界は **AWS IAM** にある
+- Snowflake は IAM Role 経由で S3 にアクセスする（Access Key / Secret Key の直接指定は非推奨）
+- Snowflake 側では Storage Integration を作成し、それを使って External Stage を定義する
+- 実体としての接続制御・境界は AWS IAM にある
 
 > 本質：
-> **「Snowflake は IAM Role を Assume して S3 に入る」**
+> 「Snowflake は IAM Role を Assume して S3 に入る」
 
 ---
 
@@ -28,9 +28,9 @@
 
 ## 3. Storage Integration の役割
 
-- Storage Integration は **「S3 への権限の器」**
+- Storage Integration は 「S3 への権限の器」
 - Stage は Integration を参照するだけ
-- Integration 自体が **アクセス可能な S3 パスの上限**を定義する
+- Integration 自体が アクセス可能な S3 パスの上限を定義する
 
 ```sql
 CREATE STORAGE INTEGRATION s3_int
@@ -49,7 +49,7 @@ CREATE STORAGE INTEGRATION s3_int
 ## 4. 複数 S3 バケットと Storage Integration の関係
 
 ### 結論
-**複数バケットでも、1つの Storage Integration で問題ない。条件付きで。**
+複数バケットでも、1つの Storage Integration で問題ない。条件付きで。
 
 ### 1つでまとめられる条件
 - 同一 AWS アカウント
@@ -57,14 +57,14 @@ CREATE STORAGE INTEGRATION s3_int
 - 権限レベル（Read / Write）が同じ
 - セキュリティ境界を分ける必要がない
 
-- `STORAGE_ALLOWED_LOCATIONS` には **複数 S3 パスを指定可能**
-- Integration 1つに対して Stage は **何個でも作成可能**
+- `STORAGE_ALLOWED_LOCATIONS` には 複数 S3 パスを指定可能
+- Integration 1つに対して Stage は 何個でも作成可能
 
 ---
 
 ## 5. Storage Integration を分けるべきケース
 
-以下の場合は **Integration を分割するのが正解**：
+以下の場合は Integration を分割するのが正解：
 
 - AWS アカウントが異なる
 - IAM Role を分けたい
@@ -73,7 +73,7 @@ CREATE STORAGE INTEGRATION s3_int
 - 将来、片方だけ権限を落とす可能性がある
 
 > 原則：
-> **Integration は「後から割る」より「最初から割る」ほうが楽**
+> Integration は「後から割る」より「最初から割る」ほうが楽
 
 ---
 
@@ -83,7 +83,7 @@ CREATE STORAGE INTEGRATION s3_int
 - Stage ごとに Integration が必要だと思ってしまう
 - Snowflake 側でパス制御しているつもりになる
 
-**実際の境界線は IAM Role と S3 ポリシー**。
+実際の境界線は IAM Role と S3 ポリシー。
 
 ---
 
@@ -99,7 +99,7 @@ CREATE STORAGE INTEGRATION s3_int
 
 ## 8. 要点の一文要約
 
-- Snowflake × S3 連携は **認証と権限設計が9割**
+- Snowflake × S3 連携は 認証と権限設計が9割
 - 同じ鍵（IAM Role）で開けるなら Integration は1つ
 - 鍵を分けたいなら Integration を分ける
 

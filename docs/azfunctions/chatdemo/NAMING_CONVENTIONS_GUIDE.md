@@ -8,8 +8,8 @@
 ## Python命名規則
 
 ### モジュール・ファイル（Module / File）
-- **形式**: `lowercase_with_underscores.py`
-- **例**:
+- 形式: `lowercase_with_underscores.py`
+- 例:
   - `function_app.py` - メインのFunction Appエントリポイント
   - `snowflake_cortex.py` - Snowflake Cortex API クライアント
   - `snowflake_auth.py` - Snowflake認証ロジック
@@ -17,17 +17,17 @@
   - `stream_endpoint.py` - ストリーミングエンドポイント
 
 ### クラス（Class）
-- **形式**: `PascalCase`
-- **例**:
+- 形式: `PascalCase`
+- 例:
   - `SnowflakeCortexClient` - Cortex APIクライアント
   - `SnowflakeAuthHandler` - 認証ハンドラー
   - `MessageProcessor` - メッセージ処理クラス
   - `ResponseFormatter` - レスポンス整形クラス
 
 ### 関数・メソッド（Function / Method）
-- **形式**: `lowercase_with_underscores`
-- **動詞始まり推奨**
-- **例**:
+- 形式: `lowercase_with_underscores`
+- 動詞始まり推奨
+- 例:
   - `chat_endpoint()` - チャットエンドポイント
   - `stream_chat()` - ストリーミングチャット
   - `execute_query()` - クエリ実行
@@ -37,9 +37,9 @@
   - `authenticate()` - 認証処理
 
 ### 変数（Variable）
-- **形式**: `lowercase_with_underscores`
-- **定数**: `UPPERCASE_WITH_UNDERSCORES`
-- **例**:
+- 形式: `lowercase_with_underscores`
+- 定数: `UPPERCASE_WITH_UNDERSCORES`
+- 例:
   ```python
   # 通常の変数
   user_id = "anonymous"
@@ -54,8 +54,8 @@
   ```
 
 ### プライベートメンバー
-- **形式**: `_leading_underscore`
-- **例**:
+- 形式: `_leading_underscore`
+- 例:
   ```python
   class SnowflakeCortexClient:
       def __init__(self):
@@ -72,9 +72,9 @@
 ## Azure Functions固有の命名規則
 
 ### HTTPトリガー関数（Endpoint）
-- **形式**: `{purpose}_endpoint` または `{action}_{resource}`
-- **デコレーター**: `@app.route(route="{route_name}")`
-- **例**:
+- 形式: `{purpose}_endpoint` または `{action}_{resource}`
+- デコレーター: `@app.route(route="{route_name}")`
+- 例:
   ```python
   @app.route(route="chat", methods=["POST", "OPTIONS"])
   def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
@@ -93,8 +93,8 @@
   ```
 
 ### ルート名（Route Name）
-- **形式**: `lowercase-with-hyphens` または `lowercase`
-- **RESTful推奨**:
+- 形式: `lowercase-with-hyphens` または `lowercase`
+- RESTful推奨:
   - `chat` - チャット送信
   - `stream` - ストリーミング
   - `messages` - メッセージ一覧
@@ -102,8 +102,8 @@
   - `health` - ヘルスチェック
 
 ### タイマートリガー関数
-- **形式**: `{action}_{schedule}`
-- **例**:
+- 形式: `{action}_{schedule}`
+- 例:
   ```python
   @app.timer_trigger(schedule="0 */5 * * * *", arg_name="timer")
   def cleanup_old_messages(timer: func.TimerRequest):
@@ -116,9 +116,9 @@
 ## 環境変数（Environment Variables）
 
 ### 命名規則
-- **形式**: `UPPERCASE_WITH_UNDERSCORES`
-- **プレフィックス**: サービス名を明示
-- **例**:
+- 形式: `UPPERCASE_WITH_UNDERSCORES`
+- プレフィックス: サービス名を明示
+- 例:
   ```python
   # Snowflake設定
   SNOWFLAKE_ACCOUNT = "xyz12345"
@@ -161,11 +161,11 @@
 ## ログ出力規則
 
 ### ログレベル
-- **`logging.debug()`**: 詳細なデバッグ情報
-- **`logging.info()`**: 一般的な情報（関数開始/終了、正常処理）
-- **`logging.warning()`**: 警告（リトライ、代替処理）
-- **`logging.error()`**: エラー（例外、失敗）
-- **`logging.critical()`**: 致命的エラー（サービス停止レベル）
+- `logging.debug()`: 詳細なデバッグ情報
+- `logging.info()`: 一般的な情報（関数開始/終了、正常処理）
+- `logging.warning()`: 警告（リトライ、代替処理）
+- `logging.error()`: エラー（例外、失敗）
+- `logging.critical()`: 致命的エラー（サービス停止レベル）
 
 ### ログメッセージ形式
 ```python
@@ -185,8 +185,8 @@ logging.error('エラー')  # 詳細不足
 ## エラーハンドリング規則
 
 ### 例外クラス
-- **形式**: `{Purpose}Error` または `{Service}{Purpose}Error`
-- **例**:
+- 形式: `{Purpose}Error` または `{Service}{Purpose}Error`
+- 例:
   ```python
   class SnowflakeConnectionError(Exception):
       """Snowflake接続エラー"""
@@ -250,15 +250,15 @@ except Exception as e:
 ## テスト命名規則
 
 ### テストファイル
-- **形式**: `test_{module_name}.py`
-- **例**:
+- 形式: `test_{module_name}.py`
+- 例:
   - `test_snowflake_cortex.py`
   - `test_function_app.py`
   - `test_auth.py`
 
 ### テスト関数
-- **形式**: `test_{function_name}_{scenario}`
-- **例**:
+- 形式: `test_{function_name}_{scenario}`
+- 例:
   ```python
   def test_chat_endpoint_success():
       """正常系：チャットメッセージ送信成功"""

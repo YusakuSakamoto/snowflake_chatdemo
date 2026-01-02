@@ -6,7 +6,7 @@
 
 ## 1. Cortex Analyst Monitoring の正体
 
-- Monitoring UI のログは `LOG.CORTEX_CONVERSATIONS` ではなく、**テーブル関数**から取得する：
+- Monitoring UI のログは `LOG.CORTEX_CONVERSATIONS` ではなく、テーブル関数から取得する：
 
 ```sql
 SNOWFLAKE.LOCAL.CORTEX_ANALYST_REQUESTS(
@@ -15,7 +15,7 @@ SNOWFLAKE.LOCAL.CORTEX_ANALYST_REQUESTS(
 )
 ```
 - これは完了後のサマリログ（成功/失敗、質問、生成SQL、エラー等）
-- **途中経過は含まれない**
+- 途中経過は含まれない
 
 ---
 
@@ -69,7 +69,7 @@ SNOWFLAKE.LOCAL.CORTEX_ANALYST_REQUESTS(
 
 - Snowflake 側で途中経過を自動保存する仕組みはない
 - Monitoring は「結果サマリ専用」
-- ➡ **REST API を stream=true（SSE）で呼び、クライアント側ですべて保存するしかない**
+- ➡ REST API を stream=true（SSE）で呼び、クライアント側ですべて保存するしかない
 
 ---
 
@@ -112,8 +112,8 @@ with requests.post(url, headers=headers, json=payload, stream=True) as r:
 
 ## 9. 最強の運用構成（結論）
 
-- **SSE全量ログ**：途中経過、迷い、警告、ツール呼び出しを完全保存
-- **CORTEX_ANALYST_REQUESTS**：成功率、生成SQL、エラー率の公式サマリ
+- SSE全量ログ：途中経過、迷い、警告、ツール呼び出しを完全保存
+- CORTEX_ANALYST_REQUESTS：成功率、生成SQL、エラー率の公式サマリ
 - この2つを conversation_id × analyst_request_id で結ぶことで、Agent / Analyst の精度改善が「勘」ではなく「工学」になる
 
 ---

@@ -7,7 +7,7 @@
 #### POST /api/chat
 Snowflake Cortex Agentとのチャット
 
-**リクエスト:**
+リクエスト:
 ```json
 {
   "message": "質問内容",
@@ -15,7 +15,7 @@ Snowflake Cortex Agentとのチャット
 }
 ```
 
-**レスポンス:**
+レスポンス:
 ```json
 {
   "status": "success",
@@ -38,7 +38,7 @@ Snowflake Cortex Agentとのチャット
 #### POST /api/chat/stream
 SSE（Server-Sent Events）形式でストリーミング応答
 
-**リクエスト:**
+リクエスト:
 ```json
 {
   "message": "質問内容",
@@ -47,7 +47,7 @@ SSE（Server-Sent Events）形式でストリーミング応答
 }
 ```
 
-**レスポンス（SSE）:**
+レスポンス（SSE）:
 ```
 event: text_delta
 data: {"text": "応答の"}
@@ -59,7 +59,7 @@ event: done
 data: {"status": "completed"}
 ```
 
-**SSEイベント種類:**
+SSEイベント種類:
 - `text_delta`: テキストの差分
 - `text_final`: 最終テキスト
 - `tool_detail`: ツール実行結果
@@ -74,7 +74,7 @@ data: {"status": "completed"}
 #### POST /api/review/schema
 Snowflake AgentによるDB設計レビューを実行し、Markdown形式で結果を返す
 
-**リクエスト:**
+リクエスト:
 ```json
 {
   "target_schema": "DB_DESIGN",
@@ -82,7 +82,7 @@ Snowflake AgentによるDB設計レビューを実行し、Markdown形式で結�
 }
 ```
 
-**レスポンス:**
+レスポンス:
 ```json
 {
   "success": true,
@@ -96,7 +96,7 @@ Snowflake AgentによるDB設計レビューを実行し、Markdown形式で結�
 }
 ```
 
-**エラーレスポンス:**
+エラーレスポンス:
 ```json
 {
   "success": false,
@@ -104,9 +104,9 @@ Snowflake AgentによるDB設計レビューを実行し、Markdown形式で結�
 }
 ```
 
-**実行時間:** 最大15分（Agent実行時間により変動）
+実行時間: 最大15分（Agent実行時間により変動）
 
-**使用例:**
+使用例:
 ```bash
 # curl
 curl -X POST http://localhost:7071/api/review/schema \
@@ -129,7 +129,7 @@ markdown = response.json()["markdown"]
 ### 1. function_app.py
 Azure Functionsのエントリーポイント
 
-**主要関数:**
+主要関数:
 - `chat_endpoint`: チャット処理
 - `chat_stream_endpoint`: ストリーミングチャット（SSE）
 - `review_schema_endpoint`: DB設計レビュー（NEW）
@@ -137,22 +137,22 @@ Azure Functionsのエントリーポイント
 ### 2. snowflake_cortex.py
 Snowflake Cortex Agent呼び出しクライアント
 
-**主要クラス:**
+主要クラス:
 - `SnowflakeCortexClient`: Cortex Agent API wrapper
 
 ### 3. snowflake_db.py
 Snowflake接続管理
 
-**主要クラス:**
+主要クラス:
 - `SnowflakeConnection`: コンテキストマネージャー形式の接続管理
 
 ### 4. db_review_agent.py（NEW）
 DB設計レビューエージェント専用モジュール
 
-**主要クラス:**
+主要クラス:
 - `DBReviewAgent`: OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT のラッパー
 
-**主要メソッド:**
+主要メソッド:
 - `review_schema()`: スキーマレビューを実行
 - `save_review_to_vault()`: レビュー結果をSnowflake Stageに保存
 
@@ -197,7 +197,7 @@ python test_review_agent.py --local --schema DB_DESIGN
 python test_review_agent.py --url https://your-function.azurewebsites.net --schema APP_PRODUCTION
 ```
 
-**テスト出力:**
+テスト出力:
 - コンソール: 実行ログとMarkdownプレビュー
 - ファイル: `tests/output/review_{SCHEMA}_{DATE}.md`
 

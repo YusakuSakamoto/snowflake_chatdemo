@@ -4,9 +4,9 @@
 
 ## 📚 ドキュメント一覧
 
-- **[命名規則](NAMING_CONVENTIONS_GUIDE.md)** - Python/Azure Functions固有の命名規則
-- **[メンテナンスガイド](MAINTENANCE_GUIDE.md)** - 開発・テスト・デプロイ手順
-- **[API仕様書](API_SPECIFICATION.md)** - エンドポイント一覧と使用方法
+- [命名規則](NAMING_CONVENTIONS_GUIDE.md) - Python/Azure Functions固有の命名規則
+- [メンテナンスガイド](MAINTENANCE_GUIDE.md) - 開発・テスト・デプロイ手順
+- [API仕様書](API_SPECIFICATION.md) - エンドポイント一覧と使用方法
 
 ## 🎯 主要機能
 
@@ -34,7 +34,7 @@
 
 #### 重要な発見
 
-**❌ SQLでのAgent実行は不可:**
+❌ SQLでのAgent実行は不可:
 ```python
 # これは動作しません
 result = cursor.execute(
@@ -42,7 +42,7 @@ result = cursor.execute(
 ).fetchone()
 ```
 
-**✅ REST API経由でのみ実行可能:**
+✅ REST API経由でのみ実行可能:
 ```python
 url = f"{base_url}/api/v2/databases/{db}/schemas/{schema}/agents/{agent}:run"
 response = session.post(url, headers=headers, json=payload, stream=True)
@@ -50,7 +50,7 @@ response = session.post(url, headers=headers, json=payload, stream=True)
 
 #### SSEレスポンスの正しい解析
 
-**Snowflake AgentのSSE形式:**
+Snowflake AgentのSSE形式:
 ```python
 # レスポンスイベント例
 event: response.text.delta
@@ -63,7 +63,7 @@ event: done
 data: [DONE]
 ```
 
-**正しい解析コード:**
+正しい解析コード:
 ```python
 for line in response.iter_lines():
     if line.startswith(b'data: '):
@@ -81,7 +81,7 @@ for line in response.iter_lines():
             pass
 ```
 
-**❌ 誤った実装例:**
+❌ 誤った実装例:
 ```python
 # これは動作しません
 for chunk in response.iter_content():

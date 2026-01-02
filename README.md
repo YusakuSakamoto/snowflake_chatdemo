@@ -2,16 +2,16 @@
 
 Obsidian × Snowflake を活用したチャットアプリケーション
 
-**コンセプト:**  
+コンセプト:  
 DB設計・名称解決・売上データ基盤を、Obsidian Vault（Markdown）を設計正本として管理し、Snowflake Cortex Agentで対話的に分析できる基盤です。
 
 ## 🎯 プロジェクトの特徴
 
-- **設計正本**: Obsidian Vault（Markdown）が唯一の設計正本
-- **自動DDL生成**: ObsidianのDataviewから Snowflake DDLを自動生成
-- **Cortex Agent統合**: 設計書を参照しながらAIエージェントが対話
-- **名称解決**: 業務用語・略称を手動辞書で管理し、決定論的に解決
-- **再現性**: 推測を排除し、説明可能・監査可能な構成
+- 設計正本: Obsidian Vault（Markdown）が唯一の設計正本
+- 自動DDL生成: ObsidianのDataviewから Snowflake DDLを自動生成
+- Cortex Agent統合: 設計書を参照しながらAIエージェントが対話
+- 名称解決: 業務用語・略称を手動辞書で管理し、決定論的に解決
+- 再現性: 推測を排除し、説明可能・監査可能な構成
 
 ## 📁 プロジェクト構造
 
@@ -58,8 +58,8 @@ snowflake_chatdemo/
 
 本プロジェクトには、GitHub Copilotが自動的に参照する設定ファイルが含まれています：
 
-- **`.github/copilot-instructions.md`** - Copilotへの指示とプロジェクト規則
-- **`.vscode/settings.json`** - VS Code設定（Copilot統合含む）
+- `.github/copilot-instructions.md` - Copilotへの指示とプロジェクト規則
+- `.vscode/settings.json` - VS Code設定（Copilot統合含む）
 
 ### 重要な規則
 Copilotは以下のドキュメントを常に参照します：
@@ -118,7 +118,7 @@ npm install
 }
 ```
 
-**モードの切り替え:**
+モードの切り替え:
 - `USE_MOCK=true`: モックデータを使用（開発用）
 - `USE_MOCK=false`: Snowflake Cortex Agentに接続
 
@@ -149,12 +149,12 @@ npm run dev
 
 ### Obsidian Vaultで開く
 
-**Windows側:**
+Windows側:
 ```
 C:\Users\Owner\Documents\snowflake-db
 ```
 
-**WSL側（シンボリックリンク）:**
+WSL側（シンボリックリンク）:
 ```
 docs/snowflake/chatdemo/
 ```
@@ -178,23 +178,23 @@ docs/snowflake/chatdemo/
 
 | スキーマ | 役割 |
 |---------|------|
-| **DB_DESIGN** | 設計・設計レビュー（Obsidian Vault連携） |
-| **IMPORT** | データ取込・検査（Raw/Landing） |
-| **NAME_RESOLUTION** | 名称解決の手動辞書 |
-| **APP_DEVELOPMENT** | アプリケーション開発環境 |
-| **APP_PRODUCTION** | アプリケーション本番環境 |
+| DB_DESIGN | 設計・設計レビュー（Obsidian Vault連携） |
+| IMPORT | データ取込・検査（Raw/Landing） |
+| NAME_RESOLUTION | 名称解決の手動辞書 |
+| APP_DEVELOPMENT | アプリケーション開発環境 |
+| APP_PRODUCTION | アプリケーション本番環境 |
 
 ### 設計思想
 
-- **設計正本**: Obsidian Vault（Markdown）が唯一の正本
-- **DDL生成**: Dataviewから自動生成（`generated/ddl/`）
-- **名称解決**: 推測を排除し、手動辞書（NAME_RESOLUTION）で決定論的に解決
-- **Agent制御**: LLMに「考えさせない」、決定論を実行させる
-- **再現性**: 説明可能性・監査耐性を重視
+- 設計正本: Obsidian Vault（Markdown）が唯一の正本
+- DDL生成: Dataviewから自動生成（`generated/ddl/`）
+- 名称解決: 推測を排除し、手動辞書（NAME_RESOLUTION）で決定論的に解決
+- Agent制御: LLMに「考えさせない」、決定論を実行させる
+- 再現性: 説明可能性・監査耐性を重視
 
 ### DEV → PROD反映ルール
 
-- APP_DEVELOPMENTとAPP_PRODUCTIONは **同一仕様**
+- APP_DEVELOPMENTとAPP_PRODUCTIONは 同一仕様
 - 差異は「配置先スキーマの差」のみ
 - DEVで検証完了後、同一DDLをPRODに適用
 
@@ -238,7 +238,7 @@ pytest tests/snowflake/chatdemo/ -v
          (パーティション)     (year/month/day)
 ```
 
-**ログの種類:**
+ログの種類:
 1. Cortex対話ログ - AI Agentとの会話履歴、SQL実行履歴
 2. Azure Functionsログ - バックエンド実行ログ
 3. SWAログ - フロントエンドアクセスログ
@@ -248,20 +248,20 @@ pytest tests/snowflake/chatdemo/ -v
 
 | レイヤー | 技術 |
 |---------|------|
-| **フロントエンド** | Next.js, TypeScript, React |
-| **バックエンド** | Azure Functions (Python 3.11) |
-| **データベース** | Snowflake |
-| **AI** | Snowflake Cortex Agent |
-| **設計管理** | Obsidian Vault (Markdown + Dataview) |
-| **DDL自動生成** | DataviewJS → SQL |
-| **名称解決** | 手動辞書（NAME_RESOLUTION） + UDF |
-| **ホスティング** | Azure Static Web Apps |
-| **ログ基盤（予定）** | AWS S3 (外部ステージ) |
+| フロントエンド | Next.js, TypeScript, React |
+| バックエンド | Azure Functions (Python 3.11) |
+| データベース | Snowflake |
+| AI | Snowflake Cortex Agent |
+| 設計管理 | Obsidian Vault (Markdown + Dataview) |
+| DDL自動生成 | DataviewJS → SQL |
+| 名称解決 | 手動辞書（NAME_RESOLUTION） + UDF |
+| ホスティング | Azure Static Web Apps |
+| ログ基盤（予定） | AWS S3 (外部ステージ) |
 
 ## 🎨 設計の特徴
 
 ### 1. Obsidian Vaultを設計正本に
-- schema/table/column を **1定義1ファイル**で管理
+- schema/table/column を 1定義1ファイルで管理
 - YAMLフロントマター + Markdownで構造化
 - Dataviewで自動的にDDL生成・レビュー資料作成
 
@@ -281,25 +281,25 @@ pytest tests/snowflake/chatdemo/ -v
 
 ## 🔄 開発フロー
 
-1. **設計** → Obsidianで設計書作成（master/配下）
-2. **DDL生成** → DataviewJSで自動生成（generated/ddl/）
-3. **適用** → SnowflakeにDDLを実行
-4. **実装** → VSCode + GitHub Copilot
-5. **テスト** → pytest / Jest
-6. **レビュー** → Obsidian上でレビュー記録
-7. **デプロイ** → GitHub Actions
+1. 設計 → Obsidianで設計書作成（master/配下）
+2. DDL生成 → DataviewJSで自動生成（generated/ddl/）
+3. 適用 → SnowflakeにDDLを実行
+4. 実装 → VSCode + GitHub Copilot
+5. テスト → pytest / Jest
+6. レビュー → Obsidian上でレビュー記録
+7. デプロイ → GitHub Actions
 
 ## 🚀 デプロイ
 
 GitHub Actions により自動デプロイが設定されています。
 
-- **バックエンド**: Azure Functions にデプロイ
-- **フロントエンド**: Azure Static Web Apps にデプロイ
+- バックエンド: Azure Functions にデプロイ
+- フロントエンド: Azure Static Web Apps にデプロイ
 
 ## 📝 開発環境
 
-- **OS**: Ubuntu (on WSL)
-- **バージョン管理**: GitHub
-- **設計書**: Obsidian → AWS S3同期 → GitHub COMMIT
-- **エディタ**: VSCode + GitHub Copilot (Code Agent)
-- **DB**: Snowflake (AWS account)
+- OS: Ubuntu (on WSL)
+- バージョン管理: GitHub
+- 設計書: Obsidian → AWS S3同期 → GitHub COMMIT
+- エディタ: VSCode + GitHub Copilot (Code Agent)
+- DB: Snowflake (AWS account)

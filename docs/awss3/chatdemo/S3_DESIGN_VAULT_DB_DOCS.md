@@ -155,7 +155,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/snowflake/chatdemo/**'
+      - 'docs/snowflake/chatdemo/'
 
 jobs:
   sync:

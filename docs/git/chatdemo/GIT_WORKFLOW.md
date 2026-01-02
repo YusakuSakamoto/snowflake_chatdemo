@@ -22,7 +22,7 @@
 ## コミットメッセージ規則
 
 ### 基本原則
-**すべてのコミットメッセージは日本語で記載する**
+すべてのコミットメッセージは日本語で記載する
 
 ### プレフィックスの使用
 コミットの種類を明確にするため、以下のプレフィックスを使用します：
@@ -87,12 +87,12 @@ git commit -m "feat: PROFILE_ALL_TABLESプロシージャ追加
 ## コミット前チェックリスト
 
 ### 必須チェック項目
-- [ ] **Windows Vaultに同期済み**
+- [ ] Windows Vaultに同期済み
   ```bash
   rsync -av --delete docs/snowflake/chatdemo/ /mnt/c/Users/Owner/Documents/snowflake-db/
   ```
-- [ ] **コミットメッセージが日本語**
-- [ ] **適切なプレフィックスを使用**
+- [ ] コミットメッセージが日本語
+- [ ] 適切なプレフィックスを使用
 
 ### 推奨チェック項目
 - [ ] 変更内容をgit diffで確認済み
@@ -164,7 +164,7 @@ FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter '
 git push --force-with-lease
 ```
 
-**注意：** force pushは履歴を書き換えるため、他の開発者と共有しているブランチでは慎重に使用してください。
+注意： force pushは履歴を書き換えるため、他の開発者と共有しているブランチでは慎重に使用してください。
 
 ### コミットの取り消し
 

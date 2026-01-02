@@ -59,21 +59,21 @@
 #### ❌ バッククォート（`）の使用禁止
 カラム名やパラメータ名を `` ` `` で囲むことは禁止です。
 
-**悪い例：**
+悪い例：
 ```markdown
 - `TARGET_SCHEMA` / `TARGET_TABLE` / `TARGET_COLUMN` により特定
 - | `P_TARGET_DB` | STRING | ✅ | - |
 - DB_DESIGN.PROFILE_RUNS.`RUN_ID` を起点として
 ```
 
-**良い例：**
+良い例：
 ```markdown
 - TARGET_SCHEMA / TARGET_TABLE / TARGET_COLUMN により特定
 - | P_TARGET_DB | STRING | ✅ | - |
 - [[DB_DESIGN.PROFILE_RUNS.RUN_ID]] を起点として
 ```
 
-**例外（バッククォート使用OK）：**
+例外（バッククォート使用OK）：
 - コード例の値：`user` / `assistant`
 - 技術用語：`logging`, `AUTO_REFRESH`
 - Markdownテーブル内のサンプルデータ：`CUSTOMER_ID`, `EMAIL`
@@ -105,7 +105,7 @@ Snowflake Cortex Agentを使用した自動設計レビューシステムです�
 
 #### 🚨 AgentはREST API経由でのみ実行可能
 
-**❌ SQLでの実行は不可:**
+❌ SQLでの実行は不可:
 ```sql
 -- これは動作しません
 SELECT SNOWFLAKE.CORTEX.COMPLETE_AGENT(
@@ -114,7 +114,7 @@ SELECT SNOWFLAKE.CORTEX.COMPLETE_AGENT(
 );
 ```
 
-**✅ REST API経由で実行:**
+✅ REST API経由で実行:
 ```bash
 # Azure Functions経由（推奨）
 curl -X POST http://localhost:7071/api/review/schema \
@@ -157,7 +157,7 @@ docs/snowflake/chatdemo/reviews/schemas/{SCHEMA}_{YYYYMMDD_HHMMSS}.md
 #### ファイル構造
 各レビュー結果は以下のセクションで構成されています：
 
-1. **メタ情報（YAML frontmatter）**
+1. メタ情報（YAML frontmatter）
    ```yaml
    ---
    type: agent_review
@@ -166,66 +166,66 @@ docs/snowflake/chatdemo/reviews/schemas/{SCHEMA}_{YYYYMMDD_HHMMSS}.md
    ---
    ```
 
-2. **0. メタ情報**
+2. 0. メタ情報
    - 対象スキーマ
    - レビュー日時
    - 参照したドキュメントのPATH一覧
 
-3. **1. サマリ（3行）**
+3. 1. サマリ（3行）
    - 全体評価の要約
    - 主要な問題点のハイライト
    - 設計ドキュメントの充実度評価
 
-4. **2. Findings（優先度別）**
-   - **Critical**: 本番障害リスクレベル（FK制約欠如、データ整合性違反等）
-   - **High**: 重大な設計問題（CHECK制約不足、状態遷移不整合等）
-   - **Med**: パフォーマンス・保守性問題（VARCHAR長未指定、複合PK妥当性等）
-   - **Low**: 軽微な改善提案（コメント統一、文書整合性等）
+4. 2. Findings（優先度別）
+   - Critical: 本番障害リスクレベル（FK制約欠如、データ整合性違反等）
+   - High: 重大な設計問題（CHECK制約不足、状態遷移不整合等）
+   - Med: パフォーマンス・保守性問題（VARCHAR長未指定、複合PK妥当性等）
+   - Low: 軽微な改善提案（コメント統一、文書整合性等）
 
-5. **3. 【仮説】の検証**
+5. 3. 【仮説】の検証
    - 設計書内の【仮説】タグへの回答
 
-6. **4. 追加で集めたい情報**
+6. 4. 追加で集めたい情報
    - 不足している調査事項
 
-7. **5. 改善提案（次アクション）**
+7. 5. 改善提案（次アクション）
    - 実装難易度・影響範囲・推奨実施時期付き
 
 #### 各Finding項目の構成
 
 各指摘には以下の情報が含まれています：
 
-- **指摘**: 問題の内容
-- **影響**: ビジネス/技術的影響
-- **提案**: 具体的な解決策
-- **DDL例**: 実装可能なSQL（Critical/Highは必須）
-- **移行手順**: 既存データへの適用手順（該当時）
-- **Evidence**: Vault上のMarkdownからの引用（2-3件）
+- 指摘: 問題の内容
+- 影響: ビジネス/技術的影響
+- 提案: 具体的な解決策
+- DDL例: 実装可能なSQL（Critical/Highは必須）
+- 移行手順: 既存データへの適用手順（該当時）
+- Evidence: Vault上のMarkdownからの引用（2-3件）
   - 設計思想ファイル（design/）
   - カラム定義ファイル（master/columns/）
   - テーブル定義ファイル（master/tables/）
-- **Vault差分案**: 設計ドキュメント修正案
-- **実装メタ情報**:
+- Vault差分案: 設計ドキュメント修正案
+- 実装メタ情報:
   - 影響範囲: [小/中/大]
   - 実装難易度: [低/中/高]
   - 推奨実施時期: [即時/今週/今月/Q1]
 
 #### Critical/High指摘への対応フロー
 
-**1. 即座に対応すべき項目の特定**
+1. 即座に対応すべき項目の特定
 ```bash
 # レビュー結果から優先度を確認
 grep -A 5 "### Critical" docs/snowflake/chatdemo/reviews/schemas/DB_DESIGN_*.md
 ```
 
-**2. 設計意図の再確認**
+2. 設計意図の再確認
 ```bash
 # Evidence欄のPATHを確認し、設計思想を再確認
 cat docs/snowflake/chatdemo/design/DB_DESIGN/design.PROFILE_RESULTS.md
 cat docs/snowflake/chatdemo/master/columns/DB_DESIGN.PROFILE_RESULTS.RUN_ID.md
 ```
 
-**3. DDL実行**
+3. DDL実行
 ```sql
 -- レビュー結果のDDL例をそのまま使用可能
 ALTER TABLE DB_DESIGN.PROFILE_RESULTS
@@ -249,7 +249,7 @@ WHERE p.RUN_ID IS NULL;
 SELECT COUNT(*) FROM DB_DESIGN.PROFILE_RESULTS;
 ```
 
-**4. 設計ドキュメント更新**
+4. 設計ドキュメント更新
 ```bash
 # Vault差分案を参考に、該当するMarkdownファイルを更新
 # 例: master/tables/DB_DESIGN.PROFILE_RESULTS.md
@@ -262,12 +262,12 @@ SELECT COUNT(*) FROM DB_DESIGN.PROFILE_RESULTS;
 
 #### Med/Low指摘への対応
 
-- **Med指摘**: 次回の設計見直しタイミングで検討
+- Med指摘: 次回の設計見直しタイミングで検討
   - 技術的負債として Issue/Ticket 管理
   - スプリント計画に組み込み
   - パフォーマンス影響が大きい場合は前倒し
 
-- **Low指摘**: 随時対応
+- Low指摘: 随時対応
   - コメント改善等の軽微な項目
   - ドキュメント整合性の向上
   - コードレビュー時に合わせて修正
@@ -445,24 +445,24 @@ Review History:
 
 | 評価項目 | 目標値 | 現在値（v2） | 説明 |
 |----------|--------|-------------|------|
-| **網羅性** | 9/10 | 9/10 | Snowflake特化観点の追加 |
-| **指摘の深さ** | 8/10 | 8/10 | 論理矛盾の検出 |
-| **Evidence具体性** | 10/10 | 10/10 | 3件のEvidence（設計思想+実装+運用） |
-| **提案実用性** | 9/10 | 9/10 | DDL例・移行手順の提示 |
-| **優先度妥当性** | 9/10 | 9/10 | Critical/High/Med/Low 4段階 |
-| **Snowflake特化** | 8/10 | 8/10 | コスト最適化、クラスタリングキー等 |
-| **構成・可読性** | 9/10 | 9/10 | YAML frontmatter + 構造化 |
-| **総合評価** | 9/10 | 9/10 | 本番運用可能レベル |
+| 網羅性 | 9/10 | 9/10 | Snowflake特化観点の追加 |
+| 指摘の深さ | 8/10 | 8/10 | 論理矛盾の検出 |
+| Evidence具体性 | 10/10 | 10/10 | 3件のEvidence（設計思想+実装+運用） |
+| 提案実用性 | 9/10 | 9/10 | DDL例・移行手順の提示 |
+| 優先度妥当性 | 9/10 | 9/10 | Critical/High/Med/Low 4段階 |
+| Snowflake特化 | 8/10 | 8/10 | コスト最適化、クラスタリングキー等 |
+| 構成・可読性 | 9/10 | 9/10 | YAML frontmatter + 構造化 |
+| 総合評価 | 9/10 | 9/10 | 本番運用可能レベル |
 
 #### 改善履歴
 
-**v1（初期版）: 7.5/10点**
+v1（初期版）: 7.5/10点
 - 優先度: High/Med/Low 3段階
 - DDL例: なし
 - Evidence: 各2件
 - 実装メタ情報: なし
 
-**v2（改善版）: 9.0/10点**
+v2（改善版）: 9.0/10点
 - 優先度: Critical/High/Med/Low 4段階
 - DDL例: すべてのCritical/Highに追加
 - Evidence: Critical/High 2-3件、Med 2件、Low 1件以上
@@ -479,17 +479,17 @@ instructions:
 ```
 
 #### 2. レビュー観点の拡充
-- **Snowflake特化**: クラスタリングキー、Time Travel、ストリーム/タスク
-- **パフォーマンス**: データ型適切性、VARIANT濫用チェック
-- **運用監視**: ログ設計、アラート条件（SLI/SLO）
-- **セキュリティ**: 列レベルマスキング、タグベースポリシー
-- **コスト最適化**: VARCHAR長、圧縮効率、Warehouse適正サイズ
+- Snowflake特化: クラスタリングキー、Time Travel、ストリーム/タスク
+- パフォーマンス: データ型適切性、VARIANT濫用チェック
+- 運用監視: ログ設計、アラート条件（SLI/SLO）
+- セキュリティ: 列レベルマスキング、タグベースポリシー
+- コスト最適化: VARCHAR長、圧縮効率、Warehouse適正サイズ
 
 #### 3. 実装支援の強化
 各Findingに以下を追加：
-- **DDL例**: 即座に実装可能なALTER TABLE文
-- **移行手順**: 既存データがある場合の4ステップ手順
-- **実装メタ情報**:
+- DDL例: 即座に実装可能なALTER TABLE文
+- 移行手順: 既存データがある場合の4ステップ手順
+- 実装メタ情報:
   - 影響範囲: [小/中/大]
   - 実装難易度: [低/中/高]
   - 推奨実施時期: [即時/今週/今月/Q1]
@@ -498,11 +498,11 @@ instructions:
 
 | 項目 | GitHub Copilot | Snowflake Agent |
 |------|----------------|----------------|
-| **主要対象** | 実装コード | 設計ドキュメント |
-| **レビュー単位** | PRベース、ファイルベース | スキーマ・テーブル単位 |
-| **実行タイミング** | PR作成時（自動） | 設計フェーズ（オンデマンド） |
-| **検出可能な問題** | 構文・セキュリティ・コーディング規約 | FK/PK設計、状態遷移、Snowflake最適化 |
-| **強み** | 即座性、脆弱性検出 | 論理整合性、設計思想検証 |
+| 主要対象 | 実装コード | 設計ドキュメント |
+| レビュー単位 | PRベース、ファイルベース | スキーマ・テーブル単位 |
+| 実行タイミング | PR作成時（自動） | 設計フェーズ（オンデマンド） |
+| 検出可能な問題 | 構文・セキュリティ・コーディング規約 | FK/PK設計、状態遷移、Snowflake最適化 |
+| 強み | 即座性、脆弱性検出 | 論理整合性、設計思想検証 |
 
 #### 相互補完による開発フロー
 
@@ -534,17 +534,17 @@ instructions:
 
 ##### 1. Agent実行エラー: `snowflake_error`
 
-**エラー内容:**
+エラー内容:
 ```json
 {"success": false, "error": "Agent実行エラー: snowflake_error"}
 ```
 
-**原因:**
+原因:
 - Agent実行権限不足
 - Agent定義の不備
 - データベース/スキーマ権限不足
 
-**解決策:**
+解決策:
 ```sql
 -- 1. Agent権限の確認と付与
 USE ROLE ACCOUNTADMIN;
@@ -562,15 +562,15 @@ DESC AGENT DB_DESIGN.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT;
 
 ##### 2. SSEレスポンスが空/取得できない
 
-**エラー内容:**
+エラー内容:
 - Agentからのレスポンスが空
 - `full_response` が空文字列
 
-**原因:**
+原因:
 - SSEレスポンス形式の誤解析
 - `delta.content` 構造の誤解
 
-**正しい解析方法:**
+正しい解析方法:
 ```python
 # ❌ 誤った解析（これは動作しない）
 if hasattr(delta, 'content'):
@@ -594,7 +594,7 @@ for line in response.iter_lines():
             continue
 ```
 
-**デバッグ方法:**
+デバッグ方法:
 ```python
 # レスポンスの生データを確認
 for line in response.iter_lines():
@@ -606,25 +606,25 @@ for line in response.iter_lines():
 
 ##### 3. Bearer Token期限切れ
 
-**エラー内容:**
+エラー内容:
 ```
 401 Unauthorized
 Authentication token expired
 ```
 
-**原因:**
+原因:
 - Bearer Tokenの有効期限切れ（通常3600秒）
 - Private Key認証への切り替えが必要
 
-**解決策:**
+解決策:
 
-**方法1: トークン再生成（短期的）**
+方法1: トークン再生成（短期的）
 ```bash
 # Snowflakeコンソールで新しいトークンを生成
 # local.settings.jsonを更新
 ```
 
-**方法2: Private Key認証への切り替え（推奨）**
+方法2: Private Key認証への切り替え（推奨）
 ```python
 # snowflake_auth.py
 from cryptography.hazmat.primitives import serialization
@@ -655,15 +655,15 @@ def get_jwt_token(account: str, user: str, private_key_path: str) -> str:
 
 ##### 4. Markdown抽出失敗
 
-**エラー内容:**
+エラー内容:
 - `~~~md ... ~~~` ブロックが見つからない
 - レビュー結果が保存されない
 
-**原因:**
+原因:
 - Agent出力形式の変更
 - コードブロック形式の誤認識
 
-**デバッグ方法:**
+デバッグ方法:
 ```python
 # db_review_agent.py
 def _extract_markdown(self, content: str) -> str:
@@ -681,7 +681,7 @@ def _extract_markdown(self, content: str) -> str:
         return content  # 全体を返す
 ```
 
-**回避策:**
+回避策:
 ```python
 # 複数パターンに対応
 def _extract_markdown(self, content: str) -> str:
@@ -703,15 +703,15 @@ def _extract_markdown(self, content: str) -> str:
 
 ##### 5. 日本語文字化け
 
-**エラー内容:**
+エラー内容:
 - レビュー結果の日本語が文字化け
 - ファイル保存時にエラー
 
-**原因:**
+原因:
 - エンコーディング指定の不足
 - Windows環境でのデフォルトエンコーディング
 
-**解決策:**
+解決策:
 ```python
 # 必ずencoding="utf-8"を指定
 def _save_markdown(self, content: str, schema: str):
@@ -721,15 +721,15 @@ def _save_markdown(self, content: str, schema: str):
 
 ##### 6. Windows Vault同期の失敗
 
-**エラー内容:**
+エラー内容:
 - WSL → Windows へのファイルコピーが失敗
 - パーミッションエラー
 
-**原因:**
+原因:
 - Windows側のファイルが開かれている（Obsidian等）
 - パス区切り文字の違い
 
-**解決策:**
+解決策:
 ```bash
 # WSL側スクリプト
 #!/bin/bash
@@ -804,11 +804,11 @@ print(cursor.fetchall())
 
 #### SSEレスポンスが空
 
-**問題:** Agentからのレスポンスが取得できない
+問題: Agentからのレスポンスが取得できない
 
-**原因:** SSEレスポンス形式の誤解析
+原因: SSEレスポンス形式の誤解析
 
-**正しい形式:**
+正しい形式:
 ```python
 # ❌ 誤った解析
 delta.content  # これは存在しない
@@ -1027,19 +1027,19 @@ cp "docs/snowflake/chatdemo/design/DB_DESIGN/design.OBJECT.md" \
 
 #### 1. 設計思想を明確に記載する
 
-**良い例:**
+良い例:
 ```markdown
 ## 設計思想
 
 本テーブルは、プロファイル実行の履歴を管理するため、以下の原則に基づいて設計されている：
 
-1. **実行単位の一意性**: RUN_IDで実行を一意に識別
-2. **状態遷移の明確化**: RUNNING → SUCCEEDED | FAILED のみ許可
-3. **時系列追跡**: STARTED_AT, FINISHED_AT で実行期間を記録
-4. **結果との分離**: 結果はPROFILE_RESULTSテーブルに格納（正規化）
+1. 実行単位の一意性: RUN_IDで実行を一意に識別
+2. 状態遷移の明確化: RUNNING → SUCCEEDED | FAILED のみ許可
+3. 時系列追跡: STARTED_AT, FINISHED_AT で実行期間を記録
+4. 結果との分離: 結果はPROFILE_RESULTSテーブルに格納（正規化）
 ```
 
-**悪い例:**
+悪い例:
 ```markdown
 ## 設計思想
 
@@ -1054,9 +1054,9 @@ cp "docs/snowflake/chatdemo/design/DB_DESIGN/design.OBJECT.md" \
 ## カラム定義
 
 ### STATUS
-- **型**: VARCHAR
-- **制約**: NOT NULL, CHECK (STATUS IN ('RUNNING', 'SUCCEEDED', 'FAILED'))
-- **設計理由**:
+- 型: VARCHAR
+- 制約: NOT NULL, CHECK (STATUS IN ('RUNNING', 'SUCCEEDED', 'FAILED'))
+- 設計理由:
   - 状態遷移を制限することで、不正な状態値の混入を防ぐ
   - 監視システムが確実に状態を判別できるようにする
   - ENUMではなくVARCHARにすることで、将来の状態追加に柔軟に対応
@@ -1098,7 +1098,7 @@ Agent実行時に【仮説】タグに対する検証コメントが返されま
 
 Agentは設計書の内容を根拠にレビューします：
 
-**充実した設計書の例:**
+充実した設計書の例:
 - 設計思想: なぜこの設計なのか
 - カラム定義: 各カラムの役割・制約・理由
 - 関連: 他のテーブルとの関係
@@ -1121,30 +1121,30 @@ curl -X POST http://localhost:7071/api/review/schema \
 
 #### 3. 定期的にレビューを実行する
 
-- **設計フェーズ**: 初期設計完了時
-- **実装前**: DDL生成前
-- **変更時**: スキーマ変更のたび
-- **定期**: 月次レビュー（自動化推奨）
+- 設計フェーズ: 初期設計完了時
+- 実装前: DDL生成前
+- 変更時: スキーマ変更のたび
+- 定期: 月次レビュー（自動化推奨）
 
 ### よくある指摘事例と対策
 
 #### Critical指摘の典型例
 
-**1. 外部キー制約の欠如**
+1. 外部キー制約の欠如
 ```
 指摘: PROFILE_RESULTS.RUN_ID に対する外部キー制約が未定義
 影響: 存在しないRUN_IDでの結果登録、参照整合性不整合
 対策: FK制約を追加し、参照整合性を保証
 ```
 
-**対策コード:**
+対策コード:
 ```sql
 ALTER TABLE DB_DESIGN.PROFILE_RESULTS
 ADD CONSTRAINT FK_PROFILE_RESULTS_RUN_ID
 FOREIGN KEY (RUN_ID) REFERENCES DB_DESIGN.PROFILE_RUNS(RUN_ID);
 ```
 
-**設計書への反映:**
+設計書への反映:
 ```markdown
 ## 制約
 
@@ -1156,28 +1156,28 @@ FOREIGN KEY (RUN_ID) REFERENCES DB_DESIGN.PROFILE_RUNS(RUN_ID);
 
 #### High指摘の典型例
 
-**2. CHECK制約の不足**
+2. CHECK制約の不足
 ```
 指摘: STATUS列でCHECK制約が未定義
 影響: 無効な状態値混入リスク
 対策: 許可値を明示的に制限
 ```
 
-**対策コード:**
+対策コード:
 ```sql
 ALTER TABLE DB_DESIGN.PROFILE_RUNS
 ADD CONSTRAINT CHK_STATUS
 CHECK (STATUS IN ('RUNNING', 'SUCCEEDED', 'FAILED'));
 ```
 
-**3. 状態遷移の整合性**
+3. 状態遷移の整合性
 ```
 指摘: FINISHED_ATとSTATUSの整合性が制約で保証されていない
 影響: 論理的不整合データの混入
 対策: 複合制約の追加
 ```
 
-**対策コード:**
+対策コード:
 ```sql
 ALTER TABLE DB_DESIGN.PROFILE_RUNS
 ADD CONSTRAINT CHK_STATUS_FINISHED_CONSISTENCY
@@ -1189,14 +1189,14 @@ CHECK (
 
 #### Med指摘の典型例
 
-**4. VARCHAR長の未指定**
+4. VARCHAR長の未指定
 ```
 指摘: VARCHAR列で長さ未指定（デフォルト16MB）
 影響: ストレージ非効率、パフォーマンス劣化
 対策: 適切な長さを指定
 ```
 
-**対策:**
+対策:
 ```sql
 -- Before
 RUN_ID VARCHAR
@@ -1385,7 +1385,7 @@ if __name__ == "__main__":
 詳細は [GIT_WORKFLOW.md](../../git/chatdemo/GIT_WORKFLOW.md) を参照してください。
 
 ### 重要ポイント
-- **コミットメッセージは日本語で記載**
+- コミットメッセージは日本語で記載
 - プレフィックス使用推奨（`feat:`, `fix:`, `docs:`, `refactor:` など）
 - コミット前にWindows Vaultへの同期を確認
 
@@ -1437,18 +1437,18 @@ ls -1 | grep -v '\.V_' | grep -v '^V_'
 
 ## 2026年1月：Snowflakeチャット運用・開発の実践知見
 
-- **Azure Functions（Python）でSSE/ストリーミングAPIは動作しない。必ずワンショットJSON応答APIに統一すること。**
+- Azure Functions（Python）でSSE/ストリーミングAPIは動作しない。必ずワンショットJSON応答APIに統一すること。
   - func.HttpResponseでtext/event-streamや逐次yieldは不可。
   - ストリーミング用エンドポイント・ロジックは全削除。
-- **API設計は「POSTでJSONを受け取り、JSONで一括返す」方式に統一。**
+- API設計は「POSTでJSONを受け取り、JSONで一括返す」方式に統一。
   - フロントエンドもawait fetch→response.json()で一括受信。
-- **エラー時も必ずJSONで返し、CORSヘッダも必須。**
-- **S3へのチャット履歴保存はNDJSON形式で2行（user/assistant）を推奨。**
-- **Pythonのtry/except構造・インデントエラーに注意。**
+- エラー時も必ずJSONで返し、CORSヘッダも必須。
+- S3へのチャット履歴保存はNDJSON形式で2行（user/assistant）を推奨。
+- Pythonのtry/except構造・インデントエラーに注意。
   - try:は必ずexceptまたはfinallyが必要。不要なtry/exceptやネストは極力排除し、returnで早期終了する設計が安全。
   - インデント崩れやtry:のみの残骸でSyntaxError/IndentationErrorが頻発する。
-- **Git管理下での復元はgit restoreで可能だが、インデント崩れが残る場合は手動修正が必要。**
-- **フロントエンドもAPI設計に合わせてfetch/await/response.json()で統一。**
+- Git管理下での復元はgit restoreで可能だが、インデント崩れが残る場合は手動修正が必要。
+- フロントエンドもAPI設計に合わせてfetch/await/response.json()で統一。
 
 ---
 

@@ -207,10 +207,10 @@ master/ 配下の定義から Snowflake DDL を自動生成する
 `views/ddl_all.md`
 
 #### 生成内容
-- **事前準備**: DB・WH作成SQL
-- **1. Snowflake DDL Generator**: スキーマ・テーブル・ビュー・プロシージャ・セマンティックビュー（SQL コメント形式）
-- **2. External Tables DDL Generator**: 外部テーブル定義（パーティション対応）
-- **3. YAML FILE Generator**: セマンティックビュー用YAML個別ファイル生成
+- 事前準備: DB・WH作成SQL
+- 1. Snowflake DDL Generator: スキーマ・テーブル・ビュー・プロシージャ・セマンティックビュー（SQL コメント形式）
+- 2. External Tables DDL Generator: 外部テーブル定義（パーティション対応）
+- 3. YAML FILE Generator: セマンティックビュー用YAML個別ファイル生成
 
 #### 出力先
 - `generated/ddl/` - Snowflake DDL（スキーマ・テーブル・ビュー・プロシージャ等）

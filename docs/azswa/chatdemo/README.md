@@ -4,8 +4,8 @@
 
 ## � ドキュメント一覧
 
-- **[命名規則](NAMING_CONVENTIONS_GUIDE.md)** - TypeScript/React/Next.js固有の命名規則
-- **[メンテナンスガイド](MAINTENANCE_GUIDE.md)** - 開発・テスト・デプロイ手順
+- [命名規則](NAMING_CONVENTIONS_GUIDE.md) - TypeScript/React/Next.js固有の命名規則
+- [メンテナンスガイド](MAINTENANCE_GUIDE.md) - 開発・テスト・デプロイ手順
 
 ## 📋 予定コンテンツ
 

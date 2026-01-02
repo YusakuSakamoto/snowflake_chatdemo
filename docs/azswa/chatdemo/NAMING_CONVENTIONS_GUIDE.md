@@ -8,9 +8,9 @@
 ## TypeScript / JavaScript 命名規則
 
 ### ファイル・ディレクトリ（File / Directory）
-- **形式**: `lowercase-with-hyphens` または `camelCase`
-- **Next.js特有**: `pages/` ディレクトリはルーティングに直結
-- **例**:
+- 形式: `lowercase-with-hyphens` または `camelCase`
+- Next.js特有: `pages/` ディレクトリはルーティングに直結
+- 例:
   ```
   pages/
   ├── index.tsx              # トップページ（/）
@@ -37,9 +37,9 @@
   ```
 
 ### コンポーネント（Component）
-- **形式**: `PascalCase`
-- **ファイル名**: コンポーネント名と一致
-- **例**:
+- 形式: `PascalCase`
+- ファイル名: コンポーネント名と一致
+- 例:
   ```tsx
   // components/ChatMessage.tsx
   export default function ChatMessage({ message }: ChatMessageProps) {
@@ -58,9 +58,9 @@
   ```
 
 ### 関数（Function）
-- **形式**: `camelCase`
-- **動詞始まり推奨**
-- **例**:
+- 形式: `camelCase`
+- 動詞始まり推奨
+- 例:
   ```tsx
   // 良い例
   function handleSubmit(event: FormEvent) { }
@@ -76,10 +76,10 @@
   ```
 
 ### 変数・定数（Variable / Constant）
-- **形式**: 
+- 形式: 
   - 変数: `camelCase`
   - 定数: `UPPERCASE_WITH_UNDERSCORES` または `camelCase`
-- **例**:
+- 例:
   ```tsx
   // 変数
   const userName = "Alice"
@@ -101,9 +101,9 @@
   ```
 
 ### インターフェース・型（Interface / Type）
-- **形式**: `PascalCase`
-- **プレフィックス**: `I` は使用しない（TypeScript推奨）
-- **例**:
+- 形式: `PascalCase`
+- プレフィックス: `I` は使用しない（TypeScript推奨）
+- 例:
   ```tsx
   // 良い例
   interface Message {
@@ -131,8 +131,8 @@
   ```
 
 ### React Hooks
-- **形式**: `use` プレフィックス + `PascalCase`
-- **例**:
+- 形式: `use` プレフィックス + `PascalCase`
+- 例:
   ```tsx
   // 良い例
   function useMessages() {
@@ -154,8 +154,8 @@
   ```
 
 ### イベントハンドラー
-- **形式**: `handle` または `on` プレフィックス + `動詞` + `名詞`
-- **例**:
+- 形式: `handle` または `on` プレフィックス + `動詞` + `名詞`
+- 例:
   ```tsx
   // 良い例
   function handleSubmit(event: FormEvent) { }
@@ -176,9 +176,9 @@
 ## CSS / スタイリング命名規則
 
 ### CSSモジュール（CSS Modules）
-- **ファイル名**: `{ComponentName}.module.css`
-- **クラス名**: `camelCase`
-- **例**:
+- ファイル名: `{ComponentName}.module.css`
+- クラス名: `camelCase`
+- 例:
   ```css
   /* Home.module.css */
   .container {
@@ -211,9 +211,9 @@
   ```
 
 ### グローバルCSS
-- **ファイル名**: `globals.css`
-- **クラス名**: `kebab-case`
-- **例**:
+- ファイル名: `globals.css`
+- クラス名: `kebab-case`
+- 例:
   ```css
   /* globals.css */
   .btn-primary {
@@ -234,9 +234,9 @@
 ## 環境変数（Environment Variables）
 
 ### 命名規則
-- **形式**: `NEXT_PUBLIC_` プレフィックス（ブラウザ公開用）
-- **それ以外**: `UPPERCASE_WITH_UNDERSCORES`（サーバーサイドのみ）
-- **例**:
+- 形式: `NEXT_PUBLIC_` プレフィックス（ブラウザ公開用）
+- それ以外: `UPPERCASE_WITH_UNDERSCORES`（サーバーサイドのみ）
+- 例:
   ```bash
   # ブラウザで利用可能（NEXT_PUBLIC_必須）
   NEXT_PUBLIC_API_BASE_URL=https://api.example.com
@@ -309,8 +309,8 @@ app/azswa/chatdemo/
 ## API クライアント命名規則
 
 ### APIエンドポイント関数
-- **形式**: `{HTTP動詞}{リソース名}`
-- **例**:
+- 形式: `{HTTP動詞}{リソース名}`
+- 例:
   ```tsx
   // utils/api-client.ts
   
@@ -346,8 +346,8 @@ export interface MessageResponse extends ApiResponse<Message[]> {
 ## テスト命名規則
 
 ### テストファイル
-- **形式**: `{ComponentName}.test.tsx` または `{fileName}.spec.ts`
-- **例**:
+- 形式: `{ComponentName}.test.tsx` または `{fileName}.spec.ts`
+- 例:
   ```
   __tests__/
   ├── components/
@@ -362,8 +362,8 @@ export interface MessageResponse extends ApiResponse<Message[]> {
   ```
 
 ### テストケース
-- **形式**: `describe` + `it/test`
-- **例**:
+- 形式: `describe` + `it/test`
+- 例:
   ```tsx
   describe('ChatMessage', () => {
     it('renders message text correctly', () => {
@@ -499,8 +499,8 @@ try {
 ## Markdown / ドキュメント命名規則
 
 ### READMEファイル
-- **形式**: `README.md` または `{Topic}.md`
-- **例**:
+- 形式: `README.md` または `{Topic}.md`
+- 例:
   - `README.md` - プロジェクト概要
   - `DEPLOYMENT.md` - デプロイ手順
   - `CONTRIBUTING.md` - コントリビューションガイド

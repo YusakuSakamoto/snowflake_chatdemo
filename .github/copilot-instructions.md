@@ -9,18 +9,18 @@
 Copilotは以下のドキュメントを必ず参照してください：
 
 ### 1. Snowflake 命名規則
-**ファイル:** `docs/snowflake/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
+ファイル: `docs/snowflake/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
 
-**重要ポイント:**
+重要ポイント:
 - ビュー（View）: `V_` プレフィックス必須（例: `V_CUSTOMER_MASTER`, `V_DOCS_OBSIDIAN`）
 - マテリアライズドビュー: `MV_` プレフィックス必須（例: `MV_DAILY_SALES_SUMMARY`）
 - テーブル: `UPPERCASE_UNDERSCORE` 形式（例: `DOCS_OBSIDIAN`, `PROFILE_RESULTS`）
 - プロシージャ: `UPPERCASE_UNDERSCORE` 形式（例: `PROFILE_TABLE`, `INGEST_VAULT_MD`）
 
 ### 2. Snowflake メンテナンスガイド
-**ファイル:** `docs/snowflake/chatdemo/MAINTENANCE_GUIDE.md`
+ファイル: `docs/snowflake/chatdemo/MAINTENANCE_GUIDE.md`
 
-**重要ポイント:**
+重要ポイント:
 - Obsidianリンク規則
   - 設計ドキュメント参照: `[[design.OBJECT]]`
   - エンティティ参照: `[[SCHEMA.OBJECT]]`
@@ -30,9 +30,9 @@ Copilotは以下のドキュメントを必ず参照してください：
 - マスターファイル構造とデザインファイル構造
 
 ### 3. Azure Functions 命名規則
-**ファイル:** `docs/azfunctions/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
+ファイル: `docs/azfunctions/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
 
-**重要ポイント:**
+重要ポイント:
 - モジュール: `lowercase_with_underscores.py`
 - クラス: `PascalCase`
 - 関数: `lowercase_with_underscores`
@@ -40,18 +40,18 @@ Copilotは以下のドキュメントを必ず参照してください：
 - エンドポイント: `{action}_{resource}_endpoint`
 
 ### 4. Azure Functions メンテナンスガイド
-**ファイル:** `docs/azfunctions/chatdemo/MAINTENANCE_GUIDE.md`
+ファイル: `docs/azfunctions/chatdemo/MAINTENANCE_GUIDE.md`
 
-**重要ポイント:**
+重要ポイント:
 - PEP 8準拠のPythonコーディング規則
 - 型ヒント必須
 - Docstring必須（関数・クラス・モジュール）
 - 構造化ログ推奨
 
 ### 5. Azure SWA 命名規則
-**ファイル:** `docs/azswa/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
+ファイル: `docs/azswa/chatdemo/NAMING_CONVENTIONS_GUIDE.md`
 
-**重要ポイント:**
+重要ポイント:
 - コンポーネント: `PascalCase`
 - 関数: `camelCase`
 - 定数: `UPPERCASE_WITH_UNDERSCORES`
@@ -59,18 +59,18 @@ Copilotは以下のドキュメントを必ず参照してください：
 - CSSモジュール: `camelCase`
 
 ### 6. Azure SWA メンテナンスガイド
-**ファイル:** `docs/azswa/chatdemo/MAINTENANCE_GUIDE.md`
+ファイル: `docs/azswa/chatdemo/MAINTENANCE_GUIDE.md`
 
-**重要ポイント:**
+重要ポイント:
 - TypeScript型定義必須
 - React関数コンポーネント推奨
 - Hooks使用ルール
 - CSSモジュール使用
 
 ### 7. Git運用規則
-**ファイル:** `docs/git/chatdemo/GIT_WORKFLOW.md`
+ファイル: `docs/git/chatdemo/GIT_WORKFLOW.md`
 
-**重要ポイント:**
+重要ポイント:
 - コミットメッセージは必ず日本語で記載
 - プレフィックス使用: `feat:`, `fix:`, `docs:`, `refactor:`, `style:`, `test:`, `chore:`
 - コミット前にWindows Vaultへの同期を確認
@@ -156,14 +156,14 @@ docs/snowflake/chatdemo/design/
 ## プロジェクト思想
 
 ### 最重要原則
-- **Obsidian Vault上のMarkdown（.md）が唯一の設計正本**
+- Obsidian Vault上のMarkdown（.md）が唯一の設計正本
 - Snowflake上のDDL/VIEW/TABLE/PROCEDURE/AGENTはすべて「結果物」
 - Agentは実DBや実データを直接解釈しない
 - 判断・存在確認・不足指摘は、必ずVault上の実在する.mdを根拠とする
 
 ### 設計ドキュメントの役割
-- **design/**: 設計思想・意図を記載
-- **master/**: 実際のオブジェクト定義を記載
+- design/: 設計思想・意図を記載
+- master/: 実際のオブジェクト定義を記載
 - Agent/LLMは両方を参照して判断する
 
 ---
@@ -173,7 +173,7 @@ docs/snowflake/chatdemo/design/
 メンテナンス用スクリプトは `tests/scripts/` に配置されています。
 既存のスクリプトを参考に、同様の構造で新規スクリプトを作成してください。
 
-**テンプレート構造:**
+テンプレート構造:
 ```python
 #!/usr/bin/env python3
 """スクリプトの説明"""

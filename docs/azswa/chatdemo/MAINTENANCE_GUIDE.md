@@ -10,11 +10,11 @@
 詳細は [NAMING_CONVENTIONS_GUIDE.md](NAMING_CONVENTIONS_GUIDE.md) を参照してください。
 
 ### 主要ルール
-- **コンポーネント**: `PascalCase`
-- **関数**: `camelCase`
-- **定数**: `UPPERCASE_WITH_UNDERSCORES`
-- **型・インターフェース**: `PascalCase`（`I` プレフィックス不要）
-- **CSSモジュール**: `camelCase`
+- コンポーネント: `PascalCase`
+- 関数: `camelCase`
+- 定数: `UPPERCASE_WITH_UNDERSCORES`
+- 型・インターフェース: `PascalCase`（`I` プレフィックス不要）
+- CSSモジュール: `camelCase`
 
 ---
 

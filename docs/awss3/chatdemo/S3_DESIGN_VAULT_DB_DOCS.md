@@ -24,7 +24,7 @@ Cortex Agent (SNOWFLAKE_DEMO_AGENT)
 Snowflake: SELECT FROM DB_DESIGN.DOCS_OBSIDIAN
            WHERE file_path LIKE '%design.ANKEN_MEISAI.md%'
   ↓
-S3: s3://snowflake-chatdemo-vault-prod/design/APP_PRODUCTION/design.ANKEN_MEISAI.md
+S3: s3://135365622922-snowflake-chatdemo-vault-prod/design/APP_PRODUCTION/design.ANKEN_MEISAI.md
   ↓
 Agent: 設計意図を抽出して回答生成
 ```
@@ -47,11 +47,11 @@ Cortex Agent: 設計レビュータスク実行
 
 ### バケット名
 ```
-s3://snowflake-chatdemo-vault-{env}/
+s3://135365622922-snowflake-chatdemo-vault-prod/
 ```
 
-- `{env}`: 環境識別子（`prod` / `dev`）
-- 例：`s3://snowflake-chatdemo-vault-prod/`
+- AWS Account ID: `135365622922`
+- 環境: `prod`
 
 ### ディレクトリ階層
 Obsidian Vaultのディレクトリ構造をそのまま維持：

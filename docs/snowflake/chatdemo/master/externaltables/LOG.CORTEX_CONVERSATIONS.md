@@ -3,7 +3,8 @@ type: externaltable
 table_id: TBL_20260102000101
 schema_id: SCH_20260102000001
 physical: CORTEX_CONVERSATIONS
-stage_name: CORTEX_CONVERSATIONS_STAGE
+stage_name: LOGS_STAGE
+stage_location: cortex_conversations/
 file_format: JSON
 auto_refresh: true
 partition_by: [year, month, day, hour]

@@ -9,6 +9,6 @@ comment:
 # SQL
 ```sql
 CREATE OR REPLACE STAGE DB_DESIGN.OBSIDIAN_VAULT_STAGE
-  URL = 's3://135365622922-snowflake-dbdesign/'
+  URL = 's3://135365622922-snowflake-chatdemo-vault-prod/'
   STORAGE_INTEGRATION = S3_OBSIDIAN_INT;
 ```

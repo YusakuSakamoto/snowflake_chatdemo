@@ -16,15 +16,15 @@
 
 ### バケット名
 ```
-s3://snowflake-chatdemo-logs-{env}/
+s3://135365622922-snowflake-chatdemo-logs-prod/
 ```
 
-- `{env}`: 環境識別子（`prod` / `dev` / `staging`）
-- 例：`s3://snowflake-chatdemo-logs-prod/`
+- AWS Account ID: `135365622922`
+- 環境: `prod`
 
 ### ディレクトリ階層
 ```
-snowflake-chatdemo-logs-prod/
+135365622922-snowflake-chatdemo-logs-prod/
 ├── cortex_conversations/           # Cortex Agent会話ログ
 │   └── year=2026/
 │       └── month=01/

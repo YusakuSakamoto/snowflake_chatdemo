@@ -764,6 +764,10 @@ DROP SCHEMA PUBLIC;
       const fileFormat = clean(t.file_format) || "JSON";
       const autoRefresh = bool(t.auto_refresh, true);
       const partitionBy = Array.isArray(t.partition_by) ? t.partition_by : [];
+      // サブディレクトリ（location_subdir, path, subdir など）
+      let subdir = clean(t.location_subdir) || clean(t.path) || clean(t.subdir) || "";
+      if (subdir && !subdir.startsWith("/")) subdir = "/" + subdir;
+      if (subdir.endsWith("/")) subdir = subdir.slice(0, -1);
 
 
       // Build column definitions with metadata$ extraction (partition columns fixed index)
@@ -802,7 +806,7 @@ DROP SCHEMA PUBLIC;
       }
       
       // Location and file format
-      out.push(`LOCATION=@${q(sch)}.${q(stageName)}\n`);
+      out.push(`LOCATION=@${q(sch)}.${q(stageName)}${subdir ? subdir : ""}\n`);
       out.push(`FILE_FORMAT=(TYPE=${fileFormat})\n`);
       out.push(`AUTO_REFRESH=${autoRefresh ? "TRUE" : "FALSE"}\n`);
       out.push(`REFRESH_ON_CREATE=TRUE;\n`);

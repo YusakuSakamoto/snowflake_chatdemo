@@ -89,34 +89,118 @@ class SnowflakeCortexClient:
             print(f"リクエストエラー: {str(e)}")
             return None
     
-    def call_cortex_agent(self, prompt: str, context: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def call_cortex_agent(self, prompt: str, agent_name: Optional[str] = None, context: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Snowflake Cortex Agentを呼び出す
-        """
-        # Cortex Complete関数を使用
-        cortex_query = f"""
-        SELECT SNOWFLAKE.CORTEX.COMPLETE(
-            'mistral-large2',
-            [
-                {{'role': 'system', 'content': 'あなたは親切なAIアシスタントです。日本語で回答してください。'}},
-                {{'role': 'user', 'content': '{prompt}'}}
-            ]
-        ) as response
-        """
+        Snowflake Cortex AgentをREST API経由で呼び出す
         
+        Note: AgentはREST API経由でのみ呼び出し可能
+        エンドポイント: /api/v2/databases/{db}/schemas/{schema}/agents/{agent}:run
+        """
+        # Agent名が指定されていない場合は環境変数から取得
+        if not agent_name:
+            agent_name = self.agent_name
+        
+        # Agent名をスキーマとオブジェクト名に分割
+        # 例: "DB_DESIGN.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT" -> ("DB_DESIGN", "OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT")
+        if "." in agent_name:
+            agent_schema, agent_object = agent_name.split(".", 1)
+        else:
+            agent_schema = self.schema
+            agent_object = agent_name
+        
+        # コンテキストがある場合はプロンプトに追加
+        full_prompt = prompt
         if context:
-            cortex_query = f"""
-            SELECT SNOWFLAKE.CORTEX.COMPLETE(
-                'mistral-large2',
-                [
-                    {{'role': 'system', 'content': 'あなたは親切なAIアシスタントです。以下のコンテキストを参考に回答してください。\nコンテキスト: {context}'}},
-                    {{'role': 'user', 'content': '{prompt}'}}
-                ]
-            ) as response
-            """
+            full_prompt = f"{context}\n\n{prompt}"
         
-        result = self.execute_query(cortex_query)
-        return result
+        # Cortex Agent REST API エンドポイント
+        url = f"{self.base_url}/databases/{self.database}/schemas/{agent_schema}/agents/{agent_object}:run"
+        
+        # 認証ヘッダーを取得
+        auth_header = self.auth_client.get_auth_header()
+        
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+            **auth_header
+        }
+        
+        payload = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": full_prompt}]
+                }
+            ],
+            "tool_choice": {"type": "auto"}
+        }
+        
+        try:
+            response = self.session.post(
+                url,
+                headers=headers,
+                json=payload,
+                stream=True,
+                timeout=900
+            )
+            
+            print(f"Agent API status code: {response.status_code}")
+            
+            if response.status_code >= 400:
+                error_msg = f"Snowflake Agent Error: {response.status_code} - {response.text}"
+                print(error_msg)
+                return {
+                    "ok": False,
+                    "error": "snowflake_error",
+                    "status_code": response.status_code,
+                    "body": response.text
+                }
+            
+            # ストリーミングレスポンスを収集
+            full_response = ""
+            line_count = 0
+            for line in response.iter_lines():
+                if line:
+                    line_count += 1
+                    decoded_line = line.decode('utf-8')
+                    print(f"[Line {line_count}] {decoded_line[:200]}")  # 最初の200文字のみログ
+                    
+                    # SSE形式: "data: {...}"
+                    if decoded_line.startswith("data: "):
+                        data_str = decoded_line[6:]  # "data: " を除去
+                        if data_str.strip():
+                            try:
+                                data = json.loads(data_str)
+                                # Snowflake Agent形式: {"content_index": N, "text": "..."}
+                                if isinstance(data, dict):
+                                    if "text" in data:
+                                        full_response += data["text"]
+                                    # 旧形式も念のため対応: {"delta": {"content": "..."}}
+                                    elif "delta" in data:
+                                        delta = data["delta"]
+                                        if isinstance(delta, dict) and "content" in delta:
+                                            full_response += delta["content"]
+                            except json.JSONDecodeError as je:
+                                print(f"JSON decode error: {je}")
+                                pass
+            
+            print(f"Total lines received: {line_count}")
+            print(f"Full response length: {len(full_response)}")
+            print(f"Response preview: {full_response[:500]}")
+            
+            return {
+                "ok": True,
+                "response": full_response,
+                "status_code": response.status_code
+            }
+            
+        except Exception as e:
+            error_msg = f"Agent呼び出しエラー: {str(e)}"
+            print(error_msg)
+            return {
+                "ok": False,
+                "error": str(e)
+            }
     
     def save_message(self, user_id: str, message: str, ai_response: Optional[str] = None) -> bool:
         """

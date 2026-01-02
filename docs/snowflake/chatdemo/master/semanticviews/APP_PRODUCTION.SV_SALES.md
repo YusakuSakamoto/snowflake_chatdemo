@@ -221,52 +221,40 @@ tables:
       schema: APP_PRODUCTION
       table: V_INVOICE
     primary_key:
-      columns: [INVOICE_NUMBER, ACCOUNTING_MONTH]
+      columns: [INVOICE_KEY, ACCOUNTING_MONTH]
     dimensions:
+      - name: INVOICE_KEY
+        expr: INVOICE_KEY
+        data_type: TEXT
+        description: 請求キー（請求番号 or 仮キー：NO_INVOICE_xxx）
+        synonyms: ["請求キー", "invoice_key"]
       - name: INVOICE_NUMBER
         expr: INVOICE_NUMBER
         data_type: TEXT
-        description: 請求番号（なしの場合は仮キー）
+        description: 請求番号（NULLの場合あり）
         synonyms: ["請求No", "請求番号", "invoice_number"]
-      - name: ACCOUNTING_MONTH
-        expr: ACCOUNTING_MONTH
-        data_type: TEXT
-        description: 計上月（YYYY-MM形式）
-        synonyms: ["計上月", "売上月", "accounting_month"]
-      - name: PROJECT_NUMBER
-        expr: PROJECT_NUMBER
-        data_type: TEXT
-        description: 案件番号
-      - name: BRANCH_NUMBER
-        expr: BRANCH_NUMBER
-        data_type: TEXT
-        description: 枝番
-      - name: FISCAL_YEAR
-        expr: FISCAL_YEAR
-        data_type: TEXT
-        description: 年度
       - name: ORDER_NUMBER
         expr: ORDER_NUMBER
         data_type: TEXT
         description: オーダ番号
+        synonyms: ["オーダNo", "オーダ番号", "order_number"]
+      - name: ACCOUNTING_MONTH
+        expr: ACCOUNTING_MONTH
+        data_type: TEXT
+        description: 計上月（YYYY/MM形式の文字列、例：2024/04、2025/12）
+        synonyms: ["計上月", "売上月", "accounting_month"]
+        sample_values: ["2024/04", "2024/05", "2024/06", "2025/01"]
+      - name: SALES_DELIVERY_FLAG
+        expr: SALES_DELIVERY_FLAG
+        data_type: TEXT
+        description: 売上渡しフラグ
+        synonyms: ["売上渡し", "sales_delivery_flag"]
     measures:
       - name: INVOICE_AMOUNT
-        expr: INVOICE_AMOUNT
+        expr: AMOUNT
         data_type: NUMBER
-        description: 請求金額（税抜）
-        synonyms: ["請求金額", "売上金額", "金額", "invoice_amount"]
-        default_aggregation: sum
-      - name: TAX_AMOUNT
-        expr: TAX_AMOUNT
-        data_type: NUMBER
-        description: 消費税額
-        synonyms: ["消費税", "税額", "tax_amount"]
-        default_aggregation: sum
-      - name: INVOICE_AMOUNT_WITH_TAX
-        expr: INVOICE_AMOUNT_WITH_TAX
-        data_type: NUMBER
-        description: 請求金額（税込）
-        synonyms: ["税込金額", "請求額税込", "invoice_amount_with_tax"]
+        description: 請求金額
+        synonyms: ["請求金額", "売上金額", "金額", "invoice_amount", "amount"]
         default_aggregation: sum
 
   - name: PROJECT_FACTS
@@ -317,84 +305,72 @@ tables:
 
 relationships:
   - name: PROJECT_TO_CUSTOMER
-    left_table: PROJECTS
-    right_table: CUSTOMERS
-    join_type: left
-    join_conditions:
-      - left_column: CUSTOMER_ID
-        right_column: CUSTOMER_ID
+    leftTable: PROJECTS
+    rightTable: CUSTOMERS
+    joinType: left_outer
+    relationshipColumns:
+      - leftColumn: CUSTOMER_ID
+        rightColumn: CUSTOMER_ID
 
   - name: PROJECT_TO_DEPARTMENT
-    left_table: PROJECTS
-    right_table: DEPARTMENTS
-    join_type: left
-    join_conditions:
-      - left_column: DEPARTMENT_ID
-        right_column: DEPARTMENT_ID
-      - left_column: FISCAL_YEAR
-        right_column: FISCAL_YEAR
+    leftTable: PROJECTS
+    rightTable: DEPARTMENTS
+    joinType: left_outer
+    relationshipColumns:
+      - leftColumn: DEPARTMENT_ID
+        rightColumn: DEPARTMENT_ID
+      - leftColumn: FISCAL_YEAR
+        rightColumn: FISCAL_YEAR
 
   - name: ORDER_TO_PROJECT
-    left_table: ORDERS
-    right_table: PROJECTS
-    join_type: left
-    join_conditions:
-      - left_column: PROJECT_NUMBER
-        right_column: PROJECT_NUMBER
-      - left_column: BRANCH_NUMBER
-        right_column: BRANCH_NUMBER
-      - left_column: FISCAL_YEAR
-        right_column: FISCAL_YEAR
-
-  - name: INVOICE_TO_PROJECT
-    left_table: INVOICES
-    right_table: PROJECTS
-    join_type: left
-    join_conditions:
-      - left_column: PROJECT_NUMBER
-        right_column: PROJECT_NUMBER
-      - left_column: BRANCH_NUMBER
-        right_column: BRANCH_NUMBER
-      - left_column: FISCAL_YEAR
-        right_column: FISCAL_YEAR
+    leftTable: ORDERS
+    rightTable: PROJECTS
+    joinType: left_outer
+    relationshipColumns:
+      - leftColumn: PROJECT_NUMBER
+        rightColumn: PROJECT_NUMBER
+      - leftColumn: BRANCH_NUMBER
+        rightColumn: BRANCH_NUMBER
+      - leftColumn: FISCAL_YEAR
+        rightColumn: FISCAL_YEAR
 
   - name: INVOICE_TO_ORDER
-    left_table: INVOICES
-    right_table: ORDERS
-    join_type: left
-    join_conditions:
-      - left_column: ORDER_NUMBER
-        right_column: ORDER_NUMBER
+    leftTable: INVOICES
+    rightTable: ORDERS
+    joinType: left_outer
+    relationshipColumns:
+      - leftColumn: ORDER_NUMBER
+        rightColumn: ORDER_NUMBER
 
   - name: FACT_TO_PROJECT
-    left_table: PROJECT_FACTS
-    right_table: PROJECTS
-    join_type: left
-    join_conditions:
-      - left_column: PROJECT_NUMBER
-        right_column: PROJECT_NUMBER
-      - left_column: BRANCH_NUMBER
-        right_column: BRANCH_NUMBER
-      - left_column: FISCAL_YEAR
-        right_column: FISCAL_YEAR
+    leftTable: PROJECT_FACTS
+    rightTable: PROJECTS
+    joinType: left_outer
+    relationshipColumns:
+      - leftColumn: PROJECT_NUMBER
+        rightColumn: PROJECT_NUMBER
+      - leftColumn: BRANCH_NUMBER
+        rightColumn: BRANCH_NUMBER
+      - leftColumn: FISCAL_YEAR
+        rightColumn: FISCAL_YEAR
 
   - name: FACT_TO_CUSTOMER
-    left_table: PROJECT_FACTS
-    right_table: CUSTOMERS
-    join_type: left
-    join_conditions:
-      - left_column: CUSTOMER_ID
-        right_column: CUSTOMER_ID
+    leftTable: PROJECT_FACTS
+    rightTable: CUSTOMERS
+    joinType: left_outer
+    relationshipColumns:
+      - leftColumn: CUSTOMER_ID
+        rightColumn: CUSTOMER_ID
 
   - name: FACT_TO_DEPARTMENT
-    left_table: PROJECT_FACTS
-    right_table: DEPARTMENTS
-    join_type: left
-    join_conditions:
-      - left_column: DEPARTMENT_ID
-        right_column: DEPARTMENT_ID
-      - left_column: FISCAL_YEAR
-        right_column: FISCAL_YEAR
+    leftTable: PROJECT_FACTS
+    rightTable: DEPARTMENTS
+    joinType: left_outer
+    relationshipColumns:
+      - leftColumn: DEPARTMENT_ID
+        rightColumn: DEPARTMENT_ID
+      - leftColumn: FISCAL_YEAR
+        rightColumn: FISCAL_YEAR
 ```
 
 ## 利用方法

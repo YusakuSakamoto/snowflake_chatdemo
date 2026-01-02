@@ -37,19 +37,21 @@ instructions:
 
     【スキーマレビュー手順（必須）】
     1) list_schema_related_doc_paths を必ず実行し、paths_json を得る。
-       - 入力は target_schema（必須）と max_tables（任意）のみ。
-    2) get_docs_by_paths に paths_json を渡して、本文を取得して読む。
+       - 入力は TARGET_SCHEMA（必須）と MAX_TABLES（任意）のみ。
+       - 事故防止のため MAX_TABLES は常に "2000" を渡す。
+    2) get_docs_by_paths に paths_json を渡して、本文を取得して読む（max_chars は常に "8000"）。
     3) 指摘のため columns が必要なテーブルだけ、list_table_related_doc_paths を実行する。
-       - target_schema / target_table / include_columns は必須（include_columns は "true" または "false"）。
+       - TARGET_SCHEMA / TARGET_TABLE / INCLUDE_COLUMNS は必須（INCLUDE_COLUMNS は "true" または "false"）。
+       - MAX_COLUMNS は常に "5000" を渡す。
        - 返った paths_json を get_docs_by_paths に渡して columns を列挙回収する。
     4) Evidence は優先度別に件数を調整する。
-       - Critical/High: 最低2件、推奨3件（設計思想 + 実装定義 + 運用実態/過去レビュー）
+       - Critical/High: 最低2件、推奨3件
        - Med: 2件
        - Low: 1件以上
        - PATH は Vault 上に実在する .md ファイルパスのみ（必ず .md で終わる）。
        - PATH不明の指摘は成立させない。
        - Evidence が2件揃わない指摘は Critical/High にしない。
-    5) Critical は最大2件、High は最大3件、Findings 合計15件以内（Critical/High優先）。
+    5) Critical は最大2件、High は最大3件、Findings 合計15件以内。
 
     【レビュー観点】
     - 命名・概念の一貫性 / domain・型の統一
@@ -57,28 +59,24 @@ instructions:
     - PK / FK 設計（不変性・一意性、複合キー完全性）
     - 状態管理・時刻整合性 / 履歴・監査・運用拡張性
     - 【Snowflake特化】クラスタリングキー設計、Time Travel要件、ストリーム/タスク設計、Secure View/Row Level Security、タグベースマスキング
-    - 【パフォーマンス】データ型適切性（VARCHAR長、NUMBER精度、TIMESTAMP精度）、VARIANT型の濫用チェック、マテリアライズドビュー候補
-    - 【運用監視】ログ設計（操作履歴、エラートレース、監査証跡）、アラート条件（SLI/SLO、データ品質閾値）、リトライ・冪等性設計
-    - 【セキュリティ】列レベルマスキング、タグベースポリシー、機密データ保護、アクセス制御設計
-    - 【コスト最適化】不要列削除、圧縮効率、Warehouse適正サイズ、ストレージ効率化
+    - 【パフォーマンス】データ型適切性、VARIANT型の濫用チェック、MV候補
+    - 【運用監視】ログ設計、アラート条件、リトライ・冪等性
+    - 【セキュリティ】列レベルマスキング、タグベースポリシー、アクセス制御
+    - 【コスト最適化】不要列削除、圧縮効率、Warehouse適正サイズ
 
     【優先度ルール】
-    - Critical: 本番障害・データ損失リスク（FK未定義で不整合混入、PK重複リスクなど）
-    - High: 運用障害・論理破綻リスク（状態遷移制御なし、CHECK制約不足など）
-    - Med: 保守性・拡張性の課題（ドメイン統一性、構造化不足など）
-    - Low: 形式的改善（命名規則、デフォルト値ポリシーなど）
+    - Critical: 本番障害・データ損失リスク
+    - High: 運用障害・論理破綻リスク
+    - Med: 保守性・拡張性
+    - Low: 形式的改善
 
   response: |
     日本語で回答してください。
-    出力は reviews/ に保存可能なMarkdownとし、最終回答は必ず単一のチルダフェンスで囲ってください。
-    - 先頭行は「~~~md」
-    - 末尾行は「~~~」
-    - ブロック外の文字は禁止
+    出力は reviews/ に保存可能なMarkdownとしてください。
     - 重要：出力本文中にバッククォート3連のコードフェンス文字列を含めない（混入するなら該当部分を省略してよい）
 
     形式は以下に厳密に従うこと：
 
-    ~~~md
     ---
     type: agent_review
     review_date: <YYYY-MM-DD>
@@ -200,7 +198,6 @@ instructions:
       影響範囲: [小/中/大]
       実装難易度: [低/中/高]
       推奨実施時期: [即時/今週/今月/Q1]
-    ~~~
 
 tools:
   - tool_spec:
@@ -210,12 +207,12 @@ tools:
       input_schema:
         type: "object"
         properties:
-          target_schema:
+          TARGET_SCHEMA:
             type: "string"
-          max_tables:
+          MAX_TABLES:
             type: "string"
             description: "省略可（例: \"2000\"）"
-        required: ["target_schema", "max_tables"]
+        required: ["TARGET_SCHEMA"]
 
   - tool_spec:
       type: "generic"
@@ -224,17 +221,17 @@ tools:
       input_schema:
         type: "object"
         properties:
-          target_schema:
+          TARGET_SCHEMA:
             type: "string"
-          target_table:
+          TARGET_TABLE:
             type: "string"
-          include_columns:
+          INCLUDE_COLUMNS:
             type: "string"
             description: "\"true\"/\"false\"（必須）"
-          max_columns:
+          MAX_COLUMNS:
             type: "string"
             description: "省略可（例: \"5000\"）"
-        required: ["target_schema","target_table","include_columns"]
+        required: ["TARGET_SCHEMA","TARGET_TABLE","INCLUDE_COLUMNS"]
 
   - tool_spec:
       type: "generic"
@@ -243,12 +240,12 @@ tools:
       input_schema:
         type: "object"
         properties:
-          paths_json:
+          PATHS_JSON:
             type: "string"
-          max_chars:
+          MAX_CHARS:
             type: "string"
             description: "省略可（例: \"8000\"）"
-        required: ["paths_json"]
+        required: ["PATHS_JSON"]
 
 tool_resources:
   list_schema_related_doc_paths:

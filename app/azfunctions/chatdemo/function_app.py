@@ -756,19 +756,19 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     # 変数の初期化
     # ----------------------------
     success = False
-    markdown = ""        # ログ用途：受け取った stream の生データ（結合したもの）
-    final_text = ""      # ★ ファイル出力用途：最終回答 response.text のみ
+    markdown = ""        # ログ用途：stream全文
+    final_text = ""      # ★ 最終出力：response.text のみ
     message = "レビュー完了"
-    req_body = None
+
     target_schema = None
+    target_table = None
     max_tables = None
 
-    """
-    DB設計レビューエージェント呼び出し（Cortex Agent REST API経由のみ許可、DB直接アクセス禁止）
-    """
     logging.info("DB Review endpoint triggered")
 
-    # OPTIONSリクエスト（CORS preflight）への対応
+    # ----------------------------
+    # OPTIONS（CORS）
+    # ----------------------------
     if req.method == "OPTIONS":
         return func.HttpResponse(
             status_code=200,
@@ -780,209 +780,187 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     try:
+        # ----------------------------
+        # リクエストJSON取得
+        # ----------------------------
         req_body = req.get_json()
         target_schema = req_body.get("target_schema")
+        target_table = req_body.get("target_table")
         max_tables = req_body.get("max_tables")
 
         if not target_schema:
             return func.HttpResponse(
-                json.dumps({"success": False, "error": "target_schema パラメータが必要です"}, ensure_ascii=False),
+                json.dumps(
+                    {"success": False, "error": "target_schema パラメータが必要です"},
+                    ensure_ascii=False,
+                ),
                 mimetype="application/json",
                 status_code=400,
                 headers={"Access-Control-Allow-Origin": "*"},
             )
 
-        # Cortex Agent REST API経由でレビューを実施
+        # ----------------------------
+        # Snowflake Cortex Agent 設定
+        # ----------------------------
         base_url = os.getenv("SNOWFLAKE_ACCOUNT_URL", "").rstrip("/")
         token = os.getenv("SNOWFLAKE_BEARER_TOKEN", "")
         database = os.getenv("SNOWFLAKE_DATABASE", "")
-        # 設計レビュー用は専用スキーマを参照
         schema = os.getenv("SNOWFLAKE_SCHEMA_REVIEW", os.getenv("SNOWFLAKE_SCHEMA", ""))
-        # 設計レビュー用は専用エージェント名を参照
-        agent = os.getenv("SNOWFLAKE_AGENT_NAME_REVIEW", os.getenv("SNOWFLAKE_AGENT_NAME", ""))
+        agent = os.getenv(
+            "SNOWFLAKE_AGENT_NAME_REVIEW",
+            os.getenv("SNOWFLAKE_AGENT_NAME", ""),
+        )
 
         url = f"{base_url}/api/v2/databases/{database}/schemas/{schema}/agents/{agent}:run"
+
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            # ここは現状維持（ログは今のままOK）
-            # ※Snowflake側がSSEを返す場合でも、下の解析は event/data を拾う
             "Accept": "application/json",
         }
 
-        # target_schema, max_tablesをプロンプトに含める
-        prompt = f"DB設計レビューを実施してください。対象スキーマ: {target_schema}"
-        if max_tables:
-            prompt += f"、最大テーブル数: {max_tables}"
+        # ----------------------------
+        # ★ PARAMS_JSON を必ず作る（ここが最重要）
+        # ----------------------------
+        params = {
+            "TARGET_SCHEMA": str(target_schema),
+            "MAX_TABLES": str(max_tables) if max_tables else "2000",
+        }
+        if target_table:
+            params["TARGET_TABLE"] = str(target_table)
+
+        # ----------------------------
+        # ★ AGENTが誤解しないプロンプト
+        # ----------------------------
+        prompt = (
+            "DB設計レビューを実施してください。\n"
+            "以下の PARAMS_JSON を唯一の入力パラメータとして厳密に使用してください。\n"
+            "ツール呼び出し時は、必ずこの値をそのまま文字列で渡してください。\n\n"
+            f"PARAMS_JSON:\n{json.dumps(params, ensure_ascii=False)}\n\n"
+            "手順:\n"
+            "1. list_schema_related_doc_paths を TARGET_SCHEMA / MAX_TABLES で実行\n"
+            "2. get_docs_by_paths で本文を取得\n"
+            "3. TARGET_TABLE が指定されている場合は、"
+            "   list_table_related_doc_paths を TARGET_SCHEMA / TARGET_TABLE / INCLUDE_COLUMNS=\"true\" で実行\n"
+            "4. 再度 get_docs_by_paths を実行し、テーブル・カラム設計を含めてレビュー\n"
+        )
 
         payload = {
-            "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": prompt}],
+                }
+            ],
             "tool_choice": {"type": "auto"},
         }
 
-        try:
-            # streamは現状維持（ログを細かく残すため）
-            r = requests.post(url, headers=headers, json=payload, timeout=120, stream=True)
+        # ----------------------------
+        # Cortex Agent 呼び出し（SSE）
+        # ----------------------------
+        r = requests.post(url, headers=headers, json=payload, timeout=120, stream=True)
 
-            if r.status_code < 400:
-                # ----------------------------
-                # ログ用：stream全体を保持
-                # 最終回答用：SSE(event/data) から response.text のみ抽出
-                # ----------------------------
-                content_chunks = []
+        if r.status_code >= 400:
+            return func.HttpResponse(
+                json.dumps(
+                    {"success": False, "error": f"Cortex Agent API error: {r.status_code}"},
+                    ensure_ascii=False,
+                ),
+                mimetype="application/json",
+                status_code=500,
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
+
+        content_chunks = []
+        current_event = None
+
+        for raw in r.iter_lines(decode_unicode=False):
+            if raw is None:
+                continue
+
+            try:
+                line = raw.decode("utf-8")
+            except Exception:
+                line = raw.decode("utf-8", errors="ignore")
+
+            logging.info(f"[review_schema_endpoint][stream] {line[:500]}")
+            content_chunks.append(line)
+
+            line = line.rstrip("\r")
+
+            if line == "":
                 current_event = None
+                continue
 
-                # iter_linesでSSEを正しく扱う（chunk境界で壊れない）
-                for raw in r.iter_lines(decode_unicode=False):
-                    if raw is None:
-                        continue
+            if line.startswith("event:"):
+                current_event = line[len("event:"):].strip()
+                continue
 
-                    try:
-                        line = raw.decode("utf-8")
-                    except Exception:
-                        line = raw.decode("utf-8", errors="ignore")
+            if not line.startswith("data:"):
+                continue
 
-                    # ログ：今のまま（行単位でも十分細かい）
-                    logging.info(f"[review_schema_endpoint][stream_chunk] {line[:500]}")
-                    content_chunks.append(line)
+            data_str = line[len("data:"):].strip()
+            if data_str == "[DONE]":
+                break
 
-                    line = line.rstrip("\r")
+            # ★ 最終回答のみ取得
+            if current_event == "response.text":
+                try:
+                    obj = json.loads(data_str)
+                    t = obj.get("text") if isinstance(obj, dict) else None
+                    if isinstance(t, str) and t.strip():
+                        final_text = t
+                except Exception:
+                    pass
 
-                    # SSEのイベント区切り（空行）
-                    if line == "":
-                        current_event = None
-                        continue
+        markdown = "\n".join(content_chunks)
+        success = bool(final_text.strip())
 
-                    if line.startswith("event:"):
-                        current_event = line[len("event:") :].strip()
-                        continue
-
-                    if not line.startswith("data:"):
-                        continue
-
-                    data_str = line[len("data:") :].strip()
-                    if data_str == "[DONE]":
-                        break
-
-                    # ★ 最終回答のみ抽出（response.text）
-                    if current_event == "response.text":
-                        try:
-                            obj = json.loads(data_str)
-                            t = obj.get("text") if isinstance(obj, dict) else None
-                            if isinstance(t, str) and t.strip():
-                                final_text = t
-                        except Exception:
-                            pass
-
-                # ログ用：stream全文（結合）
-                markdown = "\n".join(content_chunks)
-
-                # 成否は「最終回答が取れたか」で判定（これが一番ブレない）
-                success = bool(final_text.strip())
-
-                if not success:
-                    message = "最終回答（response.text）を取得できませんでした"
-
-            else:
-                message = f"Cortex Agent API error: {r.status_code}"
-
-        except Exception as e:
-            message = f"Cortex Agent REST API error: {e}"
+        if not success:
+            message = "最終回答（response.text）を取得できませんでした"
 
         # ----------------------------
-        # ファイル出力・S3アップロードは「最終回答（response.text）取得時」のみ
-        # 出力内容は final_text のみ
+        # ファイル保存（最終回答のみ）
         # ----------------------------
-        if success and final_text.strip():
-            # S3アップロード
-            try:
-                from s3_upload import upload_file_to_s3
-                s3_bucket = os.getenv("REVIEW_S3_BUCKET")
-                if s3_bucket:
-                    schema_name = target_schema.replace("/", "_").replace(".", "_") if target_schema else "unknown"
-                    table_name = req_body.get("target_table", None)
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if success:
+            output_dir = (
+                Path(__file__).parent.parent.parent.parent
+                / "docs" / "snowflake" / "chatdemo" / "reviews" / "schemas"
+            )
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-                    if table_name:
-                        table_name = table_name.replace("/", "_").replace(".", "_")
-                        s3_key = f"reviews/schemas/{schema_name}_{table_name}_{timestamp}.md"
-                    else:
-                        s3_key = f"reviews/schemas/{schema_name}_{timestamp}.md"
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            schema_name = target_schema.replace("/", "_").replace(".", "_")
+            table_part = (
+                "_" + target_table.replace("/", "_").replace(".", "_")
+                if target_table
+                else ""
+            )
 
-                    from tempfile import NamedTemporaryFile
-                    tmp_path = None
-                    try:
-                        with NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmpf:
-                            tmp_path = tmpf.name
-                            tmpf.write(final_text)  # ★ response.textのみ
-                            tmpf.flush()
-                        upload_file_to_s3(tmp_path, s3_bucket, s3_key, content_type="text/markdown")
-                        logging.info(f"Review uploaded to S3: s3://{s3_bucket}/{s3_key}")
-                    finally:
-                        if tmp_path:
-                            try:
-                                os.unlink(tmp_path)
-                            except Exception:
-                                pass
+            output_file = output_dir / f"{schema_name}{table_part}_{ts}.md"
+            output_file.write_text(final_text, encoding="utf-8")
 
-            except Exception as e:
-                logging.error(f"S3 upload error (review): {e}")
+            logging.info(f"Review saved to: {output_file}")
 
-            # ローカルファイル保存
-            try:
-                output_dir = (
-                    Path(__file__).parent.parent.parent.parent
-                    / "docs" / "snowflake" / "chatdemo" / "reviews" / "schemas"
-                )
-                output_dir.mkdir(parents=True, exist_ok=True)
-
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                schema_name = target_schema.replace("/", "_").replace(".", "_") if target_schema else "unknown"
-                table_name = req_body.get("target_table", None)
-
-                if table_name:
-                    table_name = table_name.replace("/", "_").replace(".", "_")
-                    filename = f"{schema_name}_{table_name}_{timestamp}.md"
-                else:
-                    filename = f"{schema_name}_{timestamp}.md"
-
-                output_file = output_dir / filename
-                output_file.write_text(final_text, encoding="utf-8")  # ★ response.textのみ
-                logging.info(f"Review saved to: {output_file}")
-
-            except Exception as e:
-                logging.error(f"ファイル保存失敗: {e}")
-
-        review_date = datetime.now().strftime("%Y-%m-%d")
+        # ----------------------------
+        # APIレスポンス
+        # ----------------------------
         response_data = {
             "success": success,
             "message": message,
-            # APIレスポンスとしては現状維持：ログ用の全文（必要なら final_text に変更可）
-            "markdown": markdown,
-            "final_text": final_text,  # ★確認用に返す（不要なら削除OK）
+            "final_text": final_text,
             "metadata": {
                 "target_schema": target_schema,
-                "review_date": review_date,
+                "target_table": target_table,
                 "max_tables": max_tables,
+                "review_date": datetime.now().strftime("%Y-%m-%d"),
             },
         }
 
-        # レスポンス内容を必ずログ出力
-        logging.info(f"review_schema_endpoint response: {json.dumps(response_data, ensure_ascii=False)}")
         return func.HttpResponse(
             json.dumps(response_data, ensure_ascii=False),
             mimetype="application/json",
             status_code=200 if success else 500,
-            headers={"Access-Control-Allow-Origin": "*"},
-        )
-
-    except ValueError as e:
-        # JSON解析エラー
-        logging.error(f"Invalid JSON: {str(e)}")
-        return func.HttpResponse(
-            json.dumps({"success": False, "error": "Invalid JSON format"}, ensure_ascii=False),
-            mimetype="application/json",
-            status_code=400,
             headers={"Access-Control-Allow-Origin": "*"},
         )
 

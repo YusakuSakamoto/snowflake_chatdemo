@@ -1,3 +1,5 @@
+import uuid
+
 import azure.functions as func
 import logging
 import os
@@ -5,8 +7,7 @@ import json
 import time
 import requests
 from datetime import datetime
-from snowflake_cortex import SnowflakeCortexClient
-from db_review_agent import DBReviewAgent
+from s3_upload import upload_file_to_s3
 
 # モックデータ（開発用 - USE_MOCK=Trueの場合のみ使用）
 mock_messages = []
@@ -17,10 +18,10 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 @app.route(route="chat", methods=["POST", "OPTIONS"])
 def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     """
-    チャットメッセージを処理し、Snowflakeに保存するエンドポイント
+    チャットメッセージを処理し、Cortex Agent REST API経由でのみ応答するエンドポイント
     """
     logging.info('Chat endpoint triggered')
-    
+
     # OPTIONSリクエスト（CORS preflight）への対応
     if req.method == "OPTIONS":
         return func.HttpResponse(
@@ -33,7 +34,6 @@ def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     try:
-        # リクエストボディを取得
         req_body = req.get_json()
         message = req_body.get('message')
         user_id = req_body.get('user_id', 'anonymous')
@@ -56,39 +56,88 @@ def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
                 'ai_response': f"これはモック応答です: {message}",
                 'timestamp': datetime.now().isoformat()
             })
-            
-            # 最近のメッセージを取得（最大10件）
             recent_messages = mock_messages[-10:][::-1]
         else:
-            # Snowflake Cortex Agentを使用
-            cortex_client = SnowflakeCortexClient()
-            
-            # Cortex Agentでメッセージを処理
-            cortex_result = cortex_client.call_cortex_agent(message)
-            
+            # Cortex Agent REST API経由でのみ応答
+            base_url = os.getenv("SNOWFLAKE_ACCOUNT_URL", "").rstrip("/")
+            token = os.getenv("SNOWFLAKE_BEARER_TOKEN", "")
+            database = os.getenv("SNOWFLAKE_DATABASE", "")
+            schema = os.getenv("SNOWFLAKE_SCHEMA", "")
+            agent = os.getenv("SNOWFLAKE_AGENT_NAME", "")
+
+            url = f"{base_url}/api/v2/databases/{database}/schemas/{schema}/agents/{agent}:run"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+            payload = {
+                "messages": [{"role": "user", "content": [{"type": "text", "text": message}]}],
+                "tool_choice": {"type": "auto"},
+            }
             ai_response = "応答を取得できませんでした"
-            if cortex_result and 'data' in cortex_result:
-                ai_response = cortex_result['data'][0][0] if cortex_result['data'] else ai_response
-            
-            # メッセージをSnowflakeに保存
-            cortex_client.save_message(user_id, message, ai_response)
-            
-            # 最近のメッセージを取得
-            messages_data = cortex_client.get_messages(10)
-            recent_messages = [
-                {
-                    'user_id': row[0],
-                    'message': row[1],
-                    'ai_response': row[2],
-                    'timestamp': str(row[3])
-                }
-                for row in messages_data
-            ] if messages_data else []
+            try:
+                r = requests.post(url, headers=headers, json=payload, timeout=60)
+                if r.status_code < 400:
+                    data = r.json()
+                    # Snowflake Cortex Agentの応答仕様に応じて取得
+                    if "choices" in data and data["choices"]:
+                        ai_response = data["choices"][0].get("message", {}).get("content", ai_response)
+                    elif "data" in data and data["data"]:
+                        ai_response = data["data"][0][0]
+            except Exception as e:
+                logging.error(f"Cortex Agent REST API error: {e}")
+
+            # S3アップロード（本番時のみ）
+            try:
+                s3_bucket = os.getenv("CHAT_S3_BUCKET")
+                if s3_bucket:
+                    from tempfile import NamedTemporaryFile
+                    now = datetime.utcnow()
+                    year = now.strftime('%Y')
+                    month = now.strftime('%m')
+                    day = now.strftime('%d')
+                    hour = now.strftime('%H')
+                    conversation_id = req_body.get('conversation_id') or str(uuid.uuid4())
+                    agent_name = os.getenv("SNOWFLAKE_AGENT_NAME", "")
+                    # NDJSON: user, assistant 2行
+                    ndjson_lines = []
+                    ndjson_lines.append(json.dumps({
+                        "conversation_id": conversation_id,
+                        "session_id": req_body.get('session_id'),
+                        "user_id": user_id,
+                        "agent_name": agent_name,
+                        "message_role": "user",
+                        "message_content": {"text": message},
+                        "timestamp": now.isoformat(),
+                        "metadata": None
+                    }, ensure_ascii=False))
+                    ndjson_lines.append(json.dumps({
+                        "conversation_id": conversation_id,
+                        "session_id": req_body.get('session_id'),
+                        "user_id": user_id,
+                        "agent_name": agent_name,
+                        "message_role": "assistant",
+                        "message_content": {"text": ai_response},
+                        "timestamp": now.isoformat(),
+                        "metadata": None
+                    }, ensure_ascii=False))
+                    s3_key = f"cortex_conversations/YEAR={year}/MONTH={month}/DAY={day}/HOUR={hour}/{uuid.uuid4()}.json"
+                    with NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmpf:
+                        tmpf.write("\n".join(ndjson_lines) + "\n")
+                        tmpf.flush()
+                        upload_file_to_s3(tmpf.name, s3_bucket, s3_key, content_type="application/json")
+            except Exception as e:
+                logging.error(f"S3 upload error: {e}")
+
+            # 最近のメッセージは返さない（または空リスト）
+            recent_messages = []
 
         response_data = {
             "status": "success",
             "message": "メッセージが保存されました",
-            "recent_messages": recent_messages
+            "recent_messages": recent_messages,
+            "ai_response": ai_response
         }
 
         return func.HttpResponse(
@@ -112,10 +161,10 @@ def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
 @app.route(route="messages", methods=["GET", "OPTIONS"])
 def get_messages(req: func.HttpRequest) -> func.HttpResponse:
     """
-    Snowflakeからチャットメッセージを取得するエンドポイント
+    チャットメッセージの取得（Snowflake DB直接アクセスは不可、モックのみ）
     """
     logging.info('Get messages endpoint triggered')
-    
+
     # OPTIONSリクエスト（CORS preflight）への対応
     if req.method == "OPTIONS":
         return func.HttpResponse(
@@ -129,23 +178,13 @@ def get_messages(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         limit = int(req.params.get('limit', '50'))
-        
+
         if USE_MOCK:
             # モックデータから取得
             messages = mock_messages[-limit:][::-1]
         else:
-            # Snowflakeから取得
-            cortex_client = SnowflakeCortexClient()
-            messages_data = cortex_client.get_messages(limit)
-            messages = [
-                {
-                    'user_id': row[0],
-                    'message': row[1],
-                    'ai_response': row[2],
-                    'timestamp': str(row[3])
-                }
-                for row in messages_data
-            ] if messages_data else []
+            # DBアクセス禁止のため空リスト返却
+            messages = []
 
         response_data = {
             "messages": messages
@@ -324,6 +363,7 @@ def _extract_tool_detail(obj: dict):
 
 @app.route(route="chat-stream", methods=["POST", "OPTIONS"])
 def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
+        import uuid
     """
     ストリーミング対応のCortex Agent APIエンドポイント
     """
@@ -345,6 +385,18 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
         text = body.get("text") or body.get("input") or body.get("message")
         if not text:
             return _json({"ok": False, "error": "text is required"}, 400)
+
+            # S3アップロード用情報
+            s3_bucket = os.getenv("CHAT_S3_BUCKET")
+            conversation_id = body.get('conversation_id') or str(uuid.uuid4())
+            session_id = body.get('session_id')
+            user_id = body.get('user_id', 'anonymous')
+            agent_name = os.getenv("SNOWFLAKE_AGENT_NAME", "")
+            now = datetime.utcnow()
+            year = now.strftime('%Y')
+            month = now.strftime('%m')
+            day = now.strftime('%d')
+            hour = now.strftime('%H')
 
         # --- env ---
         base_url = _env("SNOWFLAKE_ACCOUNT_URL").rstrip("/")
@@ -501,6 +553,40 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
 
         elapsed = round(time.time() - started, 3)
 
+        # S3アップロード（NDJSON, uuidファイル名, 仕様準拠）
+        try:
+            if s3_bucket:
+                import tempfile
+                ndjson_lines = []
+                # userメッセージ
+                ndjson_lines.append(json.dumps({
+                    "conversation_id": conversation_id,
+                    "session_id": session_id,
+                    "user_id": user_id,
+                    "agent_name": agent_name,
+                    "message_role": "user",
+                    "message_content": {"text": text},
+                    "timestamp": now.isoformat(),
+                    "metadata": None
+                }, ensure_ascii=False))
+                # assistantメッセージ
+                ndjson_lines.append(json.dumps({
+                    "conversation_id": conversation_id,
+                    "session_id": session_id,
+                    "user_id": user_id,
+                    "agent_name": agent_name,
+                    "message_role": "assistant",
+                    "message_content": {"text": final_answer},
+                    "timestamp": now.isoformat(),
+                    "metadata": None
+                }, ensure_ascii=False))
+                s3_key = f"cortex_conversations/YEAR={year}/MONTH={month}/DAY={day}/HOUR={hour}/{uuid.uuid4()}.json"
+                with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmpf:
+                    tmpf.write("\n".join(ndjson_lines) + "\n")
+                    tmpf.flush()
+                    upload_file_to_s3(tmpf.name, s3_bucket, s3_key, content_type="application/json")
+        except Exception as e:
+            logging.error(f"S3 upload error: {e}")
         return _json(
             {
                 "ok": True,
@@ -658,27 +744,10 @@ def chat_stream_endpoint(req: func.HttpRequest) -> func.HttpResponse:
 @app.route(route="review/schema", methods=["POST", "OPTIONS"])
 def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     """
-    DB設計レビューエージェントを呼び出すエンドポイント
-    
-    Request Body:
-    {
-        "target_schema": "DB_DESIGN",
-        "max_tables": 100  // optional
-    }
-    
-    Response:
-    {
-        "success": true,
-        "message": "レビュー完了",
-        "markdown": "...",
-        "metadata": {
-            "target_schema": "DB_DESIGN",
-            "review_date": "2026-01-02"
-        }
-    }
+    DB設計レビューエージェント呼び出し（Cortex Agent REST API経由のみ許可、DB直接アクセス禁止）
     """
     logging.info('DB Review endpoint triggered')
-    
+
     # OPTIONSリクエスト（CORS preflight）への対応
     if req.method == "OPTIONS":
         return func.HttpResponse(
@@ -689,13 +758,12 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
                 "Access-Control-Allow-Headers": "Content-Type"
             }
         )
-    
+
     try:
-        # リクエストボディを取得
         req_body = req.get_json()
         target_schema = req_body.get('target_schema')
         max_tables = req_body.get('max_tables')
-        
+
         if not target_schema:
             return func.HttpResponse(
                 json.dumps({
@@ -706,30 +774,50 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400,
                 headers={"Access-Control-Allow-Origin": "*"}
             )
-        
-        # DB設計レビューAgent呼び出し
-        agent = DBReviewAgent()
-        success, message, markdown = agent.review_schema(
-            target_schema=target_schema,
-            max_tables=max_tables
-        )
-        
-        if not success:
-            return func.HttpResponse(
-                json.dumps({
-                    "success": False,
-                    "error": message
-                }, ensure_ascii=False),
-                mimetype="application/json",
-                status_code=500,
-                headers={"Access-Control-Allow-Origin": "*"}
-            )
-        
-        # レビュー日時の取得
+
+        # Cortex Agent REST API経由でレビューを実施
+        base_url = os.getenv("SNOWFLAKE_ACCOUNT_URL", "").rstrip("/")
+        token = os.getenv("SNOWFLAKE_BEARER_TOKEN", "")
+        database = os.getenv("SNOWFLAKE_DATABASE", "")
+        schema = os.getenv("SNOWFLAKE_SCHEMA", "")
+        agent = os.getenv("SNOWFLAKE_AGENT_NAME", "")
+
+        url = f"{base_url}/api/v2/databases/{database}/schemas/{schema}/agents/{agent}:run"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        # target_schema, max_tablesをプロンプトに含める
+        prompt = f"DB設計レビューを実施してください。対象スキーマ: {target_schema}"
+        if max_tables:
+            prompt += f"、最大テーブル数: {max_tables}"
+
+        payload = {
+            "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+            "tool_choice": {"type": "auto"},
+        }
+        markdown = ""
+        message = "レビュー完了"
+        success = False
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=120)
+            if r.status_code < 400:
+                data = r.json()
+                if "choices" in data and data["choices"]:
+                    markdown = data["choices"][0].get("message", {}).get("content", "")
+                    success = True
+                elif "data" in data and data["data"]:
+                    markdown = data["data"][0][0]
+                    success = True
+            else:
+                message = f"Cortex Agent API error: {r.status_code}"
+        except Exception as e:
+            message = f"Cortex Agent REST API error: {e}"
+
         review_date = datetime.now().strftime("%Y-%m-%d")
-        
         response_data = {
-            "success": True,
+            "success": success,
             "message": message,
             "markdown": markdown,
             "metadata": {
@@ -738,14 +826,14 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
                 "max_tables": max_tables
             }
         }
-        
+
         return func.HttpResponse(
             json.dumps(response_data, ensure_ascii=False),
             mimetype="application/json",
-            status_code=200,
+            status_code=200 if success else 500,
             headers={"Access-Control-Allow-Origin": "*"}
         )
-        
+
     except ValueError as e:
         # JSON解析エラー
         logging.error(f"Invalid JSON: {str(e)}")
@@ -758,7 +846,7 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
             status_code=400,
             headers={"Access-Control-Allow-Origin": "*"}
         )
-    
+
     except Exception as e:
         logging.error(f"DB review error: {str(e)}")
         return func.HttpResponse(

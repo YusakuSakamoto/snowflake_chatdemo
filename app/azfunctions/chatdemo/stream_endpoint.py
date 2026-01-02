@@ -1,34 +1,33 @@
 # 追加のストリーミングエンドポイント
 # function_app.pyに追加する内容
-
-"""
-@app.route(route="chat-stream-sse", methods=["POST", "OPTIONS"])
 def chat_stream_sse(req: func.HttpRequest) -> func.HttpResponse:
-    
-    ストリーミングSSE対応のCortex Agent APIエンドポイント
-    クライアントにイベントを逐次送信
-    
-    logging.info('Chat stream SSE endpoint triggered')
-    
-    if req.method == "OPTIONS":
-        return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
+import os
+import requests
 
-    try:
-        body = req.get_json()
-        text = body.get("text") or body.get("input") or body.get("message")
-        if not text:
-            return _json({"ok": False, "error": "text is required"}, 400)
 
-        # --- env ---
-        base_url = _env("SNOWFLAKE_ACCOUNT_URL").rstrip("/")
-        token = _env("SNOWFLAKE_BEARER_TOKEN")
-        database = _env("SNOWFLAKE_DATABASE")
-        schema = _env("SNOWFLAKE_SCHEMA")
-        agent = _env("SNOWFLAKE_AGENT_NAME")
-
-        url = f"{base_url}/api/v2/databases/{database}/schemas/{schema}/agents/{agent}:run"
+    v = os.getenv(name)
+    if not v:
+        raise ValueError(f"Missing env var: {name}")
+    return v
 
         headers = {
+    """
+    ストリーミング対応のCortex Agent APIエンドポイント
+    Cortex Agent REST API経由のみ許可
+    """
+    base_url = _env("SNOWFLAKE_ACCOUNT_URL").rstrip("/")
+    token = _env("SNOWFLAKE_BEARER_TOKEN")
+    database = _env("SNOWFLAKE_DATABASE")
+    schema = _env("SNOWFLAKE_SCHEMA")
+    agent = _env("SNOWFLAKE_AGENT_NAME")
+
+    url = f"{base_url}/api/v2/databases/{database}/schemas/{schema}/agents/{agent}:run"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+    }
+    # 以降はCortex Agent REST APIストリーム呼び出しのみ
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
             "Accept": "text/event-stream",

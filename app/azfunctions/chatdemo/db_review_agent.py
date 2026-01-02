@@ -20,7 +20,6 @@ class DBReviewAgent:
     
     def __init__(self):
         self.agent_name = "DB_DESIGN.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT"
-        self.cortex_client = SnowflakeCortexClient()
         
         # レビュー結果の出力ディレクトリ
         self.output_dir = Path(__file__).parent.parent.parent.parent / "docs" / "snowflake" / "chatdemo" / "reviews" / "schemas"
@@ -53,10 +52,7 @@ class DBReviewAgent:
             logging.info(f"Agent name: {self.agent_name}")
             
             # REST API経由でAgent呼び出し（call_cortex_agentは内部でPOST /api/v2/cortex/agentを呼ぶ）
-            agent_response = self.cortex_client.call_cortex_agent(
-                prompt,
-                agent_name=self.agent_name
-            )
+                agent_response = self.cortex_client.call_cortex_agent(prompt)
             
             if not agent_response:
                 return False, "Agent実行結果が空です", None

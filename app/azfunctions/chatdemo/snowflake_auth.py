@@ -4,39 +4,23 @@ Snowflake接続ユーティリティ - 秘密鍵認証対応
 秘密鍵認証とBearer Token認証の両方に対応したSnowflake接続クライアント
 """
 
-import os
-import json
-import requests
-from typing import Optional, Dict, Any
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
-import jwt
-import time
 
+import os
 
 class SnowflakeAuthClient:
-    """Snowflake認証クライアント"""
-    
     def __init__(self):
-        self.account = os.getenv("SNOWFLAKE_ACCOUNT", "PGPALAB-IY16795")
-        self.host = os.getenv("SNOWFLAKE_HOST", "PGPALAB-IY16795.snowflakecomputing.com")
-        self.account_url = os.getenv("SNOWFLAKE_ACCOUNT_URL", f"https://{self.host}")
-        self.user = os.getenv("SNOWFLAKE_USER", "GBPS253YS_API_USER")
-        self.warehouse = os.getenv("SNOWFLAKE_WAREHOUSE", "GBPS253YS_WH")
-        self.database = os.getenv("SNOWFLAKE_DATABASE", "GBPS253YS_DB")
-        self.schema = os.getenv("SNOWFLAKE_SCHEMA", "APP_PRODUCTION")
-        self.role = os.getenv("SNOWFLAKE_ROLE", "ACCOUNTADMIN")
-        
-        # 認証方法: bearer_token または private_key
-        self.auth_method = os.getenv("SNOWFLAKE_AUTH_METHOD", "bearer_token")
-        
-        # Bearer Token
+        self.account_url = os.getenv("SNOWFLAKE_ACCOUNT_URL")
         self.bearer_token = os.getenv("SNOWFLAKE_BEARER_TOKEN")
-        
-        # Private Key
-        self.private_key_path = os.getenv("SNOWFLAKE_PRIVATE_KEY_PATH")
-        self.private_key_passphrase = os.getenv("SNOWFLAKE_PRIVATE_KEY_PASSPHRASE")
-    
+
+    def get_auth_headers(self):
+        if self.bearer_token:
+            return {"Authorization": f"Bearer {self.bearer_token}"}
+        raise ValueError("SNOWFLAKE_BEARER_TOKEN is not set")
+
+    def get_bearer_token(self):
+        if self.bearer_token:
+            return self.bearer_token
+        raise ValueError("SNOWFLAKE_BEARER_TOKEN is not set")
     def get_jwt_token(self) -> Optional[str]:
         """秘密鍵からJWTトークンを生成"""
         if not self.private_key_path or not os.path.exists(self.private_key_path):

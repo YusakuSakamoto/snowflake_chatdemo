@@ -14,121 +14,51 @@ class SnowflakeCortexClient:
         self.account = self.auth_client.account
         self.host = self.auth_client.host
         self.user = self.auth_client.user
-        self.warehouse = self.auth_client.warehouse
-        self.database = self.auth_client.database
-        self.schema = self.auth_client.schema
-        self.role = self.auth_client.role
-        self.agent_name = os.getenv('SNOWFLAKE_AGENT_NAME', 'SNOWFLAKE_DEMO_AGENT')
-        
-        # Snowflake REST APIエンドポイント
-        self.base_url = f"https://{self.host}/api/v2"
-        self.session = requests.Session()
-        
-    def authenticate(self) -> bool:
-        """
-        Snowflake REST APIで認証を行う（PAT/JWT対応）
-        """
-        try:
-            # 認証ヘッダーを取得
-            auth_header = self.auth_client.get_auth_header()
-            
-            if not auth_header:
-                print("認証情報が設定されていません")
-                return False
-            
-            # 接続テスト
-            test_query = "SELECT CURRENT_VERSION()"
-            result = self.execute_query(test_query)
-            
-            if result:
-                print("Snowflake認証成功")
-                return True
-            return False
-        except Exception as e:
-            print(f"認証エラー: {str(e)}")
-            return False
-    
-    def execute_query(self, query: str) -> Optional[Dict[str, Any]]:
-        """
-        Snowflake REST API経由でクエリを実行（PAT/JWT認証）
-        """
-        url = f"{self.base_url}/statements"
-        
-        # 認証ヘッダーを取得
-        auth_header = self.auth_client.get_auth_header()
-        
-        headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            **auth_header
-        }
-        
-        payload = {
-            "statement": query,
-            "timeout": 60,
-            "database": self.database,
-            "schema": self.schema,
-            "warehouse": self.warehouse,
-            "role": self.role
-        }
-        
-        try:
-            response = self.session.post(
-                url,
-                headers=headers,
-                json=payload,
-                timeout=60
-            )
-            
-            if response.status_code == 200:
+        import os
+        import requests
+
+        class SnowflakeCortexClient:
+            """
+            Snowflake Cortex Agent REST APIクライアント
+            """
+            def __init__(self):
+                self.base_url = os.getenv('SNOWFLAKE_ACCOUNT_URL', '').rstrip('/')
+                self.database = os.getenv('SNOWFLAKE_DATABASE', '')
+                self.schema = os.getenv('SNOWFLAKE_SCHEMA', '')
+                self.agent_name = os.getenv('SNOWFLAKE_AGENT_NAME', 'SNOWFLAKE_DEMO_AGENT')
+                self.session = requests.Session()
+
+            def call_cortex_agent(self, message: str) -> dict:
+                """
+                Snowflake Cortex AgentをREST API経由で呼び出す
+                """
+                agent_schema, agent_object = self._parse_agent_name(self.agent_name)
+                url = f"{self.base_url}/databases/{self.database}/schemas/{agent_schema}/agents/{agent_object}:run"
+                token = os.getenv("SNOWFLAKE_BEARER_TOKEN", "")
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                }
+                payload = {
+                    "messages": [{"role": "user", "content": [{"type": "text", "text": message}]}],
+                    "tool_choice": {"type": "auto"},
+                }
+                response = self.session.post(
+                    url,
+                    headers=headers,
+                    json=payload,
+                    timeout=120
+                )
+                if response.status_code >= 400:
+                    error_msg = f"Snowflake Agent Error: {response.status_code} - {response.text}"
+                    return {"error": "snowflake_error", "message": error_msg}
                 return response.json()
-            else:
-                print(f"クエリ実行エラー: {response.status_code} - {response.text}")
-                return None
-        except Exception as e:
-            print(f"リクエストエラー: {str(e)}")
-            return None
-    
-    def call_cortex_agent(self, prompt: str, agent_name: Optional[str] = None, context: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """
-        Snowflake Cortex AgentをREST API経由で呼び出す
-        
-        Note: AgentはREST API経由でのみ呼び出し可能
-        エンドポイント: /api/v2/databases/{db}/schemas/{schema}/agents/{agent}:run
-        """
-        # Agent名が指定されていない場合は環境変数から取得
-        if not agent_name:
-            agent_name = self.agent_name
-        
-        # Agent名をスキーマとオブジェクト名に分割
-        # 例: "DB_DESIGN.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT" -> ("DB_DESIGN", "OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT")
-        if "." in agent_name:
-            agent_schema, agent_object = agent_name.split(".", 1)
-        else:
-            agent_schema = self.schema
-            agent_object = agent_name
-        
-        # コンテキストがある場合はプロンプトに追加
-        full_prompt = prompt
-        if context:
-            full_prompt = f"{context}\n\n{prompt}"
-        
-        # Cortex Agent REST API エンドポイント
-        url = f"{self.base_url}/databases/{self.database}/schemas/{agent_schema}/agents/{agent_object}:run"
-        
-        # 認証ヘッダーを取得
-        auth_header = self.auth_client.get_auth_header()
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "text/event-stream",
-            **auth_header
-        }
-        
-        payload = {
-            "messages": [
-                {
-                    "role": "user",
+
+            def _parse_agent_name(self, agent_name: str):
+                if "." in agent_name:
+                    return agent_name.split(".", 1)
+                return self.schema, agent_name
                     "content": [{"type": "text", "text": full_prompt}]
                 }
             ],

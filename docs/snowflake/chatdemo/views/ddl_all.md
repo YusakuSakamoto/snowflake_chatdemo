@@ -764,10 +764,12 @@ DROP SCHEMA PUBLIC;
       const fileFormat = clean(t.file_format) || "JSON";
       const autoRefresh = bool(t.auto_refresh, true);
       const partitionBy = Array.isArray(t.partition_by) ? t.partition_by : [];
-      // サブディレクトリ（location_subdir, path, subdir など）
-      let subdir = clean(t.location_subdir) || clean(t.path) || clean(t.subdir) || "";
-      if (subdir && !subdir.startsWith("/")) subdir = "/" + subdir;
-      if (subdir.endsWith("/")) subdir = subdir.slice(0, -1);
+      // サブディレクトリ（stage_location, location_subdir, path, subdir など）
+      let subdir = clean(t.stage_location) || clean(t.location_subdir) || clean(t.path) || clean(t.subdir) || "";
+      if (subdir) {
+        // 先頭に/がなければ付与、末尾/はそのまま（Snowflakeは/終端でもOK）
+        if (!subdir.startsWith("/")) subdir = "/" + subdir;
+      }
 
 
       // Build column definitions with metadata$ extraction (partition columns fixed index)

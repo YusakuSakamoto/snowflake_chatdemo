@@ -88,11 +88,12 @@ def create_chat_table():
         cursor = conn.cursor()
         cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id INTEGER AUTOINCREMENT PRIMARY KEY,
-                user_id VARCHAR(255),
-                message TEXT,
-                timestamp TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+            CREATE TABLE IF NOT EXISTS CHAT_MESSAGES (
+                ID INTEGER AUTOINCREMENT PRIMARY KEY,
+                USER_ID VARCHAR(255),
+                MESSAGE TEXT,
+                AI_RESPONSE TEXT,
+                TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
             )
             """
         )

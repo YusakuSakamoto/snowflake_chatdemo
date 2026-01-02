@@ -518,20 +518,23 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
         return _json({"ok": False, "error": "internal_error", "message": str(e)}, 500)
 
 
-@app.route(route="chat-stream-sse", methods=["POST", "OPTIONS"])
-def chat_stream_sse(req: func.HttpRequest) -> func.HttpResponse:
+@app.route(route="chat/stream", methods=["POST", "OPTIONS"])
+def chat_stream_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     """
     ストリーミングSSE対応のCortex Agent APIエンドポイント
     クライアントにイベントを逐次送信
     """
-    logging.info('Chat stream SSE endpoint triggered')
+    logging.info('Chat stream endpoint (SSE) triggered')
     
     if req.method == "OPTIONS":
         return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
 
     try:
         body = req.get_json()
+
         text = body.get("text") or body.get("input") or body.get("message")
+        user_id = body.get("user_id", "anonymous")
+        agent_name = body.get("agent_name")
         if not text:
             return _json({"ok": False, "error": "text is required"}, 400)
 
@@ -556,7 +559,10 @@ def chat_stream_sse(req: func.HttpRequest) -> func.HttpResponse:
         }
 
         # ストリーミングレスポンスを生成
+
         def generate():
+            from app.azfunctions.chatdemo.snowflake_cortex import SnowflakeCortexClient
+            ai_response = ""
             try:
                 r = requests.post(url, headers=headers, json=payload, stream=True, timeout=900)
                 if r.status_code >= 400:
@@ -567,57 +573,60 @@ def chat_stream_sse(req: func.HttpRequest) -> func.HttpResponse:
                 yield f"event: start\ndata: {json.dumps({'status': 'connected'})}\n\n"
 
                 current_event = None
+                delta_chunks = []
+                final_text = None
                 for raw in r.iter_lines(decode_unicode=False):
                     if raw is None:
                         continue
-                    
                     try:
                         line = raw.decode("utf-8").rstrip("\r")
                     except Exception:
                         continue
-
                     if line == "":
                         current_event = None
                         continue
-
                     if line.startswith("event:"):
                         current_event = line[len("event:"):].strip()
                         continue
-
                     if not line.startswith("data:"):
                         continue
-
                     data_str = line[len("data:"):].strip()
                     if data_str == "[DONE]":
                         break
-
                     try:
                         obj = json.loads(data_str)
                     except Exception:
                         continue
-
                     # テキストデルタ
                     if current_event == "response.text.delta":
                         t = obj.get("text") if isinstance(obj, dict) else None
                         if isinstance(t, str) and t:
+                            delta_chunks.append(t)
                             yield f"event: text_delta\ndata: {json.dumps({'text': t})}\n\n"
-
                     # 最終テキスト
                     elif current_event == "response.text":
                         t = obj.get("text") if isinstance(obj, dict) else None
                         if isinstance(t, str) and t:
+                            final_text = t
                             yield f"event: text_final\ndata: {json.dumps({'text': t})}\n\n"
-
                     # ツール結果
                     elif current_event == "response.tool_result":
                         detail = _extract_tool_detail(obj)
                         yield f"event: tool_detail\ndata: {json.dumps(detail, ensure_ascii=False)}\n\n"
-                        
                     # ツールステップ
                     elif current_event in ["response.tool.call", "response.tool.start", "response.tool.end"]:
                         tool_name = obj.get("name") or obj.get("tool_name") or "unknown"
                         step_type = current_event.split(".")[-1]
                         yield f"event: tool_step\ndata: {json.dumps({'type': step_type, 'tool_name': tool_name})}\n\n"
+
+                # AI応答を決定
+                ai_response = final_text if final_text else "".join(delta_chunks)
+                # 履歴保存
+                try:
+                    cortex_client = SnowflakeCortexClient()
+                    cortex_client.save_message(user_id, text, ai_response)
+                except Exception as e:
+                    logging.error(f"履歴保存失敗: {e}")
 
                 # 完了イベント
                 yield f"event: done\ndata: {json.dumps({'status': 'completed'})}\n\n"

@@ -1,0 +1,377 @@
+name: SV_SALES
+description: らくらく案件データ（正規化VIEW群）を元にした売上・請求分析向けセマンティックモデル
+
+tables:
+  - name: DEPARTMENTS
+    description: 部署マスタ（年度別）
+    base_table:
+      database: GBPS253YS_DB
+      schema: APP_PRODUCTION
+      table: DEPARTMENT_MASTER
+    primary_key:
+      columns: [FISCAL_YEAR, DEPARTMENT_ID]
+    dimensions:
+      - name: DEPARTMENT_CODE
+        expr: DEPARTMENT_CODE
+        data_type: TEXT
+        description: 部CD（部の配下をまとめるキー）。1桁の文字列。
+        synonyms: ["部CD", "部コード", "部", "department_code"]
+      - name: SECTION_CODE
+        expr: SECTION_CODE
+        data_type: TEXT
+        description: 課CD。1桁の文字列。
+        synonyms: ["課CD", "課コード", "課", "section_code"]
+      - name: GROUP_CODE
+        expr: GROUP_CODE
+        data_type: TEXT
+        description: グループCD。1桁の文字列。
+        synonyms: ["グループCD", "グループコード", "グループ", "group_code"]
+      - name: FISCAL_YEAR
+        expr: FISCAL_YEAR
+        data_type: TEXT
+        description: 年度
+      - name: DEPARTMENT_ID
+        expr: DEPARTMENT_ID
+        data_type: TEXT
+        description: 部署ID
+      - name: DIVISION_CODE
+        expr: DIVISION_CODE
+        data_type: TEXT
+        description: 部コード（3桁）
+        synonyms: ["DIVISION", "division_code", "部(3桁)"]
+      - name: DEPARTMENT_SECTION_CODE
+        expr: DEPARTMENT_SECTION_CODE
+        data_type: TEXT
+        description: 課コード（4桁：DIVISION_CODE + SECTION_CODE）
+        synonyms: ["SECTION(4桁)", "department_section_code", "課(4桁)"]
+      - name: HEADQUARTERS_CODE
+        expr: HEADQUARTERS_CODE
+        data_type: TEXT
+        description: 本部コード（本部単位の範囲展開・集計キー）
+        synonyms: ["本部", "本部コード", "headquarters_code"]
+      - name: GENERAL_DEPARTMENT_CODE
+        expr: GENERAL_DEPARTMENT_CODE
+        data_type: TEXT
+        description: 汎用部署コード（マスタ側の提供値。用途は要確認）
+        synonyms: ["general_department_code"]
+      - name: DEPARTMENT_CATEGORY
+        expr: DEPARTMENT_CATEGORY
+        data_type: TEXT
+        description: 部署区分（本部 / 部 / 課 / グループ）
+        synonyms: ["カテゴリ", "区分", "department_category"]
+      - name: COMBINED_NAME
+        expr: COMBINED_NAME
+        data_type: TEXT
+        description: 部署のフル名称（階層結合名）
+        synonyms: ["部署名", "正式名称", "name_full", "combined_name"]
+      - name: COMBINED_SHORT_NAME
+        expr: COMBINED_SHORT_NAME
+        data_type: TEXT
+        description: 部署の略称（階層結合の短縮名）
+        synonyms: ["略称", "name_short", "short_name", "combined_short_name"]
+
+  - name: CUSTOMERS
+    description: 取引先マスタ（正規化VIEW）
+    base_table:
+      database: GBPS253YS_DB
+      schema: APP_PRODUCTION
+      table: V_CUSTOMER_MASTER
+    primary_key:
+      columns: [CUSTOMER_ID]
+    dimensions:
+      - name: CUSTOMER_ID
+        expr: CUSTOMER_ID
+        data_type: TEXT
+        description: 取引先ID
+        synonyms: ["顧客ID", "取引先コード"]
+      - name: CUSTOMER_NAME
+        expr: CUSTOMER_NAME
+        data_type: TEXT
+        description: 取引先名
+        synonyms: ["顧客名", "取引先名"]
+      - name: ACTIVE_FLAG
+        expr: ACTIVE_FLAG
+        data_type: TEXT
+        description: 有効無効フラグ
+
+  - name: PROJECTS
+    description: 案件マスタ（案件番号＋枝番＋年度）
+    base_table:
+      database: GBPS253YS_DB
+      schema: APP_PRODUCTION
+      table: V_PROJECT_MASTER
+    primary_key:
+      columns: [PROJECT_NUMBER, BRANCH_NUMBER, FISCAL_YEAR]
+    dimensions:
+      - name: PROJECT_NUMBER
+        expr: PROJECT_NUMBER
+        data_type: TEXT
+        description: 案件番号
+        synonyms: ["案件No", "案件番号", "project_number"]
+      - name: BRANCH_NUMBER
+        expr: BRANCH_NUMBER
+        data_type: TEXT
+        description: 枝番
+        synonyms: ["枝番", "branch_number"]
+      - name: FISCAL_YEAR
+        expr: FISCAL_YEAR
+        data_type: TEXT
+        description: 年度
+        synonyms: ["年度", "fiscal_year"]
+      - name: PROJECT_NAME
+        expr: PROJECT_NAME
+        data_type: TEXT
+        description: 案件名
+        synonyms: ["案件名", "project_name"]
+      - name: SUBJECT
+        expr: SUBJECT
+        data_type: TEXT
+        description: 件名
+        synonyms: ["件名", "subject"]
+      - name: SALES_CATEGORY
+        expr: SALES_CATEGORY
+        data_type: TEXT
+        description: 売上区分
+        synonyms: ["売上区分", "sales_category"]
+      - name: RANK
+        expr: RANK
+        data_type: TEXT
+        description: ランク
+      - name: CUSTOMER_ID
+        expr: CUSTOMER_ID
+        data_type: TEXT
+        description: 取引先ID
+        synonyms: ["顧客ID", "取引先ID", "customer_id"]
+      - name: DEPARTMENT_ID
+        expr: DEPARTMENT_ID
+        data_type: TEXT
+        description: 部署ID
+        synonyms: ["部署ID", "department_id"]
+      - name: WORK_START_DATE
+        expr: WORK_START_DATE
+        data_type: DATE
+        description: 作業開始日
+        synonyms: ["作業開始日", "work_start_date"]
+      - name: WORK_END_DATE
+        expr: WORK_END_DATE
+        data_type: DATE
+        description: 作業終了日
+        synonyms: ["作業終了日", "work_end_date"]
+
+  - name: ORDERS
+    description: オーダマスタ（オーダ番号単位）
+    base_table:
+      database: GBPS253YS_DB
+      schema: APP_PRODUCTION
+      table: V_ORDER_MASTER
+    primary_key:
+      columns: [ORDER_NUMBER]
+    dimensions:
+      - name: ORDER_NUMBER
+        expr: ORDER_NUMBER
+        data_type: TEXT
+        description: オーダ番号
+        synonyms: ["オーダNo", "オーダ番号", "order_number"]
+      - name: PROJECT_NUMBER
+        expr: PROJECT_NUMBER
+        data_type: TEXT
+        description: 案件番号
+      - name: BRANCH_NUMBER
+        expr: BRANCH_NUMBER
+        data_type: TEXT
+        description: 枝番
+      - name: FISCAL_YEAR
+        expr: FISCAL_YEAR
+        data_type: TEXT
+        description: 年度
+      - name: ORDER_DATE
+        expr: ORDER_DATE
+        data_type: DATE
+        description: オーダ日
+        synonyms: ["オーダ日", "受注日", "order_date"]
+      - name: SALES_CATEGORY
+        expr: SALES_CATEGORY
+        data_type: TEXT
+        description: 売上区分
+
+  - name: INVOICES
+    description: 請求マスタ（請求番号×計上月単位、金額集計済）
+    base_table:
+      database: GBPS253YS_DB
+      schema: APP_PRODUCTION
+      table: V_INVOICE
+    primary_key:
+      columns: [INVOICE_NUMBER, ACCOUNTING_MONTH]
+    dimensions:
+      - name: INVOICE_NUMBER
+        expr: INVOICE_NUMBER
+        data_type: TEXT
+        description: 請求番号（なしの場合は仮キー）
+        synonyms: ["請求No", "請求番号", "invoice_number"]
+      - name: ACCOUNTING_MONTH
+        expr: ACCOUNTING_MONTH
+        data_type: TEXT
+        description: 計上月（YYYY-MM形式）
+        synonyms: ["計上月", "売上月", "accounting_month"]
+      - name: PROJECT_NUMBER
+        expr: PROJECT_NUMBER
+        data_type: TEXT
+        description: 案件番号
+      - name: BRANCH_NUMBER
+        expr: BRANCH_NUMBER
+        data_type: TEXT
+        description: 枝番
+      - name: FISCAL_YEAR
+        expr: FISCAL_YEAR
+        data_type: TEXT
+        description: 年度
+      - name: ORDER_NUMBER
+        expr: ORDER_NUMBER
+        data_type: TEXT
+        description: オーダ番号
+    measures:
+      - name: INVOICE_AMOUNT
+        expr: INVOICE_AMOUNT
+        data_type: NUMBER
+        description: 請求金額（税抜）
+        synonyms: ["請求金額", "売上金額", "金額", "invoice_amount"]
+        default_aggregation: sum
+      - name: TAX_AMOUNT
+        expr: TAX_AMOUNT
+        data_type: NUMBER
+        description: 消費税額
+        synonyms: ["消費税", "税額", "tax_amount"]
+        default_aggregation: sum
+      - name: INVOICE_AMOUNT_WITH_TAX
+        expr: INVOICE_AMOUNT_WITH_TAX
+        data_type: NUMBER
+        description: 請求金額（税込）
+        synonyms: ["税込金額", "請求額税込", "invoice_amount_with_tax"]
+        default_aggregation: sum
+
+  - name: PROJECT_FACTS
+    description: プロジェクトファクト（生データ粒度、明細粒度）
+    base_table:
+      database: GBPS253YS_DB
+      schema: APP_PRODUCTION
+      table: V_PROJECT_FACT
+    dimensions:
+      - name: PROJECT_NUMBER
+        expr: PROJECT_NUMBER
+        data_type: TEXT
+        description: 案件番号
+      - name: BRANCH_NUMBER
+        expr: BRANCH_NUMBER
+        data_type: TEXT
+        description: 枝番
+      - name: FISCAL_YEAR
+        expr: FISCAL_YEAR
+        data_type: TEXT
+        description: 年度
+      - name: ORDER_NUMBER
+        expr: ORDER_NUMBER
+        data_type: TEXT
+        description: オーダ番号
+      - name: INVOICE_NUMBER
+        expr: INVOICE_NUMBER
+        data_type: TEXT
+        description: 請求番号
+      - name: ACCOUNTING_MONTH
+        expr: ACCOUNTING_MONTH
+        data_type: TEXT
+        description: 計上月
+      - name: CUSTOMER_ID
+        expr: CUSTOMER_ID
+        data_type: TEXT
+        description: 取引先ID
+      - name: DEPARTMENT_ID
+        expr: DEPARTMENT_ID
+        data_type: TEXT
+        description: 部署ID
+    measures:
+      - name: ROW_COUNT
+        expr: COUNT(*)
+        data_type: NUMBER
+        description: 明細レコード数
+        default_aggregation: sum
+
+relationships:
+  - name: PROJECT_TO_CUSTOMER
+    left_table: PROJECTS
+    right_table: CUSTOMERS
+    join_type: left
+    join_conditions:
+      - left_column: CUSTOMER_ID
+        right_column: CUSTOMER_ID
+
+  - name: PROJECT_TO_DEPARTMENT
+    left_table: PROJECTS
+    right_table: DEPARTMENTS
+    join_type: left
+    join_conditions:
+      - left_column: DEPARTMENT_ID
+        right_column: DEPARTMENT_ID
+      - left_column: FISCAL_YEAR
+        right_column: FISCAL_YEAR
+
+  - name: ORDER_TO_PROJECT
+    left_table: ORDERS
+    right_table: PROJECTS
+    join_type: left
+    join_conditions:
+      - left_column: PROJECT_NUMBER
+        right_column: PROJECT_NUMBER
+      - left_column: BRANCH_NUMBER
+        right_column: BRANCH_NUMBER
+      - left_column: FISCAL_YEAR
+        right_column: FISCAL_YEAR
+
+  - name: INVOICE_TO_PROJECT
+    left_table: INVOICES
+    right_table: PROJECTS
+    join_type: left
+    join_conditions:
+      - left_column: PROJECT_NUMBER
+        right_column: PROJECT_NUMBER
+      - left_column: BRANCH_NUMBER
+        right_column: BRANCH_NUMBER
+      - left_column: FISCAL_YEAR
+        right_column: FISCAL_YEAR
+
+  - name: INVOICE_TO_ORDER
+    left_table: INVOICES
+    right_table: ORDERS
+    join_type: left
+    join_conditions:
+      - left_column: ORDER_NUMBER
+        right_column: ORDER_NUMBER
+
+  - name: FACT_TO_PROJECT
+    left_table: PROJECT_FACTS
+    right_table: PROJECTS
+    join_type: left
+    join_conditions:
+      - left_column: PROJECT_NUMBER
+        right_column: PROJECT_NUMBER
+      - left_column: BRANCH_NUMBER
+        right_column: BRANCH_NUMBER
+      - left_column: FISCAL_YEAR
+        right_column: FISCAL_YEAR
+
+  - name: FACT_TO_CUSTOMER
+    left_table: PROJECT_FACTS
+    right_table: CUSTOMERS
+    join_type: left
+    join_conditions:
+      - left_column: CUSTOMER_ID
+        right_column: CUSTOMER_ID
+
+  - name: FACT_TO_DEPARTMENT
+    left_table: PROJECT_FACTS
+    right_table: DEPARTMENTS
+    join_type: left
+    join_conditions:
+      - left_column: DEPARTMENT_ID
+        right_column: DEPARTMENT_ID
+      - left_column: FISCAL_YEAR
+        right_column: FISCAL_YEAR

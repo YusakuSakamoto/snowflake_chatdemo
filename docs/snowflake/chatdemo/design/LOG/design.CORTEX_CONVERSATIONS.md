@@ -4,7 +4,7 @@
 [[LOG.CORTEX_CONVERSATIONS]] は、Snowflake Cortex Agent との会話履歴を長期保管・分析するための外部テーブルである。
 
 本テーブルは、S3に保存されたJSON Lines形式のログファイルを、Snowflakeから直接クエリ可能にする。  
-`[[APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT]]` を含む、全Cortex Agentの会話ログを統合的に管理する。
+[[APP_PRODUCTION.SNOWFLAKE_DEMO_AGENT]] を含む、全Cortex Agentの会話ログを統合的に管理する。
 
 ## 業務上の意味
 - このテーブルが表す概念  
@@ -53,11 +53,11 @@
 
 S3パス構造：
 ```
-s3://snowflake-chatdemo-vault-prod/logs/cortex_conversations/
-  year=2026/
-    month=01/
-      day=02/
-        hour=14/
+s3://135365622922-snowflake-chatdemo-vault-prod/cortex_conversations/
+  YEAR=2026/
+    MONTH=01/
+      DAY=02/
+        HOUR=14/
           {uuid}.json
 ```
 

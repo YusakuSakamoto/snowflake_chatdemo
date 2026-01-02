@@ -25,11 +25,12 @@ DROP SCHEMA PUBLIC;
 
 ## 生成可能なDDL
 
-1. **Snowflake DDL Generator** - スキーマ、テーブル、ビュー、プロシージャ、セマンティックビュー（YAML）など
-2. **External Tables DDL Generator** - S3/Azure連携の外部テーブル  
+1. **Snowflake DDL Generator** - スキーマ、テーブル、ビュー、プロシージャなど（セマンティックビューはコメントでYAML出力）
+2. **External Tables DDL Generator** - S3/Azure連携の外部テーブル
+3. **YAML FILE Generator** - セマンティックビューのYAMLファイル生成
 
-> **Note:** セマンティックビュー（YAML）は、Snowflake DDL Generatorに統合されています。  
-> `master/semanticviews/` 配下のファイルがYAML形式でコメント出力されます。
+> **Note:** セマンティックビュー（YAML）は、Snowflake DDL Generatorではコメント形式で出力されます。  
+> 実際のYAMLファイルとして出力する場合は、YAML FILE Generatorを使用してください。
 
 ---
 

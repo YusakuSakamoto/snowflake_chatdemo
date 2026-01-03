@@ -1,40 +1,58 @@
 # 外部テーブル設計：[[design.SNOWFLAKE_METRICS]]
 
 ## 概要
-[[LOG.SNOWFLAKE_METRICS]] は、Snowflake自体のクエリ実行メトリクスとリソース使用状況を蓄積・分析するための外部テーブルである。
 
-本テーブルは、Snowflakeの `INFORMATION_SCHEMA` や `ACCOUNT_USAGE` から定期的にエクスポートされたメトリクスデータを、S3経由で長期保管する。  
-コスト分析、パフォーマンス最適化、容量計画の根拠データとして活用される。
+[[LOG.SNOWFLAKE_METRICS]] は、Snowflake のクエリ実行メトリクスおよびリソース使用状況を、長期保管・分析するための外部テーブルである。
+
+本テーブルは、Snowflake の `INFORMATION_SCHEMA` および `ACCOUNT_USAGE` 等から定期抽出したメトリクスを S3 にエクスポートし、Snowflake から EXTERNAL TABLE として直接参照できるようにする。
+主目的は、コスト最適化・性能改善・容量計画の根拠データ整備である。
 
 ## 業務上の意味
-- このテーブルが表す概念  
-  1レコードは「1つのメトリクス測定値」を表す。  
-  クエリ実行時間、スキャンデータ量、ウェアハウスのクレジット消費量などが記録される。
 
-- 主な利用シーン  
-  - コスト分析（どのクエリが高コストか）
-  - パフォーマンス最適化（遅いクエリの特定）
-  - ウェアハウスサイジング（適切なサイズの判断）
-  - 容量計画（ストレージ使用量の予測）
+* このテーブルが表す概念
+  1レコードは「1つのメトリクス測定値」を表す。
+  例：クエリ実行時間、スキャン量、クレジット消費、ストレージ使用量。
+
+* 主な利用シーン
+
+  * コスト分析（高コストなクエリ／ウェアハウスの特定）
+  * パフォーマンス最適化（遅い・重いクエリの発見）
+  * ウェアハウスサイジング（適正サイズ判断）
+  * ストレージ増加の把握と容量計画
 
 ## 設計上の位置づけ
-[[LOG.SNOWFLAKE_METRICS]] は、以下のシステム全体の「観測性の基盤」として機能する：
 
-- アプリケーションログ（SWA, Azure Functions）
-- Cortex Agent 会話ログ
-- Snowflake メトリクス ← 本テーブル（データベース層の健全性）
+[[LOG.SNOWFLAKE_METRICS]] は「観測性（Observability）」スタックにおける **データベース層の健全性メトリクス**を担う。
 
-これらを統合的に分析することで、システム全体のボトルネックを特定できる。
+* アプリケーションログ（SWA / Azure Functions）
+* Cortex Agent 会話ログ
+* Snowflake メトリクス ← 本テーブル（DB層の健全性・コスト・性能）
+
+これらを横断することで、例えば「アプリの遅延増加が Snowflake クレジット急増／スキャン量増加と同期している」など、原因特定の精度を上げられる。
+
+---
 
 ## 設計方針
 
 ### 外部テーブルを採用する理由
-メトリクスデータは膨大になる可能性があるため、EXTERNAL TABLE を採用：
-- 長期保管でもコストを抑制（S3 Glacier へのアーカイブ）
-- 必要な期間だけクエリすることでコンピュートコストを最小化
 
-### パーティション設計
+メトリクスは「継続的に増え続ける」性質を持ち、保持期間も長くなりやすい。よって EXTERNAL TABLE を採用する。
+
+* コスト最適化
+  長期保管は S3 を基本とし、必要な期間のみ参照してコンピュート課金を抑える
+* 保持期間・ストレージ階層の柔軟性
+  監査目的での長期保管は S3 ライフサイクルで階層化できる
+* スキーマ進化の許容
+  追加メトリクスや追加属性が入っても、既存データの再ロードを避けやすい
+
+補足：頻繁な集計・ダッシュボード用途は、外部テーブル直叩きを避け、日次集計を内部テーブルやビューへ寄せる前提とする。
+
+---
+
+## パーティション設計の詳細
+
 S3パス構造：
+
 ```
 s3://snowflake-chatdemo-vault-prod/logs/snowflake_metrics/
   YEAR=2026/
@@ -44,287 +62,195 @@ s3://snowflake-chatdemo-vault-prod/logs/snowflake_metrics/
           {uuid}.json
 ```
 
+パーティション（YEAR, MONTH, DAY, HOUR）は `metadata$filename` から抽出される前提とし、時系列分析のクエリは原則としてパーティション条件を必須化する。
+
+* 目的：パーティションプルーニングによりスキャン対象を限定し、コストとレイテンシを抑える
+* 注意：時間条件だけ（timestampの範囲だけ）で絞ると全ファイルスキャンになりやすい
+
+---
+
+## フォーマット設計（JSON Lines）
+
+ログファイルは 1行=1レコードの JSON Lines（NDJSON）形式を基本とする。
+
+* 追記・分割保存に強い（時間単位でのファイル分割と相性が良い）
+* 収集ソースが複数でも統合しやすい（メトリクス種別が増えてもスキーマ破綻しにくい）
+* Snowflake の半構造化（VARIANT）と親和性が高い
+
+---
+
 ## カラム設計の判断
+
+### 主キーの概念
+
+外部テーブルでは PK 制約は強制できないため、**論理的一意性**として以下を前提とする。
+
+* metric_id は「一意であるべき識別子」
+* 実質的には metric_id + timestamp + metric_name で衝突確率を下げる
+* 重複は検証クエリ（運用）で検知し、S3側のデータ修正・除外で対処する
 
 ### 各カラムの設計意図
 
 #### metric_id (VARCHAR)
-- 意味：1つのメトリクス測定値を一意識別するID
-- 生成方法：メトリクス収集時に UUID 生成
+
+* 意味：メトリクス測定値を一意識別するID
+* 生成方法：収集時に UUID 生成
+* 利用：重複排除・再収集時の突合（同一データの二重投入検知）
 
 #### metric_name (VARCHAR)
-- 意味：メトリクスの種別
-- 値例：
-  - `query_execution_time` : クエリ実行時間（秒）
-  - `bytes_scanned` : スキャンされたデータ量（バイト）
-  - `credits_used` : ウェアハウスのクレジット消費量
-  - `rows_produced` : クエリが返した行数
-  - `compilation_time` : クエリコンパイル時間
-  - `storage_bytes` : ストレージ使用量
+
+* 意味：メトリクス種別（測定値の意味を決める軸）
+* 設計判断：種別を固定カラム化することで、集計・可視化の主軸が明確になる
+* 値例（代表）：
+
+  * query_execution_time
+  * bytes_scanned
+  * credits_used
+  * rows_produced
+  * compilation_time
+  * storage_bytes
 
 #### metric_value (NUMBER)
-- 意味：メトリクスの測定値（数値）
-- 利用例：時系列での推移グラフ、統計計算
 
-```sql
--- クエリ実行時間の日次平均
-SELECT DATE_TRUNC('day', timestamp) AS day,
-       AVG(metric_value) AS avg_execution_sec
-FROM LOG.SNOWFLAKE_METRICS
-WHERE metric_name = 'query_execution_time'
-  AND year = 2026 AND month = 1
-GROUP BY 1
-ORDER BY 1;
-```
+* 意味：測定値（数値）
+* 設計判断：単位は metric_name に依存するため、単位情報は運用規約で明示し、必要に応じ metadata に補足する
 
 #### warehouse_name (VARCHAR, nullable)
-- 意味：どのウェアハウスでクエリが実行されたか
-- NULL の場合：ウェアハウスに依存しないメトリクス（例：ストレージ使用量）
-- 利用例：ウェアハウスごとのコスト・パフォーマンス分析
 
-```sql
--- ウェアハウスごとのクレジット消費量
-SELECT warehouse_name,
-       SUM(metric_value) AS total_credits
-FROM LOG.SNOWFLAKE_METRICS
-WHERE metric_name = 'credits_used'
-  AND year = 2026 AND month = 1
-GROUP BY 1
-ORDER BY 2 DESC;
-```
+* 意味：実行ウェアハウス名
+* NULL になり得る理由：ストレージ使用量など、ウェアハウス非依存メトリクスが存在する
+* 利用：ウェアハウス別のコスト・性能の比較
 
 #### query_id (VARCHAR, nullable)
-- 意味：Snowflakeのクエリ実行ID
-- 利用例：特定のクエリの詳細分析、`QUERY_HISTORY` との紐付け
 
-```sql
--- 実行時間が長いクエリTOP10
-SELECT query_id,
-       MAX(metric_value) AS execution_time_sec
-FROM LOG.SNOWFLAKE_METRICS
-WHERE metric_name = 'query_execution_time'
-  AND year = 2026 AND month = 1
-GROUP BY 1
-ORDER BY 2 DESC
-LIMIT 10;
-```
+* 意味：Snowflake のクエリ実行ID
+* NULL になり得る理由：日次集計メトリクス（ストレージ等）はクエリ単位で紐付かない
+* 利用：個別クエリの深掘り（重いクエリの特定）
 
 #### user_name (VARCHAR, nullable)
-- 意味：クエリを実行したユーザー名
-- 利用例：ユーザーごとのクエリ実行頻度、コスト配分
 
-```sql
--- ユーザーごとのクエリ実行回数
-SELECT user_name,
-       COUNT(DISTINCT query_id) AS query_count
-FROM LOG.SNOWFLAKE_METRICS
-WHERE query_id IS NOT NULL
-  AND year = 2026 AND month = 1
-GROUP BY 1
-ORDER BY 2 DESC;
-```
+* 意味：クエリ実行ユーザー
+* NULL になり得る理由：クエリに紐付かないメトリクス（ストレージ等）
+* 利用：ユーザー別の負荷傾向、コスト配分（ただし個人情報扱いに注意）
 
 #### timestamp (TIMESTAMP_NTZ)
-- 意味：メトリクスが測定された日時（UTC）
-- 利用例：時系列分析、ピーク時間帯の特定
+
+* 意味：測定日時（UTC）
+* 設計判断：UTCで統一し、表示はアプリ側で変換する（比較・集計の一貫性優先）
 
 #### metadata (VARIANT)
-- 意味：追加のコンテキスト情報
-- 構造例：
-```json
-{
-  "database_name": "GBPS253YS_DB",
-  "schema_name": "APP_PRODUCTION",
-  "table_name": "ANKEN_MEISAI",
-  "query_type": "SELECT",
-  "execution_status": "SUCCESS"
-}
-```
-- 利用例：データベース別・テーブル別のアクセス統計
 
-```sql
--- テーブル別のスキャンデータ量
-SELECT metadata:table_name::VARCHAR AS table_name,
-       SUM(metric_value) / 1024 / 1024 / 1024 AS total_gb_scanned
-FROM LOG.SNOWFLAKE_METRICS
-WHERE metric_name = 'bytes_scanned'
-  AND year = 2026 AND month = 1
-GROUP BY 1
-ORDER BY 2 DESC;
-```
+* 意味：追加コンテキスト（DB名、スキーマ、テーブル、クエリ種別、実行ステータス等）
+* 設計判断：拡張領域として許容するが、主要分析軸は固定カラムで持つ（metadata 濫用を防ぐ）
+* 代表例：
+
+  * database_name / schema_name / table_name
+  * query_type / execution_status
 
 #### パーティションカラム（YEAR, MONTH, DAY, HOUR）
-- [[LOG.CORTEX_CONVERSATIONS]] と同様
 
-## データソースと収集方法
+* S3パス由来の時系列プルーニング用
+* 設計上は NOT NULL 前提だが、外部テーブルでは強制されないため運用検証で担保する
 
-### 1. INFORMATION_SCHEMA.QUERY_HISTORY
-リアルタイムに近いクエリ実行情報を取得：
-```sql
--- 定期タスク（1時間ごと）でメトリクスを抽出
-CREATE TASK collect_query_metrics
-  WAREHOUSE = ETL_WH
-  SCHEDULE = '60 MINUTE'
-AS
-INSERT INTO @LOG_STAGE/snowflake_metrics/YEAR={{YEAR}}/MONTH={{MONTH}}/DAY={{DAY}}/HOUR={{HOUR}}/metrics.json
-SELECT 
-  UUID_STRING() AS metric_id,
-  'query_execution_time' AS metric_name,
-  TOTAL_ELAPSED_TIME / 1000 AS metric_value,
-  WAREHOUSE_NAME,
-  QUERY_ID,
-  USER_NAME,
-  START_TIME AS timestamp,
-  OBJECT_CONSTRUCT(
-    'database_name', DATABASE_NAME,
-    'schema_name', SCHEMA_NAME,
-    'query_type', QUERY_TYPE
-  ) AS metadata
-FROM INFORMATION_SCHEMA.QUERY_HISTORY
-WHERE START_TIME >= DATEADD('hour', -1, CURRENT_TIMESTAMP());
-```
+---
 
-### 2. ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
-ウェアハウスのクレジット消費量を取得：
-```sql
--- 日次でクレジット消費量を集計
-SELECT 
-  UUID_STRING() AS metric_id,
-  'credits_used' AS metric_name,
-  CREDITS_USED AS metric_value,
-  WAREHOUSE_NAME,
-  NULL AS query_id,
-  NULL AS user_name,
-  START_TIME AS timestamp,
-  NULL AS metadata
-FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
-WHERE START_TIME >= CURRENT_DATE() - 1;
-```
+## データソースと収集方法（設計前提）
 
-### 3. ACCOUNT_USAGE.DATABASE_STORAGE_USAGE_HISTORY
-ストレージ使用量を取得：
-```sql
--- 日次でストレージ使用量を記録
-SELECT 
-  UUID_STRING() AS metric_id,
-  'storage_bytes' AS metric_name,
-  AVERAGE_DATABASE_BYTES AS metric_value,
-  NULL AS warehouse_name,
-  NULL AS query_id,
-  NULL AS user_name,
-  USAGE_DATE AS timestamp,
-  OBJECT_CONSTRUCT('database_name', DATABASE_NAME) AS metadata
-FROM SNOWFLAKE.ACCOUNT_USAGE.DATABASE_STORAGE_USAGE_HISTORY
-WHERE USAGE_DATE >= CURRENT_DATE() - 1;
-```
+### 収集対象（代表）
 
-## クエリパターン例
+* INFORMATION_SCHEMA.QUERY_HISTORY
+  クエリ実行に近いリアルタイム性（時間粒度）
+* ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
+  クレジット消費（通常は日次で十分）
+* ACCOUNT_USAGE.DATABASE_STORAGE_USAGE_HISTORY
+  ストレージ使用量（変動が緩やか）
+
+### 収集頻度（方針）
+
+* クエリ系：1時間ごと（検知速度重視）
+* クレジット：日次（集計で足りる）
+* ストレージ：日次（変化が小さい）
+
+注意：ソースごとに更新遅延があり得るため、再収集・遅延補正の運用（例：過去N時間を重複許容で再取得→metric_idで排除）を想定する。
+
+---
+
+## クエリパターン例（運用前提を含む）
 
 ### パターン1：ウェアハウスごとの月次コスト
-```sql
-SELECT warehouse_name,
-       SUM(metric_value) * 3.00 AS estimated_cost_usd  -- 1クレジット=$3と仮定
-FROM LOG.SNOWFLAKE_METRICS
-WHERE metric_name = 'credits_used'
-  AND year = 2026 AND month = 1
-GROUP BY 1
-ORDER BY 2 DESC;
-```
 
-### パターン2：遅いクエリの特定（実行時間 > 60秒）
-```sql
-SELECT query_id,
-       user_name,
-       warehouse_name,
-       metric_value AS execution_time_sec,
-       timestamp
-FROM LOG.SNOWFLAKE_METRICS
-WHERE metric_name = 'query_execution_time'
-  AND metric_value > 60
-  AND year = 2026 AND month = 1
-ORDER BY metric_value DESC;
-```
+* パーティション条件（YEAR/MONTH）を必ず入れる
+* metric_name で対象を限定する
 
-### パターン3：データスキャン量の多いテーブルTOP10
-```sql
-SELECT metadata:table_name::VARCHAR AS table_name,
-       SUM(metric_value) / 1024 / 1024 / 1024 AS total_gb_scanned
-FROM LOG.SNOWFLAKE_METRICS
-WHERE metric_name = 'bytes_scanned'
-  AND year = 2026 AND month = 1
-GROUP BY 1
-ORDER BY 2 DESC
-LIMIT 10;
-```
+### パターン2：遅いクエリの特定（実行時間閾値）
+
+* query_id があるレコードに限定
+* 上位N件抽出→別ビュー/内部テーブルで詳細分析に渡す
+
+### パターン3：スキャン量の多いテーブル
+
+* metadata の table_name を利用するが、欠損の可能性があるため NULL を除外する
 
 ### パターン4：ストレージ使用量の推移
-```sql
-SELECT DATE_TRUNC('day', timestamp) AS day,
-       SUM(metric_value) / 1024 / 1024 / 1024 / 1024 AS total_tb
-FROM LOG.SNOWFLAKE_METRICS
-WHERE metric_name = 'storage_bytes'
-  AND year = 2026 AND month = 1
-GROUP BY 1
-ORDER BY 1;
-```
+
+* 日次粒度で十分（外部テーブル直叩きの頻度は下げる）
+
+---
 
 ## 運用上の注意
 
-### メトリクス収集の頻度
-- クエリ実行メトリクス：1時間ごと（リアルタイム性が必要）
-- クレジット消費量：1日ごと（日次集計で十分）
-- ストレージ使用量：1日ごと（変動が少ない）
+### パーティション指定の徹底
+
+時系列分析では YEAR/MONTH/DAY を必須とし、全ファイルスキャンを避ける。
+運用ガイドで「禁止クエリ例」（timestamp条件だけ）を明記してもよい。
+
+### 品質担保（外部テーブル前提）
+
+* 重複検知：metric_id の重複、同一時間帯・同一種別の過剰重複を監視
+* NULL 検知：パーティションカラムや必須項目の欠損を監視
+* 異常値検知：負値、極端なスパイク（例：bytes_scanned の急増）を監視
 
 ### データ保持ポリシー
-- 直近30日：頻繁にクエリされるため、内部テーブルへコピー（任意）
-- 31-90日：S3 Standard（外部テーブルで直接クエリ）
-- 91-365日：S3 Intelligent-Tiering
-- 1年超：S3 Glacier（長期保管、監査用）
+
+* 直近30日：内部テーブル／集計結果を用意（任意）
+* 31-90日：S3 Standard（外部テーブル参照）
+* 91-365日：S3 Intelligent-Tiering
+* 1年超：S3 Glacier（監査目的、原則クエリ対象外）
+
+---
+
+## セキュリティ・プライバシー
+
+* user_name は個人特定につながり得るため、閲覧権限を最小化する
+* ダッシュボード用途では user_name を集計後にマスク／匿名化した指標を使うことを推奨
+* metadata に環境情報・オブジェクト名が含まれるため、公開範囲を設計する（運用ロールで統制）
+
+---
 
 ## 今後の拡張計画
 
-### マテリアライズドビューによる高速化
-```sql
-CREATE MATERIALIZED VIEW LOG.MV_DAILY_COST_SUMMARY AS
-SELECT DATE_TRUNC('day', timestamp) AS day,
-       warehouse_name,
-       SUM(CASE WHEN metric_name = 'credits_used' THEN metric_value ELSE 0 END) AS total_credits,
-       SUM(CASE WHEN metric_name = 'credits_used' THEN metric_value ELSE 0 END) * 3.00 AS estimated_cost_usd
-FROM LOG.SNOWFLAKE_METRICS
-WHERE year >= 2026
-GROUP BY 1, 2;
-```
+### 集計（内部テーブル / ビュー）への寄せ
 
-### アラート設定
-```sql
-CREATE ALERT high_warehouse_cost
-  WAREHOUSE = MONITORING_WH
-  SCHEDULE = '1 DAY'
-  IF EXISTS (
-    SELECT 1 FROM LOG.MV_DAILY_COST_SUMMARY
-    WHERE day = CURRENT_DATE() - 1
-      AND estimated_cost_usd > 100.00
-  )
-  THEN CALL notify_slack('Daily warehouse cost exceeded $100!');
-```
+外部テーブルのまま多頻度集計をするとコストが跳ねるため、日次の集計結果を別に持つ方針を標準化する。
 
-### コスト予測モデル
-過去のメトリクスを元に、将来のコストを予測：
-```sql
--- 過去30日の平均クレジット消費量から、月次コストを予測
-SELECT AVG(daily_credits) * 30 * 3.00 AS predicted_monthly_cost_usd
-FROM (
-  SELECT DATE_TRUNC('day', timestamp) AS day,
-         SUM(metric_value) AS daily_credits
-  FROM LOG.SNOWFLAKE_METRICS
-  WHERE metric_name = 'credits_used'
-    AND timestamp >= CURRENT_DATE() - 30
-  GROUP BY 1
-);
-```
+例：
+
+* 日次コスト（warehouse別）
+* 日次スキャン量（table別）
+* 遅いクエリの上位リスト（しきい値超過分のみ）
+
+### アラート設計
+
+* クレジットが日次予算を超過
+* bytes_scanned が前日比で急増
+* query_execution_time のP99が悪化
+
+---
 
 ## 設計レビュー時のチェックポイント
-- [ ] 月次コストが予算内か
-- [ ] 遅いクエリ（>60秒）が特定・改善されているか
-- [ ] ウェアハウスサイズが適切か（CPU使用率が80%前後が理想）
-- [ ] ストレージ使用量の増加率が想定内か
+
+* [ ] パーティション条件のないクエリが常態化していないか
+* [ ] metric_name と metric_value の単位が運用規約で明確か
+* [ ] user_name / metadata の公開範囲が適切か
+* [ ] 外部テーブル直叩きではなく、集計結果（内部テーブル等）に寄せる設計になっているか
+* [ ] ソースの更新遅延・再収集（重複排除）を想定した運用になっているか

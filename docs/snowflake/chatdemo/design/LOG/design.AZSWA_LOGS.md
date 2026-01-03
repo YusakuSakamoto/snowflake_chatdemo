@@ -1,249 +1,372 @@
-# LOG.AZSWA_LOGS 設計ドキュメント  
-（Azure Static Web Apps アクセスログ／外部テーブル）
+# 外部テーブル設計：[[design.AZSWA_LOGS]]
+
+## 概要
+
+[[LOG.AZSWA_LOGS]] は、Azure Static Web Apps（Next.js フロントエンド）のアクセスログを長期保管・分析するための外部テーブルである。
+
+本テーブルは、S3 に保存された JSON 形式（原則 JSON Lines を推奨）のログファイルを、Snowflake から EXTERNAL TABLE として直接参照可能にする。
+UX 改善（導線・離脱・速度）、障害検知（4xx/5xx の急増）、セキュリティ監視（異常アクセス傾向）を主用途とする。
+
+## 業務上の意味
+
+* このテーブルが表す概念
+  **1レコード = 1 HTTP リクエスト**。
+  ブラウザからフロントエンドへ到達したアクセスの「結果（status_code）」「業務上の状態（status）」「体感性能（response_time_ms）」を、時系列で追跡する。
+
+* 主な利用シーン
+
+  * 404/5xx の監視と原因調査（発生ページ・流入元・時間帯）
+  * パフォーマンス分析（P50/P95/P99、デバイス別、ページ別）
+  * ユーザー行動分析（セッション遷移、リファラ別、時間帯別）
+  * 異常アクセス検知（短時間多アクセス、特定パス集中、UA偏り）
+
+## 設計上の位置づけ
+
+[[LOG.AZSWA_LOGS]] は、観測性（Observability）スタックのフロントエンド側を担当する。
+
+* フロントエンド（Azure SWA / Next.js）アクセスログ ← 本テーブル
+* バックエンド（Azure Functions）アプリログ：[[LOG.AZFUNCTIONS_LOGS]]
+* AI 会話ログ：[[LOG.CORTEX_CONVERSATIONS]]
+* Snowflake メトリクス（クエリ実行統計）
+
+これらを横断的に分析することで、**ユーザー操作 → API 呼び出し → Agent 応答**までの流れを追跡しやすくなる。
 
 ---
 
-## 0. 本ドキュメントの位置づけ
+## 設計方針
 
-本ファイルは [[LOG.AZSWA_LOGS]] テーブルの 設計意図・判断・運用前提 を記載する。  
-DDL 定義の正本は master 配下にあり、本ドキュメントは以下を目的とする。
+### 外部テーブルを採用する理由
 
-- なぜそのカラムが存在するか
-- なぜその型・nullable・粒度なのか
-- Snowflake（EXTERNAL TABLE）前提で、どのように品質を担保するか
-- レビュー指摘への対応履歴と設計判断の確定
+本テーブルでは EXTERNAL TABLE（外部テーブル）を採用する。
 
----
+#### メリット
 
-## 1. テーブル概要
+1. コスト最適化
 
-### 1.1 目的
+   * アクセスログは増え続ける前提だが、S3 ストレージは安価で長期保管に向く
+2. 柔軟な保持期間管理
 
-[[LOG.AZSWA_LOGS]] は、Azure Static Web Apps（Next.js フロントエンド）の  
-HTTPリクエスト単位のアクセスログを集約・分析するための外部テーブルである。
+   * S3 ライフサイクルで自動アーカイブでき、Snowflake 側の定義変更が不要
+3. スキーマ進化の容易性
 
-- ログは S3 上に JSON 形式で保存される
-- Snowflake から EXTERNAL TABLE として直接参照する
-- 長期的な行動分析・エラー監視・UX改善を主目的とする
+   * metadata（VARIANT）を併用し、将来的な属性追加に耐える
 
-### 1.2 レコード粒度
+#### デメリットと対処
 
-- 1レコード = 1 HTTP リクエスト
-- フロントエンドで処理されたリクエストの結果を表す
-
----
-
-## 2. 設計上の前提（EXTERNAL TABLE）
-
-### 2.1 制約に関する基本方針
-
-Snowflake の EXTERNAL TABLE では以下を前提とする。
-
-- PRIMARY KEY / UNIQUE / FOREIGN KEY  
-  - 宣言可能だが 強制（enforced）されない
-  - DDLレベルの品質担保には使わない
-- CHECK 制約  
-  - Snowflakeでは未サポート
-  - DDLに記載しない
-
-よって、本テーブルの品質担保は以下で行う。
-
-- 設計ドキュメントでの明示
-- 検証クエリ
-- 取り込み元（アプリ／ETL）での制御
-- 必要に応じた内部テーブル化
+* クエリ速度：内部テーブルより遅い
+  → 頻繁に見る集計は内部テーブル化または MV で高速化
+* 制約が強制されない（品質担保の弱さ）
+  → 検証クエリ・監視・書き込み側制御で運用担保する
+* クラスタリング不可
+  → 時系列パーティションで代替し、スキャン範囲を絞る
 
 ---
 
-## 3. 主キー・識別子設計
+## パーティション設計
 
-### 3.1 log_id（主キー相当）
+### S3 パス構造
 
-- 意味: HTTPリクエストを一意に識別するID
-- 生成方法: リクエスト処理時に UUID を生成
-- 設計判断:
-  - EXTERNAL TABLE では PK を強制できないため、  
-    「一意であるべき識別子」として設計意図を明示する
-  - 重複検知は検証クエリ・下流処理で行う
+例：
 
----
+```
+s3://.../logs/azswa/
+  YEAR=2026/
+    MONTH=01/
+      DAY=02/
+        HOUR=14/
+          {uuid}.json
+```
 
-## 4. STATUS / STATUS_CODE 設計（High-1対応確定）
+### パーティションカラム（YEAR, MONTH, DAY, HOUR）
 
-### 4.1 設計背景
+* 役割：`metadata$filename` から抽出し、パーティションプルーニングを効かせる
+* 型：NUMBER（整数運用）
 
-HTTPログにおいて「状態」を1つのカラムで表すと、  
-HTTPプロトコルの状態と アプリケーション内部状態が混在し、  
-分析・集計・アラート設計が不明瞭になる。
+#### パーティションプルーニングの例
 
-そのため、本テーブルでは意図的に2つを分離する。
+（重要：時系列クエリは YEAR/MONTH/DAY を基本として絞り込む）
 
----
+```sql
+-- 良い例：日単位でスキャン範囲を限定
+SELECT *
+FROM LOG.AZSWA_LOGS
+WHERE year = 2026 AND month = 1 AND day = 2;
 
-### 4.2 各カラムの役割
-
-#### STATUS_CODE（NUMBER）
-
-- 意味: HTTPプロトコル標準の応答コード
-- 例: 200 / 301 / 404 / 500
-- 利用目的:
-  - HTTPレイヤの可視化
-  - エラー率（4xx / 5xx）監視
-  - アラート・SLO計測
-- 主分析指標: HTTP観点ではこちらを主とする
-
-#### STATUS（VARCHAR, nullable）
-
-- 意味: アプリケーション／業務ロジックの状態
-- 想定値:
-  - RUNNING
-  - SUCCEEDED
-  - FAILED
-- 利用目的:
-  - 内部処理フローの状態把握
-  - 業務レベルの異常検知
-- 主分析指標: アプリ／業務観点ではこちらを主とする
+-- 悪い例：全スキャンになりがち（外部テーブルでは高コスト）
+SELECT *
+FROM LOG.AZSWA_LOGS
+WHERE timestamp > CURRENT_TIMESTAMP() - INTERVAL '1 day';
+```
 
 ---
 
-### 4.3 設計上の注意
+## 制約・品質担保（EXTERNAL TABLE 前提）
 
-- STATUS_CODE と STATUS は 粒度・責務が異なる
-- HTTPの集計・可視化・アラートは STATUS_CODE を用いる
-- 業務ロジックの状態分析は STATUS を用いる
-- どちらかが恒常的に不要になった場合は、  
-  設計段階で削除を検討する
+### 制約に関する基本方針
 
----
+* PRIMARY KEY / UNIQUE / FOREIGN KEY
 
-## 5. 時系列・パーティション設計
+  * 宣言できても強制されないため、DDL による品質担保には使わない
+* CHECK 制約
 
-### 5.1 時刻カラム
+  * DDL に載せない（前提方針に従う）
 
-#### timestamp（TIMESTAMP_NTZ）
+よって品質担保は以下の組み合わせで行う。
 
-- 意味: リクエストを受信した日時（UTC）
-- 利用:
-  - 時系列分析
-  - 日次・時間帯別集計
+* 書き込み側での必須項目保証（log_id、timestamp、status_code など）
+* 定期的な検証クエリ（重複・NULL・値域）
+* 異常時の S3 データ是正（除外・マスキング・再生成）
+* 高頻度利用の集計は内部テーブル化
 
 ---
 
-### 5.2 パーティションカラム
+## 主キー・識別子設計
 
-#### YEAR / MONTH / DAY / HOUR
+### log_id（主キー相当）
 
-- 役割: S3 パス分割およびパーティションプルーニング用
-- 形式:
-  - YEAR: NUMBER(4,0)
-  - MONTH/DAY/HOUR: NUMBER(2,0)
-- 注意:
-  - NOT NULL を設計上明示するが、EXTERNAL TABLE では強制されない
-  - NULL 混入はパフォーマンス劣化・コスト増加に直結する
+* 意味：HTTP リクエストを一意識別する ID
+* 生成方法：リクエスト処理時に UUID を生成
+* 設計判断：
+  外部テーブルで一意性を強制できないため、「一意であるべき」ことを設計として明示し、**重複検知を運用で担保**する。
 
----
+#### 重複検知の運用例（推奨）
 
-### 5.3 品質担保（運用）
+* 日次で「重複が 0」を確認し、異常があれば書き込み経路を点検する。
 
-- 定期的に NULL 混入検証を行う
-- 異常時は S3 側データを修正・除外する
+```sql
+SELECT log_id, COUNT(*) AS c
+FROM LOG.AZSWA_LOGS
+WHERE year = 2026 AND month = 1 AND day = 2
+GROUP BY 1
+HAVING COUNT(*) > 1;
+```
 
----
+### request_id（相関 ID）
 
-## 6. セッション・ユーザー関連カラム
-
-### 6.1 session_id（VARCHAR, nullable）
-
-- 意味: ユーザーセッション識別子
-- 取得元: Cookie / ローカルストレージ
-- 利用目的:
-  - セッション単位の行動分析
-- 設計判断:
-  - 匿名・初回アクセスでは NULL を許容
+* 意味：Azure SWA が付与する識別子（またはリクエスト相関用 ID）
+* 用途：[[LOG.AZFUNCTIONS_LOGS]] 等との論理 JOIN に利用
+* 設計判断：FK 制約は持たず、**JOIN 成功率や欠損率を監視**する
 
 ---
 
-### 6.2 user_agent（VARCHAR, nullable）
+## STATUS / STATUS_CODE 設計（High-1 対応確定）
 
-- 意味: ブラウザ／デバイス情報
-- 利用:
-  - デバイス別利用傾向分析
+### 設計背景
 
----
+「状態」を 1 カラムに寄せると、HTTP 状態（プロトコル）と業務状態（アプリ）が混ざり、分析が曖昧になる。
+そのため、本テーブルでは意図的に分離する。
 
-## 7. パフォーマンス・エラー関連
+### STATUS_CODE（NUMBER）
 
-### 7.1 response_time_ms（NUMBER, nullable）
+* 意味：HTTP 応答コード（200/301/404/500…）
+* 主用途：
 
-- 意味: レスポンスタイム（ミリ秒）
-- NULL理由:
-  - 測定不能
-  - エラーによる途中終了
-- 利用:
-  - P95 / P99 レイテンシ分析
+  * 4xx / 5xx 監視
+  * SLO 計測
+  * リクエスト失敗の入口（どのパスで増えたか）
 
----
+### STATUS（VARCHAR, nullable）
 
-## 8. セキュリティ・プライバシー
+* 意味：アプリケーション／業務ロジックの状態
+* 想定値：RUNNING / SUCCEEDED / FAILED など
+* 主用途：
 
-### 8.1 client_ip（VARCHAR, nullable）
+  * 業務フローの異常検知（HTTP は 200 だが処理は FAILED など）
+  * UX/導線の成否指標
 
-- 意味: クライアントIPアドレス
-- 方針:
-  - 個人特定を避けるため、最後のオクテットをマスク
-- 利用:
-  - 地域別傾向
-  - 異常アクセス検知
+### 設計上の注意
 
----
-
-### 8.2 metadata（VARIANT）
-
-- 意味: 拡張コンテキスト情報
-- 想定内容:
-  - referrer
-  - A/Bテスト識別子
-  - 実験フラグ
-- 設計判断:
-  - 可変項目の吸収用
-  - 濫用を防ぐため、主要分析軸は固定カラムで持つ
+* HTTP の可視化・アラートは STATUS_CODE を主に使う
+* 業務状態の可視化は STATUS を主に使う
+* どちらかが恒常的に不要になった場合は削除を検討（ただし “混ぜない” を優先）
 
 ---
 
-## 9. データ整合性（論理参照）
+## カラム設計の判断
 
-### 9.1 request_id
+### timestamp（TIMESTAMP_NTZ）
 
-- Azure SWA が自動付与する識別子
-- [[LOG.AZFUNCTIONS_LOGS]] 等との論理的 JOIN に利用
-- FK 制約は設定せず、検証クエリで整合性を担保
+* 意味：リクエスト受信日時（UTC）
+* なぜ NTZ：ログ時刻は UTC 統一し、表示や集計のタイムゾーン変換は利用側で行う
+* 代表用途：時系列集計、ピーク検知、障害発生点の特定
+
+### response_time_ms（NUMBER, nullable）
+
+* 意味：レスポンス時間（ms）
+* NULL 許容理由：
+
+  * 測定不能（クライアント中断、ログ収集欠損）
+  * エラーで計測完了前に終了
+* 代表用途：P95/P99、パス別、UA 別の体感性能
+
+### session_id（VARCHAR, nullable）
+
+* 意味：ユーザーセッション識別子
+* 取得元：Cookie / LocalStorage など
+* NULL 許容理由：匿名・初回アクセス・同意未取得などを想定
+
+### user_agent（VARCHAR, nullable）
+
+* 意味：ブラウザ／OS／デバイス情報
+* 代表用途：デバイス別の性能差、特定 UA での不具合検知
+
+### client_ip（VARCHAR, nullable）
+
+* 意味：クライアント IP
+* 方針：個人特定を避けるためマスク（例：末尾オクテットの匿名化）
+* 代表用途：異常アクセス傾向（ただし個人追跡が目的にならないようにする）
+
+### metadata（VARIANT）
+
+* 意味：拡張コンテキスト（referrer、A/B テスト、実験フラグ等）
+* 設計判断：
+
+  * 変化しやすい属性を吸収する
+  * 主要分析軸は固定カラムに寄せ、metadata を“何でも箱”にしない
 
 ---
 
-## 10. 運用・監視設計（要点）
+## クエリパターン例
 
-- AUTO_REFRESH 失敗回数
-- 新規ファイル増加量
-- スキャン量・クレジット消費
-- 404 / 5xx の急増検知
+### パターン1：エラー率の時系列推移（HTTP観点）
 
-※ 実装は別途運用ドキュメントに記載する。
+```sql
+SELECT DATE_TRUNC('hour', timestamp) AS hour,
+       COUNT(*) AS total,
+       COUNT_IF(status_code >= 400) AS errors,
+       ROUND(errors / total * 100, 2) AS error_rate_pct
+FROM LOG.AZSWA_LOGS
+WHERE year = 2026 AND month = 1 AND day = 2
+GROUP BY 1
+ORDER BY 1;
+```
+
+### パターン2：P95/P99 レイテンシ（パス別）
+
+```sql
+SELECT metadata:path::VARCHAR AS path,
+       APPROX_PERCENTILE(response_time_ms, 0.95) AS p95_ms,
+       APPROX_PERCENTILE(response_time_ms, 0.99) AS p99_ms
+FROM LOG.AZSWA_LOGS
+WHERE response_time_ms IS NOT NULL
+  AND year = 2026 AND month = 1
+GROUP BY 1
+ORDER BY p99_ms DESC;
+```
+
+### パターン3：業務状態 FAILED の検出（アプリ観点）
+
+```sql
+SELECT timestamp, status_code, status, metadata
+FROM LOG.AZSWA_LOGS
+WHERE status = 'FAILED'
+  AND year = 2026 AND month = 1
+ORDER BY timestamp DESC;
+```
+
+### パターン4：request_id でバックエンドログと相関（論理 JOIN）
+
+```sql
+SELECT a.timestamp,
+       a.status_code,
+       a.request_id,
+       b.function_name,
+       b.level,
+       b.message
+FROM LOG.AZSWA_LOGS a
+LEFT JOIN LOG.AZFUNCTIONS_LOGS b
+  ON a.request_id = b.invocation_id
+WHERE a.year = 2026 AND a.month = 1 AND a.day = 2;
+```
 
 ---
 
-## 11. 将来拡張方針
+## 運用上の注意
 
-- 高頻度集計は内部テーブル・MV化を検討
-- 長期ログは S3 ライフサイクルでコスト最適化
-- 分析用途拡張時も、本設計思想を維持する
+### AUTO_REFRESH の前提
+
+* 新規ファイル追加が自動反映される前提（遅延は発生し得る）
+* 運用監視では「新規ファイルが増えているのに反映されない」状態を検知する
+
+### ログの書き込みフロー（代表例）
+
+1. SWA/フロントエンドがアクセスログを生成（または基盤ログを取得）
+2. 収集・転送（例：ログ基盤 → S3）
+3. S3 のパーティションパスへ保存
+4. Snowflake が AUTO_REFRESH で検知
+
+### 監視項目（要点）
+
+* AUTO_REFRESH 失敗回数
+* 新規ファイル増加量（時間あたり）
+* スキャン量・クレジット消費の急増
+* 404 / 5xx の急増、特定パス集中
 
 ---
 
-## 12. レビュー対応履歴
+## セキュリティ・プライバシー
 
-- 2026-01-03  
-  - STATUS / STATUS_CODE の役割分担を明文化（High-1対応）
-  - 外部テーブル制約・品質担保方針を明確化
-  - 設計と実装DDLの責務分離を整理
+### 機密情報の取り扱い（最低限の契約）
+
+* Authorization / Cookie / API キー等の秘匿情報を **ログ本文に出さない**
+* metadata に入れる場合も、復元可能な秘密値は格納しない（マスク or 除外）
+* client_ip は匿名化（保存目的が「個人追跡」にならないようにする）
+
+### アクセス制御（例）
+
+```sql
+GRANT SELECT ON LOG.AZSWA_LOGS TO ROLE LOG_VIEWER;
+```
 
 ---
+
+## 今後の拡張計画
+
+### マテリアライズドビューによる高速化（例）
+
+```sql
+CREATE MATERIALIZED VIEW LOG.MV_HOURLY_SWA_METRICS AS
+SELECT DATE_TRUNC('hour', timestamp) AS hour,
+       COUNT(*) AS total_requests,
+       COUNT_IF(status_code >= 400) AS errors,
+       APPROX_PERCENTILE(response_time_ms, 0.99) AS p99_ms
+FROM LOG.AZSWA_LOGS
+WHERE year >= 2026
+GROUP BY 1;
+```
+
+### アラート（例）
+
+```sql
+CREATE ALERT high_swa_error_rate
+  WAREHOUSE = MONITORING_WH
+  SCHEDULE = '10 MINUTE'
+  IF EXISTS (
+    SELECT 1
+    FROM LOG.MV_HOURLY_SWA_METRICS
+    WHERE hour >= DATEADD('hour', -1, CURRENT_TIMESTAMP())
+      AND errors / NULLIF(total_requests, 0) > 0.05
+  )
+  THEN CALL notify_slack('High error rate in Azure SWA!');
+```
+
+---
+
+## 設計レビュー時のチェックポイント
+
+* [ ] YEAR/MONTH/DAY を指定しないクエリが常態化していないか（コスト劣化）
+* [ ] 404 / 5xx が急増していないか（入口：status_code）
+* [ ] status='FAILED' が増えていないか（業務観点）
+* [ ] response_time_ms の P99 が目標を超えていないか
+* [ ] log_id 重複が発生していないか
+* [ ] 秘匿情報がログに出ていないか（metadata 含む）
+
+---
+
+## レビュー対応履歴
+
+* 2026-01-03
+
+  * STATUS / STATUS_CODE の役割分担を明文化（High-1 対応）
+  * 外部テーブル制約・品質担保方針を明確化
+  * 設計と DDL（master 正本）の責務分離を整理

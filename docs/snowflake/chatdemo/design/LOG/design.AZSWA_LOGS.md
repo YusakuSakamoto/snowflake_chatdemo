@@ -131,12 +131,12 @@ HTTPプロトコルの状態と アプリケーション内部状態が混在し
 
 ### 5.2 パーティションカラム
 
-#### year / month / day / hour
+#### YEAR / MONTH / DAY / HOUR
 
 - 役割: S3 パス分割およびパーティションプルーニング用
 - 形式:
-  - year: NUMBER(4,0)
-  - month/day/hour: NUMBER(2,0)
+  - YEAR: NUMBER(4,0)
+  - MONTH/DAY/HOUR: NUMBER(2,0)
 - 注意:
   - NOT NULL を設計上明示するが、EXTERNAL TABLE では強制されない
   - NULL 混入はパフォーマンス劣化・コスト増加に直結する

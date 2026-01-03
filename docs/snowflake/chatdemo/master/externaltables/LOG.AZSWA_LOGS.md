@@ -8,7 +8,7 @@ stage_location: azswa/
 file_format: JSON
 auto_refresh: true
 partition_by: [year, month, day, hour]
-comment: Azure Static Web Appsログ（外部テーブル）
+comment: Azure Static Web Apps アクセスログ（外部テーブル）
 ---
 
 # AZSWA_LOGS

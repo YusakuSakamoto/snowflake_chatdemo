@@ -15,6 +15,7 @@ USE_MOCK = os.getenv('USE_MOCK', 'False').lower() == 'true'
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
+
 @app.route(route="chat", methods=["POST", "OPTIONS"])
 def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     """
@@ -57,6 +58,7 @@ def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
                 'timestamp': datetime.now().isoformat()
             })
             recent_messages = mock_messages[-10:][::-1]
+            ai_response = f"これはモック応答です: {message}"
         else:
             # Cortex Agent REST API経由でのみ応答
             base_url = os.getenv("SNOWFLAKE_ACCOUNT_URL", "").rstrip("/")
@@ -82,7 +84,14 @@ def chat_endpoint(req: func.HttpRequest) -> func.HttpResponse:
                     data = r.json()
                     # Snowflake Cortex Agentの応答仕様に応じて取得
                     if "choices" in data and data["choices"]:
-                        ai_response = data["choices"][0].get("message", {}).get("content", ai_response)
+                        c = data["choices"][0].get("message", {}).get("content")
+                        if isinstance(c, str):
+                            ai_response = c
+                        elif isinstance(c, list):
+                            # {"type":"text","text":"..."} の配列を想定
+                            ai_response = "".join(
+                                [x.get("text", "") for x in c if isinstance(x, dict)]
+                            ) or ai_response
                     elif "data" in data and data["data"]:
                         ai_response = data["data"][0][0]
             except Exception as e:
@@ -272,32 +281,6 @@ def _find_flush_pos(buf: str) -> int:
     return 0
 
 
-def _first_content_json(obj: dict):
-    """Snowflake tool_result は obj['content'][0]['json'] に情報が入ることが多い"""
-    try:
-        content = obj.get("content")
-        if isinstance(content, list) and len(content) > 0:
-            c0 = content[0]
-            if isinstance(c0, dict):
-                j = c0.get("json")
-                if isinstance(j, dict):
-                    return j
-    except Exception:
-        pass
-    return None
-
-
-def _try_parse_json_string(v):
-    if isinstance(v, str):
-        s = v.strip()
-        if (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]")):
-            try:
-                return json.loads(s)
-            except Exception:
-                return v
-    return v
-
-
 def _extract_tool_detail(obj: dict):
     """ツール実行結果から詳細を抽出"""
     if not isinstance(obj, dict):
@@ -307,47 +290,39 @@ def _extract_tool_detail(obj: dict):
     status = obj.get("status") or "unknown"
     elapsed_ms = obj.get("elapsed_ms") or obj.get("elapsedMs")
 
-    # content配列から情報を抽出
     content_list = obj.get("content", [])
     if not isinstance(content_list, list):
         content_list = [content_list] if content_list else []
 
     tool_input = {}
     tool_output = {}
-    
+
     for content_item in content_list:
         if not isinstance(content_item, dict):
             continue
-            
-        # JSON形式のコンテンツを処理
+
         if "json" in content_item:
             cj = content_item.get("json", {})
-            
-            # SQLを抽出
+
             if "sql" in cj and isinstance(cj.get("sql"), str):
                 tool_input["sql"] = cj.get("sql")
-            
-            # テキストを抽出
+
             if "text" in cj and isinstance(cj.get("text"), str):
                 tool_input["note"] = cj.get("text")
-            
-            # 結果を抽出
+
             if "result" in cj:
                 result_data = cj.get("result")
                 if isinstance(result_data, str):
-                    # JSON文字列の場合はパース
                     try:
                         tool_output["result"] = json.loads(result_data)
-                    except:
+                    except Exception:
                         tool_output["result"] = result_data
                 else:
                     tool_output["result"] = result_data
-            
-            # result_setを抽出
+
             if "result_set" in cj and cj.get("result_set") is not None:
                 tool_output["data"] = cj.get("result_set")
-            
-            # dataを直接抽出
+
             if "data" in cj and cj.get("data") is not None:
                 tool_output["data"] = cj.get("data")
 
@@ -361,6 +336,19 @@ def _extract_tool_detail(obj: dict):
     }
 
 
+def _strip_leading_blank_lines(s: str) -> str:
+    """
+    先頭の「空白のみの行」を削除（Markdownのインデント等は壊さないため行単位）
+    """
+    if not isinstance(s, str) or not s:
+        return s
+    lines = s.splitlines(True)  # 改行保持
+    i = 0
+    while i < len(lines) and lines[i].strip() == "":
+        i += 1
+    return "".join(lines[i:])
+
+
 @app.route(route="chat-stream", methods=["POST", "OPTIONS"])
 def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
     import uuid
@@ -368,14 +356,13 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
     ストリーミング対応のCortex Agent APIエンドポイント
     """
     logging.info('Chat stream endpoint triggered')
-    
+
     if req.method == "OPTIONS":
         return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
 
     started = time.time()
 
     try:
-        # --- input ---
         try:
             body = req.get_json()
         except Exception:
@@ -384,7 +371,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
 
         text = body.get("text") or body.get("input") or body.get("message")
 
-        # S3アップロード用情報（常に定義）
         s3_bucket = os.getenv("CHAT_S3_BUCKET")
         conversation_id = body.get('conversation_id') or str(uuid.uuid4())
         session_id = body.get('session_id')
@@ -399,7 +385,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
         if not text:
             return _json({"ok": False, "error": "text is required"}, 400)
 
-        # --- env ---
         base_url = _env("SNOWFLAKE_ACCOUNT_URL").rstrip("/")
         token = _env("SNOWFLAKE_BEARER_TOKEN")
         database = _env("SNOWFLAKE_DATABASE")
@@ -419,7 +404,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
             "tool_choice": {"type": "auto"},
         }
 
-        # --- call Cortex Agent ---
         r = requests.post(url, headers=headers, json=payload, stream=True, timeout=900)
         if r.status_code >= 400:
             return _json(
@@ -458,7 +442,7 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                 rest = buf.strip()
                 if rest:
                     for i in range(0, len(rest), 400):
-                        add_progress(rest[i : i + 400])
+                        add_progress(rest[i: i + 400])
                 buf = ""
                 return
 
@@ -487,13 +471,13 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                 continue
 
             if line.startswith("event:"):
-                current_event = line[len("event:") :].strip()
+                current_event = line[len("event:"):].strip()
                 continue
 
             if not line.startswith("data:"):
                 continue
 
-            data_str = line[len("data:") :].strip()
+            data_str = line[len("data:"):].strip()
             if data_str == "[DONE]":
                 break
 
@@ -504,7 +488,18 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
 
             events_count += 1
 
-            # --- delta ---
+            if current_event == "response.thinking.delta":
+                t = obj.get("text") if isinstance(obj, dict) else None
+                if isinstance(t, str) and t:
+                    logging.info(f"[thinking.delta] {t[:500]}")
+                continue
+
+            if current_event == "response.thinking":
+                t = obj.get("text") if isinstance(obj, dict) else None
+                if isinstance(t, str) and t:
+                    logging.info(f"[thinking] {t[:2000]}")
+                continue
+
             if current_event == "response.text.delta":
                 t = obj.get("text") if isinstance(obj, dict) else None
                 if isinstance(t, str) and t:
@@ -513,7 +508,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                     flush(False)
                 continue
 
-            # --- final answer ---
             if current_event == "response.text":
                 if got_final:
                     continue
@@ -525,7 +519,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                     add_progress("完了：最終回答を受け取りました")
                 continue
 
-            # --- tool result ---
             if current_event == "response.tool_result":
                 logging.info(f"🔧 Tool result event: {json.dumps(obj, ensure_ascii=False)[:500]}")
                 detail = _extract_tool_detail(obj)
@@ -535,7 +528,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                 add_progress(f"🔧 ツール: **{detail['tool_name']}** ({detail['status']})")
                 continue
 
-            # --- tool call/start/end ---
             if current_event in ["response.tool.call", "response.tool.start", "response.tool.end"]:
                 tool_name = obj.get("name") or obj.get("tool_name") or "unknown"
                 if current_event == "response.tool.call":
@@ -546,7 +538,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                     add_progress(f"✅ ツール実行完了: **{tool_name}**")
                 continue
 
-        # response.text が来ない場合は delta を最終回答にする
         if not final_answer:
             final_answer = "".join(delta_all).strip()
             if final_answer:
@@ -554,12 +545,10 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
 
         elapsed = round(time.time() - started, 3)
 
-        # S3アップロード（NDJSON, uuidファイル名, 仕様準拠）
         try:
             if s3_bucket:
                 import tempfile
                 ndjson_lines = []
-                # userメッセージ
                 ndjson_lines.append(json.dumps({
                     "conversation_id": conversation_id,
                     "session_id": session_id,
@@ -570,7 +559,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                     "timestamp": now.isoformat(),
                     "metadata": None
                 }, ensure_ascii=False))
-                # assistantメッセージ
                 ndjson_lines.append(json.dumps({
                     "conversation_id": conversation_id,
                     "session_id": session_id,
@@ -588,6 +576,7 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                     upload_file_to_s3(tmpf.name, s3_bucket, s3_key, content_type="application/json")
         except Exception as e:
             logging.error(f"S3 upload error: {e}")
+
         return _json(
             {
                 "ok": True,
@@ -604,144 +593,6 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
         logging.error(f"ストリーミングエラー: {str(e)}")
         return _json({"ok": False, "error": "internal_error", "message": str(e)}, 500)
 
-
-@app.route(route="chat/stream", methods=["POST", "OPTIONS"])
-def chat_stream_endpoint(req: func.HttpRequest) -> func.HttpResponse:
-    """
-    ストリーミングSSE対応のCortex Agent APIエンドポイント
-    クライアントにイベントを逐次送信
-    """
-    logging.info('Chat stream endpoint (SSE) triggered')
-    
-    if req.method == "OPTIONS":
-        return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
-
-    try:
-        body = req.get_json()
-
-        text = body.get("text") or body.get("input") or body.get("message")
-        user_id = body.get("user_id", "anonymous")
-        agent_name = body.get("agent_name")
-        if not text:
-            return _json({"ok": False, "error": "text is required"}, 400)
-
-        # --- env ---
-        base_url = _env("SNOWFLAKE_ACCOUNT_URL").rstrip("/")
-        token = _env("SNOWFLAKE_BEARER_TOKEN")
-        database = _env("SNOWFLAKE_DATABASE")
-        schema = _env("SNOWFLAKE_SCHEMA")
-        agent = _env("SNOWFLAKE_AGENT_NAME")
-
-        url = f"{base_url}/api/v2/databases/{database}/schemas/{schema}/agents/{agent}:run"
-
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "Accept": "text/event-stream",
-        }
-
-        payload = {
-            "messages": [{"role": "user", "content": [{"type": "text", "text": text}]}],
-            "tool_choice": {"type": "auto"},
-        }
-
-        # ストリーミングレスポンスを生成
-
-        def generate():
-            from app.azfunctions.chatdemo.snowflake_cortex import SnowflakeCortexClient
-            ai_response = ""
-            try:
-                r = requests.post(url, headers=headers, json=payload, stream=True, timeout=900)
-                if r.status_code >= 400:
-                    yield f"event: error\ndata: {json.dumps({'error': 'snowflake_error', 'status': r.status_code})}\n\n"
-                    return
-
-                # 初期イベント送信
-                yield f"event: start\ndata: {json.dumps({'status': 'connected'})}\n\n"
-
-                current_event = None
-                delta_chunks = []
-                final_text = None
-                for raw in r.iter_lines(decode_unicode=False):
-                    if raw is None:
-                        continue
-                    try:
-                        line = raw.decode("utf-8").rstrip("\r")
-                    except Exception:
-                        continue
-                    if line == "":
-                        current_event = None
-                        continue
-                    if line.startswith("event:"):
-                        current_event = line[len("event:"):].strip()
-                        continue
-                    if not line.startswith("data:"):
-                        continue
-                    data_str = line[len("data:"):].strip()
-                    if data_str == "[DONE]":
-                        break
-                    try:
-                        obj = json.loads(data_str)
-                    except Exception:
-                        continue
-                    # テキストデルタ
-                    if current_event == "response.text.delta":
-                        t = obj.get("text") if isinstance(obj, dict) else None
-                        if isinstance(t, str) and t:
-                            delta_chunks.append(t)
-                            yield f"event: text_delta\ndata: {json.dumps({'text': t})}\n\n"
-                    # 最終テキスト
-                    elif current_event == "response.text":
-                        t = obj.get("text") if isinstance(obj, dict) else None
-                        if isinstance(t, str) and t:
-                            final_text = t
-                            yield f"event: text_final\ndata: {json.dumps({'text': t})}\n\n"
-                    # ツール結果
-                    elif current_event == "response.tool_result":
-                        detail = _extract_tool_detail(obj)
-                        yield f"event: tool_detail\ndata: {json.dumps(detail, ensure_ascii=False)}\n\n"
-                    # ツールステップ
-                    elif current_event in ["response.tool.call", "response.tool.start", "response.tool.end"]:
-                        tool_name = obj.get("name") or obj.get("tool_name") or "unknown"
-                        step_type = current_event.split(".")[-1]
-                        yield f"event: tool_step\ndata: {json.dumps({'type': step_type, 'tool_name': tool_name})}\n\n"
-
-                # AI応答を決定
-                ai_response = final_text if final_text else "".join(delta_chunks)
-                # 履歴保存
-                try:
-                    cortex_client = SnowflakeCortexClient()
-                    cortex_client.save_message(user_id, text, ai_response)
-                except Exception as e:
-                    logging.error(f"履歴保存失敗: {e}")
-
-                # 完了イベント
-                yield f"event: done\ndata: {json.dumps({'status': 'completed'})}\n\n"
-
-            except Exception as e:
-                logging.exception("SSE generation failed")
-                yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
-
-        # SSEレスポンスを返す
-        sse_headers = {
-            **CORS_HEADERS,
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        }
-        
-        return func.HttpResponse(
-            body=generate(),
-            status_code=200,
-            headers=sse_headers,
-            mimetype="text/event-stream"
-        )
-
-    except Exception as e:
-        logging.exception("chat_stream_sse failed")
-        return _json({"ok": False, "error": str(e)}, 500)
-
-
 @app.route(route="review/schema", methods=["POST", "OPTIONS"])
 def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     import os
@@ -757,11 +608,12 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     # ----------------------------
     success = False
     markdown = ""        # ログ用途：stream全文
-    final_text = ""      # ★ 最終出力：response.text のみ
+    final_text = ""      # 最終出力：response.text（なければdelta結合）
     message = "レビュー完了"
 
     target_schema = None
-    target_table = None
+    target_table = None     # 互換用
+    target_object = None    # ★追加：オブジェクト単位レビュー用
     max_tables = None
 
     logging.info("DB Review endpoint triggered")
@@ -785,8 +637,13 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         # ----------------------------
         req_body = req.get_json()
         target_schema = req_body.get("target_schema")
-        target_table = req_body.get("target_table")
+        target_table = req_body.get("target_table")          # 既存互換
+        target_object = req_body.get("target_object")        # ★新規
         max_tables = req_body.get("max_tables")
+
+        # 互換：target_object 未指定なら target_table を採用（既存クライアント救済）
+        if not target_object and target_table:
+            target_object = target_table
 
         if not target_schema:
             return func.HttpResponse(
@@ -816,34 +673,45 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "Accept": "application/json",
+            "Accept": "text/event-stream",
         }
 
         # ----------------------------
-        # ★ PARAMS_JSON を必ず作る（ここが最重要）
+        # PARAMS_JSON（文字列前提 / null禁止）
         # ----------------------------
         params = {
             "TARGET_SCHEMA": str(target_schema),
             "MAX_TABLES": str(max_tables) if max_tables else "2000",
         }
-        if target_table:
-            params["TARGET_TABLE"] = str(target_table)
+
+        # ★重要：TARGET_OBJECT 指定時は tool 側が TARGET_TABLE を要求するため、同じ値を入れる
+        # instructions: "TARGET_TABLE は TARGET_OBJECT と同義として扱い、TARGET_OBJECT の値をそのまま渡す"
+        if target_object:
+            params["TARGET_OBJECT"] = str(target_object)
+            params["TARGET_TABLE"] = str(target_object)  # ★これが無いと Agent が tool を呼べない/迷う
 
         # ----------------------------
-        # ★ AGENTが誤解しないプロンプト
+        # prompt（誤解させない・短め・PARAMS_JSON唯一入力を強調）
         # ----------------------------
-        prompt = (
-            "DB設計レビューを実施してください。\n"
-            "以下の PARAMS_JSON を唯一の入力パラメータとして厳密に使用してください。\n"
-            "ツール呼び出し時は、必ずこの値をそのまま文字列で渡してください。\n\n"
-            f"PARAMS_JSON:\n{json.dumps(params, ensure_ascii=False)}\n\n"
-            "手順:\n"
-            "1. list_schema_related_doc_paths を TARGET_SCHEMA / MAX_TABLES で実行\n"
-            "2. get_docs_by_paths で本文を取得\n"
-            "3. TARGET_TABLE が指定されている場合は、"
-            "   list_table_related_doc_paths を TARGET_SCHEMA / TARGET_TABLE / INCLUDE_COLUMNS=\"true\" で実行\n"
-            "4. 再度 get_docs_by_paths を実行し、テーブル・カラム設計を含めてレビュー\n"
-        )
+        if target_object:
+            prompt = (
+                "以下の PARAMS_JSON を唯一の入力として、"
+                "OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT の定義に厳密に従い、静的設計レビューを実行してください。\n\n"
+                f"PARAMS_JSON:\n{json.dumps(params, ensure_ascii=False)}\n\n"
+                "注意:\n"
+                "- 今回は TARGET_OBJECT 指定のためオブジェクト単位レビュー（スキーマ全体レビューは禁止）\n"
+                "- オブジェクト単位レビュー手順に従い、最初は list_table_related_doc_paths を INCLUDE_COLUMNS=\"false\" で実行\n"
+                "- 推測禁止、Vault 根拠のみ使用\n"
+            )
+        else:
+            prompt = (
+                "以下の PARAMS_JSON を唯一の入力として、"
+                "OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT の定義に厳密に従い、静的設計レビューを実行してください。\n\n"
+                f"PARAMS_JSON:\n{json.dumps(params, ensure_ascii=False)}\n\n"
+                "注意:\n"
+                "- TARGET_OBJECT 未指定のためスキーマ単位レビュー\n"
+                "- 推測禁止、Vault 根拠のみ使用\n"
+            )
 
         payload = {
             "messages": [
@@ -863,7 +731,11 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         if r.status_code >= 400:
             return func.HttpResponse(
                 json.dumps(
-                    {"success": False, "error": f"Cortex Agent API error: {r.status_code}"},
+                    {
+                        "success": False,
+                        "error": f"Cortex Agent API error: {r.status_code}",
+                        "body": r.text,
+                    },
                     ensure_ascii=False,
                 ),
                 mimetype="application/json",
@@ -872,6 +744,7 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         content_chunks = []
+        delta_chunks = []
         current_event = None
 
         for raw in r.iter_lines(decode_unicode=False):
@@ -883,6 +756,7 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
             except Exception:
                 line = raw.decode("utf-8", errors="ignore")
 
+            # 既存仕様：streamの行ログは残す
             logging.info(f"[review_schema_endpoint][stream] {line[:500]}")
             content_chunks.append(line)
 
@@ -894,6 +768,7 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
 
             if line.startswith("event:"):
                 current_event = line[len("event:"):].strip()
+                logging.info(f"[review_schema_endpoint][event] {current_event}")
                 continue
 
             if not line.startswith("data:"):
@@ -901,28 +776,86 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
 
             data_str = line[len("data:"):].strip()
             if data_str == "[DONE]":
+                logging.info("[review_schema_endpoint][done] [DONE]")
                 break
 
-            # ★ 最終回答のみ取得
+            # ここから data: JSON のログ（必要分だけ）
+            # パースできない場合はそのままログ
+            try:
+                obj = json.loads(data_str)
+            except Exception:
+                logging.info(f"[review_schema_endpoint][data] {data_str[:500]}")
+                continue
+
+            # --- thinking delta ---
+            if current_event == "response.thinking.delta":
+                t = obj.get("text") if isinstance(obj, dict) else None
+                if isinstance(t, str) and t:
+                    logging.info(f"[review_schema_endpoint][thinking.delta] {t[:500]}")
+                continue
+
+            # --- thinking final ---
+            if current_event == "response.thinking":
+                t = obj.get("text") if isinstance(obj, dict) else None
+                if isinstance(t, str) and t:
+                    logging.info(f"[review_schema_endpoint][thinking] {t[:2000]}")
+                continue
+
+            # --- response.text.delta（ログ＋蓄積）---
+            if current_event == "response.text.delta":
+                t = obj.get("text") if isinstance(obj, dict) else None
+                if isinstance(t, str) and t:
+                    logging.info(f"[review_schema_endpoint][text.delta] {t[:500]}")
+                    delta_chunks.append(t)
+                continue
+
+            # --- response.text（ログ＋最終採用）---
             if current_event == "response.text":
-                try:
-                    obj = json.loads(data_str)
-                    t = obj.get("text") if isinstance(obj, dict) else None
-                    if isinstance(t, str) and t.strip():
-                        final_text = t
-                except Exception:
-                    pass
+                t = obj.get("text") if isinstance(obj, dict) else None
+                if isinstance(t, str) and t.strip():
+                    logging.info(f"[review_schema_endpoint][text] {t[:500]}")
+                    final_text = t
+                continue
+
+            # --- tool steps（tool_call / tool_start / tool_end 相当）---
+            if current_event in ("response.tool.call", "response.tool.start", "response.tool.end"):
+                tool_name = None
+                if isinstance(obj, dict):
+                    tool_name = obj.get("name") or obj.get("tool_name") or "unknown"
+                logging.info(f"[review_schema_endpoint][tool_step] {current_event} tool={tool_name}")
+                continue
+
+            # --- tool result ---
+            if current_event == "response.tool_result":
+                # 全文は重いので先頭だけ（既存方針に合わせる）
+                logging.info(
+                    f"[review_schema_endpoint][tool_result] {json.dumps(obj, ensure_ascii=False)[:500]}"
+                )
+                continue
+
+            # その他イベント（念のためログ）
+            logging.info(
+                f"[review_schema_endpoint][event_data] event={current_event} data={json.dumps(obj, ensure_ascii=False)[:300]}"
+            )
+
+        # response.text が来ない場合は delta を最終回答にする
+        if not final_text.strip() and delta_chunks:
+            final_text = "".join(delta_chunks).strip()
 
         markdown = "\n".join(content_chunks)
         success = bool(final_text.strip())
 
         if not success:
-            message = "最終回答（response.text）を取得できませんでした"
+            message = "最終回答（response.text / response.text.delta）を取得できませんでした"
 
         # ----------------------------
         # ファイル保存（最終回答のみ）
+        # 先頭空白行があれば削除
         # ----------------------------
         if success:
+            # 既存 util を使う想定（この関数はファイル上のどこかに既にある前提）
+            final_text = _strip_leading_blank_lines(final_text)
+
             output_dir = (
                 Path(__file__).parent.parent.parent.parent
                 / "docs" / "snowflake" / "chatdemo" / "reviews" / "schemas"
@@ -930,28 +863,24 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
             output_dir.mkdir(parents=True, exist_ok=True)
 
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            schema_name = target_schema.replace("/", "_").replace(".", "_")
-            table_part = (
-                "_" + target_table.replace("/", "_").replace(".", "_")
-                if target_table
-                else ""
-            )
+            schema_name = str(target_schema).replace("/", "_").replace(".", "_")
 
-            output_file = output_dir / f"{schema_name}{table_part}_{ts}.md"
+            obj_part = ""
+            if target_object:
+                obj_part = "_" + str(target_object).replace("/", "_").replace(".", "_")
+
+            output_file = output_dir / f"{schema_name}{obj_part}_{ts}.md"
             output_file.write_text(final_text, encoding="utf-8")
 
             logging.info(f"Review saved to: {output_file}")
 
-        # ----------------------------
-        # APIレスポンス
-        # ----------------------------
         response_data = {
             "success": success,
             "message": message,
             "final_text": final_text,
             "metadata": {
                 "target_schema": target_schema,
-                "target_table": target_table,
+                "target_object": target_object,
                 "max_tables": max_tables,
                 "review_date": datetime.now().strftime("%Y-%m-%d"),
             },
@@ -972,4 +901,3 @@ def review_schema_endpoint(req: func.HttpRequest) -> func.HttpResponse:
             status_code=500,
             headers={"Access-Control-Allow-Origin": "*"},
         )
-

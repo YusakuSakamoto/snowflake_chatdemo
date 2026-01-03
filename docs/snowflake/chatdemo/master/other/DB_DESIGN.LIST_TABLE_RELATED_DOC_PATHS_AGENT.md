@@ -61,7 +61,7 @@ BEGIN
     'master/views/' || v_schema || '.' || v_table || '.md',
 
     -- その他オブジェクト（procedure/function/tool/semantic view 等）
-    'master/others/' || v_schema || '.' || v_table || '.md',
+    'master/other/' || v_schema || '.' || v_table || '.md',
 
     -- 設計意図（オブジェクト設計書）
     'design/' || v_schema || '/design.' || v_table || '.md'

@@ -25,10 +25,12 @@ DECLARE
   v_base_candidates VARIANT;
   v_base_paths      VARIANT;
 
+  v_design_paths    VARIANT;  -- ★追加：design/<SCHEMA>/design.*.md を拾う
+
   v_tables_paths    VARIANT;
   v_ext_paths       VARIANT;
   v_views_paths     VARIANT;
-  v_others_paths    VARIANT;
+  v_other_paths     VARIANT;  -- ★修正：other（単数）に合わせる
 
   v_all_paths       VARIANT;
   v_paths_dedup     VARIANT;
@@ -60,6 +62,21 @@ BEGIN
   FROM cand c
   JOIN DB_DESIGN.V_DOCS_OBSIDIAN d
     ON d.PATH = c.path;
+
+  -- (A2) ★追加：design/<SCHEMA>/design.*.md を列挙（「リンク解決」はせず、実在PATHを構文で拾う）
+  -- 例: design/DB_DESIGN/design.PROFILE_RUNS.md
+  SELECT COALESCE(
+           ARRAY_AGG(PATH) WITHIN GROUP (ORDER BY PATH),
+           ARRAY_CONSTRUCT()
+         )
+    INTO :v_design_paths
+  FROM (
+    SELECT d.PATH
+    FROM DB_DESIGN.V_DOCS_OBSIDIAN d
+    WHERE d.PATH LIKE ('design/' || :v_schema || '/design.%')
+      AND d.PATH LIKE '%.md'
+    QUALIFY ROW_NUMBER() OVER (ORDER BY d.PATH) <= :v_max_tables
+  );
 
   -- (B) master/tables
   SELECT COALESCE(
@@ -103,16 +120,16 @@ BEGIN
     QUALIFY ROW_NUMBER() OVER (ORDER BY d.PATH) <= :v_max_tables
   );
 
-  -- (E) master/others
+  -- (E) ★修正：master/other（単数）に合わせる（READMEと整合）
   SELECT COALESCE(
            ARRAY_AGG(PATH) WITHIN GROUP (ORDER BY PATH),
            ARRAY_CONSTRUCT()
          )
-    INTO :v_others_paths
+    INTO :v_other_paths
   FROM (
     SELECT d.PATH
     FROM DB_DESIGN.V_DOCS_OBSIDIAN d
-    WHERE d.PATH LIKE 'master/others/%'
+    WHERE d.PATH LIKE 'master/other/%'
       AND d.TARGET_SCHEMA = :v_schema
     QUALIFY ROW_NUMBER() OVER (ORDER BY d.PATH) <= :v_max_tables
   );
@@ -120,10 +137,13 @@ BEGIN
   -- (F) 結合して distinct & sort
   v_all_paths := ARRAY_CAT(
                   ARRAY_CAT(
-                    ARRAY_CAT(v_base_paths, v_tables_paths),
-                    ARRAY_CAT(v_ext_paths, v_views_paths)
+                    ARRAY_CAT(
+                      ARRAY_CAT(v_base_paths, v_design_paths),
+                      ARRAY_CAT(v_tables_paths, v_ext_paths)
+                    ),
+                    v_views_paths
                   ),
-                  v_others_paths
+                  v_other_paths
                 );
 
   WITH p AS (

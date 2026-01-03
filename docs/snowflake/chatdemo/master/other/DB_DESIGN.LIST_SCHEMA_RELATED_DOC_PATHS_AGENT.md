@@ -35,6 +35,7 @@ BEGIN
 
   -- 上位設計（DB_DESIGNは常に入れる。重複しても後でdistinct）
   v_base_paths := ARRAY_CONSTRUCT(
+    'README_DB_DESIGN.md',
     'design/design.DB_DESIGN.md',
     'design/design.' || v_schema || '.md'
   );

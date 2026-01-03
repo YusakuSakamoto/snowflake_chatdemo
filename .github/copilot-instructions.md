@@ -212,8 +212,6 @@ if __name__ == "__main__":
 すべてのドキュメントは `docs/` ディレクトリ配下に整理されています：
 
 - `docs/snowflake/chatdemo/README.md` - プロジェクト概要
-- `docs/snowflake/chatdemo/naming_conventions.md` - 命名規則
-- `docs/snowflake/chatdemo/MAINTENANCE_GUIDE.md` - メンテナンスガイド
 - `docs/git/chatdemo/GIT_WORKFLOW.md` - Git運用規則
 - `tests/scripts/README.md` - スクリプト一覧
 

@@ -44,6 +44,7 @@ BEGIN
   END IF;
 
   v_base_paths := ARRAY_CONSTRUCT(
+    'README_DB_DESIGN.md',
     'design/design.DB_DESIGN.md',
     'design/design.' || v_schema || '.md',
     'master/tables/' || v_schema || '.' || v_table || '.md',

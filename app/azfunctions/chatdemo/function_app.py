@@ -498,6 +498,7 @@ def chat_stream(req: func.HttpRequest) -> func.HttpResponse:
                 t = obj.get("text") if isinstance(obj, dict) else None
                 if isinstance(t, str) and t:
                     logging.info(f"[thinking] {t[:2000]}")
+                    add_progress(f"[thinking] {t}")
                 continue
 
             if current_event == "response.text.delta":

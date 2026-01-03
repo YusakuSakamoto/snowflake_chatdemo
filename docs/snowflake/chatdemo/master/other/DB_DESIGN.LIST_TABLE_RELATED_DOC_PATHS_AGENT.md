@@ -26,10 +26,11 @@ DECLARE
   v_inc_cols    BOOLEAN;
   v_max_cols    NUMBER;
 
-  v_base_paths  VARIANT;
-  v_col_paths   VARIANT;
-  v_all_paths   VARIANT;
-  v_paths_dedup VARIANT;
+  v_base_candidates VARIANT;  -- 候補（存在しないものも含む）
+  v_base_paths      VARIANT;  -- 存在するものだけ
+  v_col_paths       VARIANT;
+  v_all_paths       VARIANT;
+  v_paths_dedup     VARIANT;
 BEGIN
   v_schema := TARGET_SCHEMA;
   v_table  := TARGET_TABLE;
@@ -43,14 +44,38 @@ BEGIN
     RETURN TO_VARIANT(OBJECT_CONSTRUCT('error', 'TARGET_TABLE is required'));
   END IF;
 
-  v_base_paths := ARRAY_CONSTRUCT(
+  -- (A) base候補：tables と externaltables の両方を候補にする
+  v_base_candidates := ARRAY_CONSTRUCT(
     'README_DB_DESIGN.md',
     'design/design.DB_DESIGN.md',
     'design/design.' || v_schema || '.md',
+
+    -- 内部テーブル/通常テーブル定義（従来）
     'master/tables/' || v_schema || '.' || v_table || '.md',
+
+    -- 外部テーブル定義（追加）
+    'master/externaltables/' || v_schema || '.' || v_table || '.md',
+
+    -- テーブル設計書
     'design/' || v_schema || '/design.' || v_table || '.md'
   );
 
+  -- (B) base候補のうち、V_DOCS_OBSIDIAN に実在するものだけ残す
+  WITH cand AS (
+    SELECT VALUE::STRING AS path
+    FROM TABLE(FLATTEN(INPUT => :v_base_candidates))
+    WHERE VALUE IS NOT NULL
+  )
+  SELECT COALESCE(
+           ARRAY_AGG(c.path) WITHIN GROUP (ORDER BY c.path),
+           ARRAY_CONSTRUCT()
+         )
+    INTO :v_base_paths
+  FROM cand c
+  JOIN DB_DESIGN.V_DOCS_OBSIDIAN d
+    ON d.PATH = c.path;
+
+  -- (C) columns（従来通り）
   IF (v_inc_cols) THEN
     SELECT COALESCE(
              ARRAY_AGG(PATH) WITHIN GROUP (ORDER BY PATH),
@@ -69,6 +94,7 @@ BEGIN
     v_col_paths := ARRAY_CONSTRUCT();
   END IF;
 
+  -- (D) 結合して重複排除
   v_all_paths := ARRAY_CAT(v_base_paths, v_col_paths);
 
   WITH p AS (

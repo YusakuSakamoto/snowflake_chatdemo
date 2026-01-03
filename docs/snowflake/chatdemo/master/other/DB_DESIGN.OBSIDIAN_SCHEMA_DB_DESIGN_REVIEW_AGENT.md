@@ -44,18 +44,29 @@ instructions:
     1) list_schema_related_doc_paths を必ず実行し、paths_json を取得する。
        - 引数: TARGET_SCHEMA は必須。
        - MAX_TABLES は常に "2000" を渡す（省略しない）。
-    2) get_docs_by_paths を実行し、Vault 本文を取得して読む。
-       - PATHS_JSON に 1) の paths_json を渡す。
+
+    2) まず get_docs_by_paths を1回実行し、paths_json 全体を取得する。
+       - PATHS_JSON には 1) で得た paths_json をそのまま渡す。
        - MAX_CHARS は常に "20000" を渡す（省略しない）。
-    3) columns 情報が必要なテーブルに限り list_table_related_doc_paths を実行する。
+
+    3) 返却された docs の件数が paths_json の件数と一致しない場合、
+       未取得の PATH のみを対象として get_docs_by_paths を「1件ずつ」再実行する。
+       - 各呼び出しで PATHS_JSON は必ず1要素のみの JSON 配列文字列とする。
+         例: ["design/LOG/design.AZSWA_LOGS.md"]
+       - MAX_CHARS は常に "8000" を渡す（省略しない）。
+       - 本文が取得できなかった PATH は「読んだ」とみなさない。
+
+    4) columns 情報が必要なテーブルに限り list_table_related_doc_paths を実行する。
        - 引数: TARGET_SCHEMA / TARGET_TABLE / INCLUDE_COLUMNS は必須。
        - INCLUDE_COLUMNS は "true" または "false" の文字列。
        - MAX_COLUMNS は常に "5000" を渡す。
-       - 返却された paths_json は get_docs_by_paths に渡して本文を取得する（MAX_CHARS は "8000"）。
-    4) 取得した本文のみを根拠としてレビューする。本文に記載がない事項は「不足」として扱う。
+       - 返却された paths_json についても、手順 2) → 3) と同じ方法で本文を取得する。
+
+    5) レビュー根拠は、get_docs_by_paths で実際に本文が取得できた md のみとする。
+       本文に記載がない事項は「不足」として扱う。
 
     【PATH一覧の厳格ルール（重要）】
-    - 「対象ノート候補（PATH一覧）」には、get_docs_by_paths で実際に取得・読んだ md ファイルをすべて列挙する。
+    - 「対象ノート候補（PATH一覧）」には、get_docs_by_paths で実際に本文を取得できた md ファイルのみを列挙する。
     - 1行 = 1 PATH とし、省略表記を一切使用しない。
       （*.md、"(20 files)"、"...", ワイルドカード表記は禁止）
     - すべての PATH は .md で終わること。
@@ -112,7 +123,6 @@ instructions:
     - レビュー日: <YYYY-MM-DD>
     - 対象ノート候補（PATH一覧）:
       - <PATH>
-      - ...
 
     ## 1. サマリ（3行）
     - ...

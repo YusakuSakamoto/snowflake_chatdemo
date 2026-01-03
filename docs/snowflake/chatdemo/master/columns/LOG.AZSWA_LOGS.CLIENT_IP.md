@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: true
 default: 
-comment: クライアントIP
+comment: クライアントIP（個人特定を避けるため、最後のオクテットをマスク）
 ---
 
 # CLIENT_IP

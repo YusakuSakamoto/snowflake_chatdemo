@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: true
 default: 
-comment: セッションID
+comment: セッションID（匿名・初回アクセスはNULL許容）
 ---
 
 # SESSION_ID

@@ -21,10 +21,17 @@ $$
 DECLARE
   v_schema         STRING;
   v_max_tables     NUMBER;
-  v_base_paths     VARIANT;
-  v_table_paths    VARIANT;
-  v_all_paths      VARIANT;
-  v_paths_dedup    VARIANT;
+
+  v_base_candidates VARIANT;
+  v_base_paths      VARIANT;
+
+  v_tables_paths    VARIANT;
+  v_ext_paths       VARIANT;
+  v_views_paths     VARIANT;
+  v_others_paths    VARIANT;
+
+  v_all_paths       VARIANT;
+  v_paths_dedup     VARIANT;
 BEGIN
   v_schema := TARGET_SCHEMA;
   v_max_tables := COALESCE(TRY_TO_NUMBER(MAX_TABLES), 2000);
@@ -33,19 +40,33 @@ BEGIN
     RETURN TO_VARIANT(OBJECT_CONSTRUCT('error', 'TARGET_SCHEMA is required'));
   END IF;
 
-  -- 上位設計（DB_DESIGNは常に入れる。重複しても後でdistinct）
-  v_base_paths := ARRAY_CONSTRUCT(
+  -- (A) 上位設計（存在するものだけ残す）
+  v_base_candidates := ARRAY_CONSTRUCT(
     'README_DB_DESIGN.md',
     'design/design.DB_DESIGN.md',
     'design/design.' || v_schema || '.md'
   );
 
-  -- master/tables を列挙（TARGET_SCHEMA で絞る）
+  WITH cand AS (
+    SELECT VALUE::STRING AS path
+    FROM TABLE(FLATTEN(INPUT => :v_base_candidates))
+    WHERE VALUE IS NOT NULL
+  )
+  SELECT COALESCE(
+           ARRAY_AGG(c.path) WITHIN GROUP (ORDER BY c.path),
+           ARRAY_CONSTRUCT()
+         )
+    INTO :v_base_paths
+  FROM cand c
+  JOIN DB_DESIGN.V_DOCS_OBSIDIAN d
+    ON d.PATH = c.path;
+
+  -- (B) master/tables
   SELECT COALESCE(
            ARRAY_AGG(PATH) WITHIN GROUP (ORDER BY PATH),
            ARRAY_CONSTRUCT()
          )
-    INTO :v_table_paths
+    INTO :v_tables_paths
   FROM (
     SELECT d.PATH
     FROM DB_DESIGN.V_DOCS_OBSIDIAN d
@@ -54,9 +75,57 @@ BEGIN
     QUALIFY ROW_NUMBER() OVER (ORDER BY d.PATH) <= :v_max_tables
   );
 
-  v_all_paths := ARRAY_CAT(v_base_paths, v_table_paths);
+  -- (C) master/externaltables
+  SELECT COALESCE(
+           ARRAY_AGG(PATH) WITHIN GROUP (ORDER BY PATH),
+           ARRAY_CONSTRUCT()
+         )
+    INTO :v_ext_paths
+  FROM (
+    SELECT d.PATH
+    FROM DB_DESIGN.V_DOCS_OBSIDIAN d
+    WHERE d.PATH LIKE 'master/externaltables/%'
+      AND d.TARGET_SCHEMA = :v_schema
+    QUALIFY ROW_NUMBER() OVER (ORDER BY d.PATH) <= :v_max_tables
+  );
 
-  -- distinct & sort
+  -- (D) master/views
+  SELECT COALESCE(
+           ARRAY_AGG(PATH) WITHIN GROUP (ORDER BY PATH),
+           ARRAY_CONSTRUCT()
+         )
+    INTO :v_views_paths
+  FROM (
+    SELECT d.PATH
+    FROM DB_DESIGN.V_DOCS_OBSIDIAN d
+    WHERE d.PATH LIKE 'master/views/%'
+      AND d.TARGET_SCHEMA = :v_schema
+    QUALIFY ROW_NUMBER() OVER (ORDER BY d.PATH) <= :v_max_tables
+  );
+
+  -- (E) master/others
+  SELECT COALESCE(
+           ARRAY_AGG(PATH) WITHIN GROUP (ORDER BY PATH),
+           ARRAY_CONSTRUCT()
+         )
+    INTO :v_others_paths
+  FROM (
+    SELECT d.PATH
+    FROM DB_DESIGN.V_DOCS_OBSIDIAN d
+    WHERE d.PATH LIKE 'master/others/%'
+      AND d.TARGET_SCHEMA = :v_schema
+    QUALIFY ROW_NUMBER() OVER (ORDER BY d.PATH) <= :v_max_tables
+  );
+
+  -- (F) 結合して distinct & sort
+  v_all_paths := ARRAY_CAT(
+                  ARRAY_CAT(
+                    ARRAY_CAT(v_base_paths, v_tables_paths),
+                    ARRAY_CAT(v_ext_paths, v_views_paths)
+                  ),
+                  v_others_paths
+                );
+
   WITH p AS (
     SELECT VALUE::STRING AS path
     FROM TABLE(FLATTEN(INPUT => :v_all_paths))

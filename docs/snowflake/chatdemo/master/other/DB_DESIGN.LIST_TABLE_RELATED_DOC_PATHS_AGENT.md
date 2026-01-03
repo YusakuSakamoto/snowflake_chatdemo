@@ -44,19 +44,26 @@ BEGIN
     RETURN TO_VARIANT(OBJECT_CONSTRUCT('error', 'TARGET_TABLE is required'));
   END IF;
 
-  -- (A) base候補：tables と externaltables の両方を候補にする
+  -- (A) base候補：tables / externaltables / views / others を候補にする
+  -- ここでの TARGET_TABLE は「物理名相当（TABLE/VIEW/OTHERの物理）」を想定
   v_base_candidates := ARRAY_CONSTRUCT(
     'README_DB_DESIGN.md',
     'design/design.DB_DESIGN.md',
     'design/design.' || v_schema || '.md',
 
-    -- 内部テーブル/通常テーブル定義（従来）
+    -- 内部/通常テーブル
     'master/tables/' || v_schema || '.' || v_table || '.md',
 
-    -- 外部テーブル定義（追加）
+    -- 外部テーブル
     'master/externaltables/' || v_schema || '.' || v_table || '.md',
 
-    -- テーブル設計書
+    -- ビュー定義
+    'master/views/' || v_schema || '.' || v_table || '.md',
+
+    -- その他オブジェクト（procedure/function/tool/semantic view 等）
+    'master/others/' || v_schema || '.' || v_table || '.md',
+
+    -- 設計意図（オブジェクト設計書）
     'design/' || v_schema || '/design.' || v_table || '.md'
   );
 

@@ -39,12 +39,20 @@ BEGIN
   END IF;
 
   -- (A) docs（存在するもの）
-  WITH req AS (
-    SELECT VALUE::STRING AS REQ_PATH
+  WITH req_raw AS (
+    SELECT VALUE::STRING AS RAW_PATH
     FROM TABLE(FLATTEN(INPUT => :v_paths))
+  ),
+  req AS (
+    SELECT
+      RAW_PATH,
+      REGEXP_REPLACE(TRIM(RAW_PATH), '^/+', '') AS REQ_PATH
+    FROM req_raw
+    WHERE RAW_PATH IS NOT NULL AND TRIM(RAW_PATH) <> ''
   ),
   hit AS (
     SELECT
+      r.RAW_PATH,
       r.REQ_PATH,
       d.DOC_ID, d.PATH, d.FOLDER, d.SCOPE, d.FILE_TYPE, d.RUN_DATE,
       d.TARGET_SCHEMA, d.TARGET_TABLE, d.TARGET_COLUMN,
@@ -77,9 +85,16 @@ BEGIN
   WHERE DOC_ID IS NOT NULL;
 
   -- (B) missing（見つからないもの）
-  WITH req AS (
-    SELECT VALUE::STRING AS REQ_PATH
+  WITH req_raw AS (
+    SELECT VALUE::STRING AS RAW_PATH
     FROM TABLE(FLATTEN(INPUT => :v_paths))
+  ),
+  req AS (
+    SELECT
+      RAW_PATH,
+      REGEXP_REPLACE(TRIM(RAW_PATH), '^/+', '') AS REQ_PATH
+    FROM req_raw
+    WHERE RAW_PATH IS NOT NULL AND TRIM(RAW_PATH) <> ''
   ),
   hit AS (
     SELECT

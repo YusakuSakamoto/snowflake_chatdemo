@@ -13,17 +13,17 @@ Markdown + YAML + Dataview を用い、再現性・レビュー性・自動化�
 
 ### 1.1 目的
 - DB 設計情報を Obsidian Vault に一元集約する
-- schema / table / column / monitoring を 1定義1ファイルで正規化する
+- schema / table / view / externaltable / column / monitoring を 1定義1ファイルで正規化する
 - 不変 ID により参照関係を維持する
 - 設計判断・レビュー履歴を構造化 Markdown として保存する
 - Dataview により、定義一覧・横断レビュー・DDL 生成用ビューを自動生成する
-- Snowflake DDL 生成と Cortex Search / Agent / Analyst 連携を前提にする
+- Snowflake DDL 生成と Cortex Agent / Analyst 連携を前提にする
 
 ### 1.2 設計思想（原則）
 - 定義（master）と設計意図（design）を分離する
 - 定義の変更は master のみで行い、設計判断は design に残す
 - reviews は結果保存のみで、定義の正本ではない
-- views は参照専用とし、編集しない
+- views フォルダは Obsidian の Dataview 表示専用（参照専用）とし、定義の正本ではない
 - Git 管理・差分レビュー・再現性を優先する
 - Agent / Analyst の振る舞い（ログ設計含む）も設計対象とみなす
 
@@ -46,30 +46,37 @@ Markdown + YAML + Dataview を用い、再現性・レビュー性・自動化�
 
 ```text
 /
-├─ master/               # 定義の正本（DDL生成対象）
+├─ master/                    # 定義の正本（DDL生成対象）
 │ ├─ schemas/
 │ ├─ tables/
+│ ├─ externaltables/
+│ ├─ views/
 │ ├─ columns/
-│ └─ other/              # view / procedure / function / tool 等（必要に応じて）
+│ ├─ procedures/
+│ ├─ functions/
+│ ├─ alerts/
+│ └─ other/                   # tool / agent / stage / fileformat 等（必要に応じて）
 │
-├─ design/               # 設計意図・判断・前提条件
+├─ design/                    # 設計意図・判断・前提条件
 │ ├─ design.<SCHEMA>.md
 │ └─ <SCHEMA>/
 │    └─ design.<OBJECT>.md
 │
-├─ reviews/              # レビュー結果・Agent出力・履歴
+├─ reviews/                   # レビュー結果・Agent出力・履歴
 │ ├─ <YYYY-MM-DD>/
 │ │  └─ <SCHEMA>.<OBJECT>.md
 │ └─ profiles/
 │    └─ <YYYY-MM-DD>/<SCHEMA>/<OBJECT>.md
 │
-├─ views/                # Dataview / DataviewJS 専用ビュー（編集禁止）
+├─ views/                     # Dataview / DataviewJS 専用ビュー（参照専用）
 │ ├─ schemas.md
 │ ├─ tables.md
+│ ├─ externaltables.md
+│ ├─ views.md
 │ ├─ columns.md
 │ └─ ddl_all.md
 │
-└─ templates/            # テンプレート（任意）
+└─ templates/                 # テンプレート（任意）
 ```
 
 ---
@@ -89,6 +96,16 @@ Markdown + YAML + Dataview を用い、再現性・レビュー性・自動化�
 - Agent / Analyst / 自動処理が master を直接変更することは禁止
 - Evidence は必ず実在する md パスを使用する
 - ファイル名が変わっても ID は変えない（不変 ID 運用）
+- object type ごとの置き場（重要）
+  - schema: master/schemas/<SCHEMA>.md
+  - table: master/tables/<SCHEMA>.<TABLE>.md
+  - externaltable: master/externaltables/<SCHEMA>.<TABLE>.md
+  - view: master/views/<SCHEMA>.<VIEW>.md
+  - column: master/columns/<SCHEMA>.<TABLE>.<COLUMN>.md
+  - procedure: master/procedures/<SCHEMA>.<PROC>.md
+  - function: master/functions/<SCHEMA>.<FUNC>.md
+  - alert: master/alerts/<SCHEMA>.<ALERT>.md
+- 重要: view の定義は master/views に置く。master/tables と混同しない（レビュー・取得・DDL生成の安定稼働のため）
 
 ---
 
@@ -123,7 +140,61 @@ comment: プロファイル実行の履歴管理テーブル
 ---
 ```
 
-### 5.3 column 定義（1 column = 1ファイル）
+### 5.3 externaltable 定義（1 externaltable = 1ファイル）
+master/externaltables/<SCHEMA>.<TABLE>.md
+
+```yaml
+---
+type: externaltable
+externaltable_id: EXT_20260103000100
+schema_id: SCH_LOG
+physical: AZSWA_LOGS
+comment: Azure Static Web Apps のアクセスログ（外部テーブル）
+---
+```
+
+### 5.4 view 定義（1 view = 1ファイル）
+master/views/<SCHEMA>.<VIEW>.md
+
+```yaml
+---
+type: view
+view_id: VW_20251226184000
+schema_id: SCH_DB_DESIGN
+physical: V_PROFILE_RESULTS_LATEST
+comment: 最新（SUCCEEDED）のプロファイル実行に紐づく結果一覧
+depends_on:
+  - DB_DESIGN.PROFILE_RUNS
+  - DB_DESIGN.PROFILE_RESULTS
+---
+```
+
+本文の推奨構成（view の場合）:
+- View Columns: ビューの列名と列コメント（型は不要）
+- SQL: 定義 SQL
+- 想定用途: 典型クエリ・利用シーン
+- 注意: パーティション指定、コスト、権限、マスキング等
+
+#### 5.4.1 view 定義のレビュー基準（必須）
+view は「table と同じ感覚」でレビューすると事故ります。レビュー／自動処理が迷わないよう、以下を view の判定基準（根拠）として明文化します。
+
+- View Columns を「列仕様の正」として扱う  
+  - View Columns に列名があるのに SQL の SELECT に出てこない（または逆）は不整合とみなす  
+  - SQL の SELECT は列名を明示することを推奨する（SELECT * はレビュー不能になりやすい）
+
+- frontmatter の ID（view_id / schema_id など）は「定義識別子」であり、SQL が返す列ではない  
+  - view_id / schema_id 等が SELECT 列に含まれないこと自体は問題にしない  
+  - 不整合判定は「View Columns と SQL の整合」で行う
+
+- depends_on は「運用上の安全策」として推奨する  
+  - 依存先が増減したら depends_on を更新する  
+  - depends_on はレビューの影響範囲把握に使う（DDL の依存解決ロジックとは別）
+
+- view の運用意図は design に残す  
+  - 例：直接テーブル参照を避ける／パーティション指定を誘導する／マスキング済み列のみ公開する 等  
+  - view の SQL を賢くするより、変更時に壊れない導線（手順・チェックリスト）を優先する
+
+### 5.5 column 定義（1 column = 1ファイル）
 master/columns/<SCHEMA>.<TABLE>.<COLUMN>.md
 
 ```yaml
@@ -157,7 +228,31 @@ FROM "master/tables"
 SORT schema_id, physical
 ```
 
-### 6.2 columns 一覧（横断チェック用）
+### 6.2 externaltables 一覧
+views/externaltables.md
+
+```dataview
+TABLE
+  schema_id,
+  physical,
+  comment
+FROM "master/externaltables"
+SORT schema_id, physical
+```
+
+### 6.3 views 一覧
+views/views.md
+
+```dataview
+TABLE
+  schema_id,
+  physical,
+  comment
+FROM "master/views"
+SORT schema_id, physical
+```
+
+### 6.4 columns 一覧（横断チェック用）
 views/columns.md
 
 ```dataview
@@ -178,11 +273,11 @@ SORT table_id, pk desc
 
 master 配下の定義から Snowflake DDL を生成します。
 
-### 7.1 生成内容
-- DB / Warehouse 作成用 SQL
-- Snowflake DDL（schema / table / view / procedure / semantic view）
-- External Table DDL（パーティション対応）
-- Semantic View 用 YAML
+### 7.1 生成対象
+- schema / table / view / procedure / function
+- externaltable（パーティション対応）
+- semantic view 用 YAML（必要に応じて）
+- 運用定義（alert 等）
 
 ### 7.2 出力先
 - generated/ddl/
@@ -221,17 +316,6 @@ master 配下の定義から Snowflake DDL を生成します。
 - 予約語回避：Snowflake予約語は避ける。必要ならダブルクォート
 - 大文字・小文字：スキーマ/テーブル/カラムは大文字、パーティションカラムは小文字
 
-### 8.3 既存オブジェクトの移行（例）
-- ビューの V_ 付与：
-  1. 新名で作成（CUSTOMER_MASTER → V_CUSTOMER_MASTER）
-  2. 依存物を更新
-  3. 旧ビュー削除
-  4. 設計書更新
-- MV 導入：
-  - 頻繁に参照される集計ビューを対象
-  - MV_ を使用
-  - リフレッシュ戦略（FULL / INCREMENTAL）を明記
-
 ---
 
 ## 9. Obsidian リンク規則（要点）
@@ -249,12 +333,6 @@ master 配下の定義から Snowflake DDL を生成します。
 - 重複プレフィックスは禁止
   - NG: design.[[design.OBJECT]]
   - OK: [[design.OBJECT]]
-
-### 9.3 リンクの利点
-- 名称変更に強い（Obsidianで自動更新）
-- トレーサビリティが高い
-- ナビゲーションが速い
-- グラフビューで関係を可視化できる
 
 ---
 
@@ -274,7 +352,13 @@ master 配下の定義から Snowflake DDL を生成します。
 - クラスタリング（CLUSTER BY / 自動再クラスタリング）を外部テーブル最適化策として扱わない
 - 高頻度分析・重い集計がある場合は内部テーブル化（取り込み先）で最適化する
 
-### 10.3 レビュー判定の補助ルール
+### 10.3 view の扱い（重要）
+- view は table と別扱いで定義する（master/views に置く）
+- view の取得・レビューは view 専用の PATH 列挙を行う（master/tables と混同しない）
+- view の依存関係（参照元）は depends_on で明示することを推奨する
+- 認可・マスキング・パーティション指定の誘導など、運用上の安全策は view で実現しやすい（設計意図を design に残す）
+
+### 10.4 レビュー判定の補助ルール
 - 本章に反する指摘は成立させない（例：CHECK を追加すべき、外部テーブルで制約強制すべき、など）
 - 代替案は運用検証クエリ、取り込み時バリデーション、内部テーブル化を優先する
 
@@ -286,7 +370,7 @@ master 配下の定義から Snowflake DDL を生成します。
 
 ### 11.1 禁止事項（バッククォート）
 - カラム名やパラメータ名をバッククォートで囲むことは禁止
-  - NG: `TARGET_SCHEMA`
+  - NG: TARGET_SCHEMA をバッククォートで囲む表記
   - OK: TARGET_SCHEMA
 
 例外（バッククォート使用可）：
@@ -296,7 +380,7 @@ master 配下の定義から Snowflake DDL を生成します。
 - SQL 関数名（FLATTEN / GET 等）
 
 ### 11.2 新規オブジェクト追加時（チェックリスト）
-1. master に定義ファイル作成（tables / views / procedures 等）
+1. master に定義ファイル作成（schemas / tables / externaltables / views / procedures 等）
 2. design に設計ファイル作成（design/<SCHEMA>/design.<OBJECT>.md）
 3. 必要なら columns 定義を作成
 4. 命名規則に準拠しているか確認
@@ -309,21 +393,11 @@ master 配下の定義から Snowflake DDL を生成します。
 3. 関連する column 定義を更新
 4. リンク切れがないか確認
 
-### 11.4 命名規則違反の修正（例）
-- V_ がないビューを検出し、命名移行する
-- MV_ がないマテリアライズドビューがあれば同様に移行
-
-### 11.5 バッククォート削除（例）
-- grep で検出し、一括変換スクリプトで修正、例外ケースは手動確認する
-
-### 11.6 自動化スクリプト
-- すべて tests/scripts/ に配置する
-- UTF-8、差分比較、dry-run を推奨する
-- 処理結果はログ出力する
-
-### 11.7 Windows Vault 同期
-- 重要な変更後は同期する
-- 大量変更は rsync を使用する
+### 11.4 view 追加・変更時の注意
+- master/views に必ず置く（master/tables と混ぜない）
+- view の列一覧（View Columns）と SQL を必ず同期させる
+- 依存先が増えたら depends_on を更新する
+- 直接テーブル参照を許可しない運用の場合、view 経由に寄せる意図を design に明記する
 
 ---
 
@@ -332,7 +406,7 @@ master 配下の定義から Snowflake DDL を生成します。
 | 日付 | 変更内容 |
 |------|---------|
 | 2026-01-02 | 初版作成：命名規則、リンク規則、メンテナンス手順を定義 |
-| 2026-01-03 | チャットAPI運用・開発の実践知見を追記 |
+| 2026-01-03 | view / externaltable の定義置き場とレビュー導線を追記（master/views, master/externaltables の明確化） |
 
 ---
 
@@ -568,7 +642,7 @@ snowsql -c myconn --private-key-path /home/yolo/.ssh/snowflake/rsa_key.p8 -q "US
 
 ### 設定ファイルの場所
 
-`~/.snowsql/config`
+~/.snowsql/config
 
 ### myconn接続の設定内容
 
@@ -632,8 +706,7 @@ SELECT SNOWFLAKE.CORTEX.COMPLETE_AGENT(
 ## トラブルシューティング
 
 ### 秘密鍵のパスフレーズを求められる
-
-秘密鍵にパスフレーズが設定されている場合、対話的に入力が求められます。
+秘密鍵にパスフレーズが設定されている場合、対話的に入力が求められます。  
 環境変数で設定することも可能：
 
 ```bash
@@ -662,23 +735,18 @@ snowsql -c myconn --private-key-path /home/yolo/.ssh/snowflake/rsa_key.p8 \
 
 ### 秘密鍵のパーミッション
 
-秘密鍵は適切な権限に設定してください：
-
 ```bash
 chmod 600 /home/yolo/.ssh/snowflake/rsa_key.p8
 ```
 
 ### 秘密鍵の管理
-
 - 秘密鍵はGitリポジトリにコミットしないこと
-- `.gitignore`に`*.p8`を追加
+- .gitignoreに *.p8 を追加
 - バックアップは暗号化して保管
 
 ---
 
 ## エイリアス設定（任意）
-
-頻繁に使用する場合は、`.bashrc`または`.zshrc`にエイリアスを追加：
 
 ```bash
 # ~/.bashrc または ~/.zshrc に追加
@@ -703,7 +771,6 @@ snowsql-api -q "SELECT CURRENT_ROLE();"
 ---
 
 ## 参考資料
-
-- [SnowSQL公式ドキュメント](https://docs.snowflake.com/en/user-guide/snowsql)
-- [秘密鍵認証](https://docs.snowflake.com/en/user-guide/key-pair-auth)
-- [SnowSQL設定オプション](https://docs.snowflake.com/en/user-guide/snowsql-config)
+- SnowSQL公式ドキュメント https://docs.snowflake.com/en/user-guide/snowsql
+- 秘密鍵認証 https://docs.snowflake.com/en/user-guide/key-pair-auth
+- SnowSQL設定オプション https://docs.snowflake.com/en/user-guide/snowsql-config

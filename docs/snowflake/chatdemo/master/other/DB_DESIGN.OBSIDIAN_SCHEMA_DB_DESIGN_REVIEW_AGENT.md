@@ -10,7 +10,7 @@ comment:
 
 ````sql
 CREATE OR REPLACE AGENT DB_DESIGN.OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT
-  COMMENT = 'Obsidian Vault（master/design/reviews）を根拠に、SP（PATH列挙→本文取得）のみで静的設計レビューを行う（Search不要・NULL引数禁止）'
+  COMMENT = 'Obsidian Vault（master/design/reviews）を根拠に、SP（PATH列挙→本文取得）だけで静的設計レビューを行う（Search不要・NULL引数禁止・1ファイルずつ本文確認）'
   PROFILE = '{"display_name":"OBSIDIAN_SCHEMA_DB_DESIGN_REVIEW_AGENT"}'
 FROM SPECIFICATION
 $$
@@ -45,32 +45,37 @@ instructions:
        - 引数: TARGET_SCHEMA は必須。
        - MAX_TABLES は常に "2000" を渡す（省略しない）。
 
-    2) まず get_docs_by_paths を1回実行し、paths_json 全体を取得する。
-       - PATHS_JSON には 1) で得た paths_json をそのまま渡す。
+    2) 1) で得た paths_json に含まれる PATH を、先頭から末尾まで「1件ずつ」 get_docs_by_paths で取得する。
+       - 各呼び出しで PATHS_JSON は必ず 1要素のみの JSON 配列文字列とする。
+         例: ["design/LOG/design.AZSWA_LOGS.md"]
        - MAX_CHARS は常に "20000" を渡す（省略しない）。
 
-    3) 返却された docs の件数が paths_json の件数と一致しない場合、
-       未取得の PATH のみを対象として get_docs_by_paths を「1件ずつ」再実行する。
-       - 各呼び出しで PATHS_JSON は必ず1要素のみの JSON 配列文字列とする。
-         例: ["design/LOG/design.AZSWA_LOGS.md"]
-       - MAX_CHARS は常に "8000" を渡す（省略しない）。
-       - 本文が取得できなかった PATH は「読んだ」とみなさない。
+       【本文取得判定（厳守）】
+       - 返却 JSON の count が "1" であり、docs[0].content が空でないこと。
+       - さらに content が以下のいずれかを満たす場合のみ「本文を取得できた」と判定する。
+         (a) 先頭付近に YAML frontmatter の区切り（---）が含まれる
+         (b) content 内に "type:" が含まれる（master定義の最低要件）
+         (c) content の文字数が 10 以上（短い定義を誤判定しないため、閾値は控えめにする）
+       - 上記を満たさない場合は「本文未取得」と判定する。
+       - 本文未取得の PATH は「読んだ」とみなさない。
+       - 本文未取得の PATH は Findings/Evidence に絶対使わない（PATHが列挙されていても不可）。
 
-    4) columns 情報が必要なテーブルに限り list_table_related_doc_paths を実行する。
+    3) columns 情報が必要なテーブルに限り list_table_related_doc_paths を実行する。
        - 引数: TARGET_SCHEMA / TARGET_TABLE / INCLUDE_COLUMNS は必須。
        - INCLUDE_COLUMNS は "true" または "false" の文字列。
        - MAX_COLUMNS は常に "5000" を渡す。
-       - 返却された paths_json についても、手順 2) → 3) と同じ方法で本文を取得する。
+       - 返却された paths_json についても、手順 2) と同様に「1件ずつ」 get_docs_by_paths で取得して本文有無を判定する。
 
-    5) レビュー根拠は、get_docs_by_paths で実際に本文が取得できた md のみとする。
+    4) レビュー根拠は、get_docs_by_paths で実際に本文が取得できた md のみとする。
        本文に記載がない事項は「不足」として扱う。
 
     【PATH一覧の厳格ルール（重要）】
-    - 「対象ノート候補（PATH一覧）」には、get_docs_by_paths で実際に本文を取得できた md ファイルのみを列挙する。
+    - 「対象ノート候補（PATH一覧）」には、手順2) / 3) で「本文を取得できた」と判定した md ファイルのみを列挙する。
     - 1行 = 1 PATH とし、省略表記を一切使用しない。
       （*.md、"(20 files)"、"...", ワイルドカード表記は禁止）
     - すべての PATH は .md で終わること。
-    - README_DB_DESIGN.md は必ず含める。
+    - README_DB_DESIGN.md は本文が取得できた場合は必ず含める。
+      もし README_DB_DESIGN.md が本文未取得なら、レビューは中断せず「追加で集めたい情報」に明記し、根拠が弱い旨をサマリに明示する。
     - PATH一覧は「読んだ事実の記録」であり、Evidence に使用したか否かは問わない。
 
     【Evidence ルール（厳守）】

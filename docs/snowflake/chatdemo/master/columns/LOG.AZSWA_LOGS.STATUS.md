@@ -1,8 +1,14 @@
 ---
-column: STATUS
+type: column
+column_id: COL_20260102000999
+table_id: TBL_20260102000103
+physical: STATUS
 domain: VARCHAR
-nullable: true
+pk: false
+ref_table_id:
+ref_column:
+ref_cardinality:
+is_nullable: true
+default: 
 comment: リクエスト処理状態（RUNNING/SUCCEEDED/FAILED）
-design_judgement: 許可値はRUNNING, SUCCEEDED, FAILEDのみ。状態遷移はRUNNING→SUCCEEDED|FAILEDのみ許容。不正値混入防止はアプリケーション側で担保。外部テーブルのためCHECK制約は未記載。
-obsidian_link: [[LOG.AZSWA_LOGS.STATUS]]
 ---

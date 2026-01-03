@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: true
 default: 
-comment: メタデータ
+comment: 拡張メタデータ。JSON例: {"request_id": "...", "user_agent": "...", "custom_tags": ["tag1"]}。主要分析軸は固定カラムで持ち、metadataは補助用途。
 ---
 
 # METADATA

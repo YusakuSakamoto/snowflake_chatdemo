@@ -103,10 +103,8 @@ WHERE timestamp > CURRENT_TIMESTAMP() - INTERVAL '1 day';
 
 ### 論理一意性（主キー概念）
 
-外部テーブルには主キー制約を設定できないが、論理的には以下の組が一意性を持つ想定とする：
 
-* invocation_id + timestamp + message（または log_id が存在する場合は log_id）
-
+外部テーブルには主キー制約を設定できないが、log_id（NOT NULL）による一意性を前提とする。
 同一 invocation 内で複数ログが出るため、invocation_id 単体は一意にならない点に注意する。
 
 ### 各カラムの設計意図
@@ -392,3 +390,12 @@ ALTER TABLE LOG.AZFUNCTIONS_LOGS
 * [ ] SLA違反（>3秒）の件数が許容範囲内か
 * [ ] 機密情報がログに出力されていないか
 * [ ] ログ形式（JSON Lines）と必須項目が転送経路間で整合しているか
+
+---
+
+## 変更履歴
+
+- 2026-01-04
+  - カラムコメントを具体化（論理一意性、JSON例、NULL条件、パーティションカラムの注意点等を明記）
+  - EXTERNAL TABLEの品質担保方針を明確化
+  - 設計とDDL（master正本）の責務分離を整理

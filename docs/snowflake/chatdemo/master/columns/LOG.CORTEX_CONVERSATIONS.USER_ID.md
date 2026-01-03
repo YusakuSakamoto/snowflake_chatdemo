@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: true
 default: 
 comment: ユーザーID
+comment: ユーザーID（匿名時NULL、実名不可・仮名ID、GDPR削除時の論理キー）
 ---
 
 # USER_ID

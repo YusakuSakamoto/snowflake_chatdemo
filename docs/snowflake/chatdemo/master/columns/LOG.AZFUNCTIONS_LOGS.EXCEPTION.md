@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: true
 default: 
-comment: 例外情報
+comment: 例外情報。JSON構造例: {"type": "ValueError", "message": "...", "traceback": "..."}。例外発生時のみ格納、通常はNULL。
 ---
 
 # EXCEPTION

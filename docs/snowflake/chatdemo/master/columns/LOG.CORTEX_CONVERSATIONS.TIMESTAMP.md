@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: タイムスタンプ
+comment: メッセージ生成日時（UTC、論理一意性の一部）
 ---
 
 # TIMESTAMP

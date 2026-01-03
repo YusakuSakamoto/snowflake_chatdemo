@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: パーティション:月
+comment: パーティション:月（S3パス由来、NULL混入禁止）
 ---
 
 # MONTH

@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: メトリクスID
+comment: メトリクスID（論理一意性: metric_id, metric_name, timestamp等の組み合わせで重複検知）
 ---
 
 # METRIC_ID

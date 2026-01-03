@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: メッセージロール (user/assistant)
+comment: 発話者種別（user/assistant）論理一意性の一部
 ---
 
 # MESSAGE_ROLE

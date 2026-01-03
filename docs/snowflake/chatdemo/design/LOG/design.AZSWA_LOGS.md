@@ -149,23 +149,7 @@ HAVING COUNT(*) > 1;
 
 ---
 
-## STATUS / STATUS_CODE 設計（High-1 対応確定）
-
-### 設計背景
-
-「状態」を 1 カラムに寄せると、HTTP 状態（プロトコル）と業務状態（アプリ）が混ざり、分析が曖昧になる。
-そのため、本テーブルでは意図的に分離する。
-
-### STATUS_CODE（NUMBER）
-
-* 意味：HTTP 応答コード（200/301/404/500…）
-* 主用途：
-
-  * 4xx / 5xx 監視
-  * SLO 計測
-  * リクエスト失敗の入口（どのパスで増えたか）
-
-### STATUS（VARCHAR, nullable）
+## STATUS / STATUS_CODE 設計
 
 * 意味：アプリケーション／業務ロジックの状態
 * 想定値：RUNNING / SUCCEEDED / FAILED など
@@ -363,10 +347,13 @@ CREATE ALERT high_swa_error_rate
 
 ---
 
-## レビュー対応履歴
+## 変更履歴
 
-* 2026-01-03
-
-  * STATUS / STATUS_CODE の役割分担を明文化（High-1 対応）
-  * 外部テーブル制約・品質担保方針を明確化
-  * 設計と DDL（master 正本）の責務分離を整理
+- 2026-01-04
+  - カラムコメントを具体化（論理一意性、JSON例、NULL条件、パーティションカラムの注意点等を明記）
+  - EXTERNAL TABLEの品質担保方針を明確化
+  - 設計とDDL（master正本）の責務分離を整理
+- 2026-01-03
+  - STATUS / STATUS_CODE の役割分担を明文化（High-1 対応）
+  - 外部テーブル制約・品質担保方針を明確化
+  - 設計と DDL（master 正本）の責務分離を整理

@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: パーティション:日
+comment: パーティション:日（S3パス由来、クエリ時必須指定）。パーティションプルーニングに必須。
 ---
 
 # DAY

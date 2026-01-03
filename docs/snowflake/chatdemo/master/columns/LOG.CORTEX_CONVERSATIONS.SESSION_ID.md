@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: セッションID
+comment: セッションID（1セッション内で複数会話可、行動分析用）
 ---
 
 # SESSION_ID

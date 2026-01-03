@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: メッセージ内容
+comment: メッセージ本文（例: { "text": "What is the total sales?" }）
 ---
 
 # MESSAGE_CONTENT

@@ -11,4 +11,5 @@ partition_by: [year, month, day, hour]
 comment: Azure Static Web Apps アクセスログ（外部テーブル）
 ---
 
+
 # AZSWA_LOGS

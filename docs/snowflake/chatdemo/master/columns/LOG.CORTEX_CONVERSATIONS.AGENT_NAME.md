@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: エージェント名
+comment: 応答したCortex Agent名（例: SNOWFLAKE_DEMO_AGENT）
 ---
 
 # AGENT_NAME

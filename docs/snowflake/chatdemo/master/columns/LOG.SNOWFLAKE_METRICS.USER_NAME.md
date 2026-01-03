@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: true
 default: 
 comment: ユーザー名
+comment: クエリ実行ユーザー名（匿名化/NULLあり、監査・分析用）
 ---
 
 # USER_NAME

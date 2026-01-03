@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: パーティション:時
+comment: パーティション:時（S3パス由来、NULL混入禁止）
 ---
 
 # HOUR

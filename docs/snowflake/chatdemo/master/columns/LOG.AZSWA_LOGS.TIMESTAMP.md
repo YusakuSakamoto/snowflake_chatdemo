@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: タイムスタンプ
+comment: リクエスト受信日時（UTC）。時系列集計・ピーク検知・障害発生点の特定に使用。
 ---
 
 # TIMESTAMP

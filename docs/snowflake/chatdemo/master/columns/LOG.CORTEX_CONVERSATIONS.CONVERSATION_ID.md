@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: false
 default: 
 comment: 会話ID
+comment: 会話スレッドID（論理一意性: conversation_id, message_role, timestamp の組み合わせで重複検知）
 ---
 
 # CONVERSATION_ID

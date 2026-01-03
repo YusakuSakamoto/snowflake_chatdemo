@@ -11,6 +11,7 @@ ref_cardinality:
 is_nullable: true
 default: 
 comment: メタデータ
+comment: 観測・運用メタ情報（例: { "tokens": 12, "model": "mistral-large", "latency_ms": 1200, "error": null }、補助情報がない場合NULL）
 ---
 
 # METADATA

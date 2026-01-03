@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: 1リクエストを一意識別する主キー。重複排除・データ品質担保のため必須。
+comment: 1リクエストを一意識別する主キー。外部テーブルでは一意性は運用検証で担保（重複検知クエリ）。重複排除・データ品質担保のため必須。
 ---
 
 # LOG_ID

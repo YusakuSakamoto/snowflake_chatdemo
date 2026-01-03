@@ -185,6 +185,21 @@ LIMIT 10;
 * status_code : HTTPステータスコード（エラー検知用）
 * client_ip / user_agent : ユーザー属性
 
+
+#### 外部テーブル設計要点
+
+- S3パス: azswa/YEAR=yyyy/MONTH=mm/DAY=dd/HOUR=hh/{uuid}.json
+- パーティションカラム: year, month, day, hour（S3パス由来、クエリ時必須）
+- AUTO_REFRESH: true（新規ファイル自動検知）
+- ファイル形式: JSON Lines（NDJSON）
+- 主キー: log_id（外部テーブルでは一意性は運用検証で担保）
+- 主要カラム: log_id, request_id, status_code, status, timestamp, response_time_ms, session_id, user_agent, client_ip, metadata
+
+#### 注意事項
+- パーティション指定なしのクエリは全スキャンとなりコスト高
+- 個人情報（client_ip等）は匿名化・マスキング運用
+- metadataは補助用途、主要分析軸は固定カラムで保持
+
 #### クエリパターン想定
 
 ```sql

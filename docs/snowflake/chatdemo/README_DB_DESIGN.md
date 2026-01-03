@@ -362,6 +362,58 @@ master 配下の定義から Snowflake DDL を生成します。
 - 本章に反する指摘は成立させない（例：CHECK を追加すべき、外部テーブルで制約強制すべき、など）
 - 代替案は運用検証クエリ、取り込み時バリデーション、内部テーブル化を優先する
 
+## 10.5 Agentレビューの評価基準（重要）
+
+本 Vault の設計レビュー（agent_review）は「master/design の記述に基づく静的レビュー」であり、実 DB の状態確認や推測補完を行わない。  
+レビューの品質・再現性・自動化耐性を担保するため、以下の基準を README の公式ルールとする。
+
+### 10.5.1 Evidence（根拠）の成立条件
+- Evidence は Vault 上に実在する .md の PATH のみを使用する
+- Evidence 抜粋は論点を直接裏付ける短い断片に限定する（長文引用は禁止）
+- Evidence がない指摘は Findings に含めない（「追加で集めたい情報」に回す）
+- High / Critical の指摘は Evidence が最低 2 件揃わない場合は付与しない
+
+### 10.5.2 「対象ノート候補（PATH一覧）」のルール
+- 「対象ノート候補（PATH一覧）」は “読んだ事実” の記録である
+- PATH一覧には、本文が取得できた（内容を読めた） md ファイルのみを列挙する
+- 1行 = 1 PATH とし、省略（... / ワイルドカード / “(xx files)”）を禁止する
+- README_DB_DESIGN.md は本文が取得できた場合は必ず含める
+  - 本文未取得の場合もレビューは中断せず、「追加で集めたい情報」に明記する
+
+### 10.5.3 Findings の優先度付け（定義）
+- Critical: 本番障害・データ損失リスク（Evidence 2件以上必須）
+- High: 運用障害・論理破綻リスク（Evidence 2件以上必須）
+- Med: 保守性・拡張性・将来リスク
+- Low: 形式的改善・可読性向上
+
+### 10.5.4 レビュー観点（推奨の順序）
+1) 命名・概念の一貫性（schema / table / view / externaltable / column、ID不変、参照整合）  
+2) domain・型・nullable・default の妥当性と設計意図の明示  
+3) PK / FK 設計（Snowflake非enforced前提での運用担保）  
+4) 履歴・監査・時刻整合性（created_at / updated_at / 状態遷移）  
+5) Snowflake特化設計（Time Travel、Secure View、RLS、タグ/マスキング 等）  
+6) パフォーマンス・コスト（型適切性、VARIANT濫用、MV候補、不要列）  
+7) 運用監視（ログ、アラート、リトライ、冪等性）
+
+### 10.5.5 view に関するレビュー判定基準（補足）
+view は table と別扱いで定義する（master/views に置く）。レビューは以下を基準に判定する。
+
+- View Columns と SQL の整合性を最重要とする  
+  - View Columns にある列が SELECT にない（または逆）は不整合とみなす  
+  - SELECT * はレビュー性を下げるため避けることを推奨する
+
+- frontmatter の ID フィールド（view_id / schema_id 等）は “定義識別子” であり SQL 出力列ではない  
+  - view_id / schema_id が SELECT に出ないこと自体は問題にしない  
+  - 不整合判定は “View Columns と SELECT 列” の一致で行う
+
+- depends_on は依存関係の追跡と影響範囲把握のために記載を推奨する  
+  - 依存先が増減したら更新する（レビューで追跡可能にする）
+
+### 10.5.6 externaltable に関するレビュー判定基準（補足）
+- 外部テーブルは制約強制・物理最適化前提で設計しない（10.2に従う）
+- file_format は DDL 生成の完全性に直結するため、名称（file_format_name 等）または詳細を明示することを推奨する
+- パーティション列（year, month, day, hour 等）の設計意図と WHERE 句の一致（プルーニング）を重視してレビューする
+
 ---
 
 # Part D: メンテナンスと変更履歴

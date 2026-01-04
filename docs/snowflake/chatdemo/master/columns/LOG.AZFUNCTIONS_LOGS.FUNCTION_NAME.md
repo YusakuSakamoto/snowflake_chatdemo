@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: 関数名
+comment: 関数名（例: chat_endpoint, chat_stream, review_schema_endpoint など。関数ごとのエラー率・実行時間分析に利用）
 ---
 
 # FUNCTION_NAME

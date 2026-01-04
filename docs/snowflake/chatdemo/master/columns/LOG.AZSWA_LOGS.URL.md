@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: リクエストURL
+comment: リクエストURL（例: /api/chat, /login など。アクセス傾向分析や異常検知に利用）
 ---
 
 # URL

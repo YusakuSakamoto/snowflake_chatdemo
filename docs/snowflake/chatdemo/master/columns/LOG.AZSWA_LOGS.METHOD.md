@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: HTTPメソッド
+comment: HTTPメソッド（例: GET, POST, PUT, DELETE。API種別や操作傾向の分析に利用）
 ---
 
 # METHOD

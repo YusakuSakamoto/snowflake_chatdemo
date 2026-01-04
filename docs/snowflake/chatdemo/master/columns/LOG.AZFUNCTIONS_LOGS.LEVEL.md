@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: ログレベル (INFO/WARNING/ERROR)
+comment: ログレベル（INFO/WARNING/ERROR）。障害分析や警告傾向の把握に利用
 ---
 
 # LEVEL

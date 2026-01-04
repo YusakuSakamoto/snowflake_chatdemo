@@ -11,4 +11,3 @@ partition_by: [year, month, day, hour]
 comment: Azure Functionsログ（外部テーブル）
 ---
 
-# AZFUNCTIONS_LOGS

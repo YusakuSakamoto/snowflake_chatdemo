@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: メトリクス名
+comment: メトリクス名（例: query_execution_time, bytes_scanned, credits_used, rows_produced）
 ---
 
 # METRIC_NAME

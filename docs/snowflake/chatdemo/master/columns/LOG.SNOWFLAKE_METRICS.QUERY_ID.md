@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: true
 default: 
-comment: クエリID
+comment: クエリID（NULLになり得る理由：ストレージ使用量等、クエリ非依存メトリクスが存在するため）
 ---
 
 # QUERY_ID

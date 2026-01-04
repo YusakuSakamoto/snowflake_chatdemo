@@ -1,6 +1,6 @@
 ---
 type: externaltable
-table_id: TBL_20260102000103
+externaltable_id: EXT_20260102000103
 schema_id: SCH_20260102000001
 physical: AZSWA_LOGS
 stage_name: LOGS_STAGE
@@ -12,4 +12,6 @@ comment: Azure Static Web Apps アクセスログ（外部テーブル）
 ---
 
 
+
 # AZSWA_LOGS
+

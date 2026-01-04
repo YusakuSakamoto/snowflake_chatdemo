@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: リクエストID
+comment: Azure SWAが付与する識別子（またはリクエスト相関用ID）。LOG.AZFUNCTIONS_LOGS等との論理JOINに利用。FK制約は持たず、JOIN成功率や欠損率を監視する。
 ---
 
 # REQUEST_ID

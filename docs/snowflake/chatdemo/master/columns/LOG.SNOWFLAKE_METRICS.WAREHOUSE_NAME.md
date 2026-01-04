@@ -10,7 +10,7 @@ ref_column:
 ref_cardinality:
 is_nullable: true
 default: 
-comment: ウェアハウス名
+comment: ウェアハウス名（NULLになり得る理由：ストレージ使用量など、ウェアハウス非依存メトリクスが存在するため）
 ---
 
 # WAREHOUSE_NAME

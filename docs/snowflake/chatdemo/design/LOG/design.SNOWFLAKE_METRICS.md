@@ -32,7 +32,12 @@
 
 ---
 
-## 設計方針
+
+## 設計方針・運用要点（master本文記載禁止のため本ファイルに集約）
+
+- S3長期保管・パーティション（year, month, day, hour）で効率的な時系列分析
+- 主要カラム・S3パス・ファイル形式・AUTO_REFRESH等の詳細は本ファイルで管理
+- カラム定義や論理一意性、NULL禁止等の運用ルールも本ファイルに明記
 
 ### 外部テーブルを採用する理由
 
@@ -257,9 +262,11 @@ s3://snowflake-chatdemo-vault-prod/logs/snowflake_metrics/
 
 ---
 
+
 ## 変更履歴
 
 - 2026-01-04
+  - master/externaltables配下の本文を削除し、設計要点・運用方針を本designファイルに集約
   - カラムコメントを具体化（論理一意性、JSON例、NULL条件、パーティションカラムの注意点等を明記）
   - EXTERNAL TABLEの品質担保方針を明確化
   - 設計とDDL（master正本）の責務分離を整理

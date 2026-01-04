@@ -11,4 +11,6 @@ partition_by: [year, month, day, hour]
 comment: Cortex Agent会話ログ（外部テーブル）
 ---
 
+
 # CORTEX_CONVERSATIONS
+

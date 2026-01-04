@@ -11,4 +11,3 @@ partition_by: [year, month, day, hour]
 comment: Snowflakeメトリクスログ（外部テーブル）
 ---
 
-# SNOWFLAKE_METRICS

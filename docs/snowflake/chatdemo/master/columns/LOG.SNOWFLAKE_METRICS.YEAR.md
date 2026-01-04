@@ -10,7 +10,6 @@ ref_column:
 ref_cardinality:
 is_nullable: false
 default: 
-comment: パーティション:年
 comment: パーティション:年（S3パス由来、NULL混入禁止）
 ---
 
